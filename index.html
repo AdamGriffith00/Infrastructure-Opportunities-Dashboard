@@ -39,11 +39,47 @@
             letter-spacing: 1px;
         }
 
-        .buttons-placeholder {
-            text-align: center;
+        .navigation-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            max-width: 800px;
+            width: 100%;
+            padding: 0 2rem;
+        }
+
+        .nav-button {
+            background-color: rgb(218, 79, 39);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
             font-size: 1.1rem;
-            opacity: 0.7;
-            font-style: italic;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-button:hover {
+            background-color: rgb(180, 60, 25);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-button.disabled {
+            background-color: rgb(120, 120, 120);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .nav-button.disabled:hover {
+            background-color: rgb(120, 120, 120);
+            transform: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -54,6 +90,16 @@
             .title {
                 font-size: 2rem;
                 margin-bottom: 2rem;
+            }
+
+            .navigation-buttons {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .nav-button {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
             }
         }
 
@@ -77,8 +123,13 @@
 
     <h1 class="title">Infrastructure Opportunities and Budget Dashboard</h1>
 
-    <div class="buttons-placeholder">
-        Dashboard navigation buttons will be added here
+    <div class="navigation-buttons">
+        <button class="nav-button disabled">Overall</button>
+        <button class="nav-button disabled">Sectors</button>
+        <a href="Cost-Management.html" class="nav-button">Cost Management</a>
+        <button class="nav-button disabled">Project Management</button>
+        <button class="nav-button disabled">Project Controls</button>
+        <button class="nav-button disabled">International</button>
     </div>
 </body>
 </html>
