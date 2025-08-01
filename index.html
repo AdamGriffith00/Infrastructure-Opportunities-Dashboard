@@ -24,6 +24,7 @@
 
         .logo-container {
             margin-bottom: 2rem;
+            margin-left: 45px;
         }
 
         .logo {
@@ -40,12 +41,33 @@
         }
 
         .navigation-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 1.5rem;
             max-width: 800px;
             width: 100%;
             padding: 0 2rem;
+        }
+
+        .top-row {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: space-between;
+        }
+
+        .bottom-row {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-left: 45px;
+        }
+
+        .top-row .nav-button,
+        .bottom-row .nav-button {
+            flex: 1;
+            max-width: 180px;
+            min-width: 180px;
+            height: 80px;
         }
 
         .nav-button {
@@ -58,10 +80,13 @@
             font-weight: bold;
             cursor: pointer;
             text-decoration: none;
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
             transition: all 0.3s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            line-height: 1.2;
         }
 
         .nav-button:hover {
@@ -92,9 +117,21 @@
                 margin-bottom: 2rem;
             }
 
-            .navigation-buttons {
-                grid-template-columns: 1fr;
-                gap: 1rem;
+            .top-row {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .bottom-row {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .top-row .nav-button,
+            .bottom-row .nav-button {
+                flex: 1 1 calc(50% - 0.75rem);
+                max-width: none;
+                min-width: 120px;
             }
 
             .nav-button {
@@ -124,12 +161,17 @@
     <h1 class="title">Infrastructure Opportunities and Budget Dashboard</h1>
 
     <div class="navigation-buttons">
-        <button class="nav-button disabled">Overall</button>
-        <button class="nav-button disabled">Sectors</button>
-        <a href="Cost-Management.html" class="nav-button">Cost<br>Management</a>
-        <a href="Project-Management.html" class="nav-button">Project<br>Management</a>
-        <a href="Project-Controls.html" class="nav-button">Project<br>Controls</a>
-        <button class="nav-button disabled">International</button>
+        <div class="top-row">
+            <button class="nav-button disabled">Overall</button>
+            <a href="Hub.html" class="nav-button">Hub</a>
+            <button class="nav-button disabled">Sectors</button>
+            <button class="nav-button disabled">International</button>
+        </div>
+        <div class="bottom-row">
+            <a href="Cost-Management.html" class="nav-button">Cost<br>Management</a>
+            <a href="Project-Management.html" class="nav-button">Project<br>Management</a>
+            <a href="Project-Controls.html" class="nav-button">Project<br>Controls</a>
+        </div>
     </div>
 </body>
 </html>
