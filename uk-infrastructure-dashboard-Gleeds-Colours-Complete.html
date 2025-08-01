@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Infrastructure Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none !important; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #2563eb; }
+        .tab-inactive { border-bottom: 2px solid transparent; color: #6b7280; }
+    </style>
+</head>
+<body class="min-h-screen" style="background-color: #3c3c3c;">
+    <div class="p-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Navigation -->
+            <div style="background-color: #F7C400;" class="rounded-lg shadow-sm mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex">
+                        <button onclick="showOpportunities()" id="oppTab" class="tab-active py-4 px-6 text-sm font-medium">
+                            Opportunities Tracker
+                        </button>
+                        <button onclick="showBudget()" id="budgetTab" class="tab-inactive py-4 px-6 text-sm font-medium">
+                            Budget Tracker
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Opportunities Section -->
+            <div id="opportunitiesSection">
+                <!-- Header -->
+                <div style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-4">UK Infrastructure Opportunities</h1>
+                    
+                    <!-- Filters -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Sector</label>
+                            <select id="sectorSelect" onchange="filterOpportunities()" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="All">All Sectors</option>
+                                <option value="Rail">Rail</option>
+                                <option value="Aviation">Aviation</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="Ports">Ports</option>
+                                <option value="Highways">Highways</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Region</label>
+                            <select id="regionSelect" onchange="filterOpportunities()" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="All">All Regions</option>
+                                <option value="London">London</option>
+                                <option value="North West">North West</option>
+                                <option value="South East">South East</option>
+                                <option value="Midlands">Midlands</option>
+                                <option value="Scotland">Scotland</option>
+                                <option value="Wales">Wales</option>
+                                <option value="North East">North East</option>
+                                <option value="South West">South West</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategic Market Insights 2025 -->
+                <div style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">🎯 Strategic Market Insights 2025</h2>
+                    
+                    <!-- Key Market Drivers -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5">
+                            <h3 class="text-lg font-semibold text-blue-900 mb-3">🚀 High-Growth Opportunities</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-start gap-3">
+                                    <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+                                    <div>
+                                        <div class="font-medium text-sm">Renewable Energy Grid (£15B+ market)</div>
+                                        <div class="text-xs text-gray-600">Scotland offshore wind connections, grid reinforcement</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+                                    <div>
+                                        <div class="font-medium text-sm">Airport Expansion (£8B+ market)</div>
+                                        <div class="text-xs text-gray-600">Heathrow T6, Gatwick second runway preparations</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                                    <div>
+                                        <div class="font-medium text-sm">Water AMP8 Programme (£55B+ market)</div>
+                                        <div class="text-xs text-gray-600">Major water company infrastructure refresh 2025-30</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-5">
+                            <h3 class="text-lg font-semibold text-amber-900 mb-3">⚡ Key Success Factors</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-start gap-3">
+                                    <span class="bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✓</span>
+                                    <div>
+                                        <div class="font-medium text-sm">Net Zero Credentials</div>
+                                        <div class="text-xs text-gray-600">Carbon reduction strategies mandatory for major bids</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✓</span>
+                                    <div>
+                                        <div class="font-medium text-sm">Digital Integration</div>
+                                        <div class="text-xs text-gray-600">BIM, AI, and IoT integration expected standard</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✓</span>
+                                    <div>
+                                        <div class="font-medium text-sm">Cost Certainty Track Record</div>
+                                        <div class="text-xs text-gray-600">Post-HS2 scrutiny demands proven cost management</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Trends & Risks -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 mb-2">📈 Market Accelerators</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• National Infrastructure Strategy refresh</li>
+                                <li>• Regional levelling-up investments</li>
+                                <li>• Green bond financing availability</li>
+                                <li>• Post-pandemic infrastructure focus</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-red-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-red-800 mb-2">⚠️ Key Risks</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• Skills shortage in key sectors</li>
+                                <li>• Supply chain cost inflation</li>
+                                <li>• Planning system delays</li>
+                                <li>• Political/policy uncertainty</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-purple-800 mb-2">🎯 Winning Strategies</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• Early client engagement programmes</li>
+                                <li>• Regional partnership development</li>
+                                <li>• ESG integration in all proposals</li>
+                                <li>• Digital delivery capability demos</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UK Overview -->
+                <div id="ukOverview" style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">UK Infrastructure Market Overview</h2>
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-blue-600">£725B</div>
+                            <div class="text-sm text-gray-600">10-Year Investment</div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-green-600">300+</div>
+                            <div class="text-sm text-gray-600">Opportunities</div>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-yellow-600">5</div>
+                            <div class="text-sm text-gray-600">Key Sectors</div>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-purple-600">9</div>
+                            <div class="text-sm text-gray-600">Regions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Regional Details -->
+                <div id="regionalDetails" style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6 hidden">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4"><span id="regionName"></span> - Infrastructure Outlook</h2>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-3">Overview</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span>Expected Opportunities:</span>
+                                    <span id="regionOpps" class="font-bold text-blue-600"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Budget Allocation:</span>
+                                    <span id="regionBudget" class="font-bold text-green-600"></span>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-sm"><strong>Focus:</strong> <span id="regionFocus"></span></p>
+                                <p class="text-sm mt-2"><strong>Growth Areas:</strong> <span id="regionGrowth"></span></p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-3">Major Clients</h3>
+                            <div id="regionClients" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opportunities List -->
+                <div style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Current Opportunities</h2>
+                    <div id="opportunitiesList" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- Budget Section -->
+            <div id="budgetSection" class="hidden">
+                <!-- Budget Header -->
+                <div style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-4">UK Infrastructure Budget Tracker</h1>
+                    
+                    <!-- Budget Filters -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Region</label>
+                            <select id="budgetRegionSelect" onchange="filterBudgets()" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="All">All Regions</option>
+                                <option value="London">London</option>
+                                <option value="North West">North West</option>
+                                <option value="South East">South East</option>
+                                <option value="Midlands">Midlands</option>
+                                <option value="Scotland">Scotland</option>
+                                <option value="Wales">Wales</option>
+                                <option value="North East">North East</option>
+                                <option value="South West">South West</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
+                            <select id="budgetTimeSelect" onchange="filterBudgets()" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="2025">2025-26 Budget</option>
+                                <option value="10year">10-Year Allocation</option>
+                                <option value="both">Both Periods</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2025-26 Budget Rankings -->
+                <div style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">📊 2025-26 Budget Rankings</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Top Sectors -->
+                        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5">
+                            <h3 class="text-lg font-semibold text-blue-900 mb-4">🏆 Top Sectors by Budget</h3>
+                            <div class="space-y-3" id="sectorRankings">
+                                <!-- Dynamic content will be inserted here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Top Regions -->
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5">
+                            <h3 class="text-lg font-semibold text-green-900 mb-4">🌍 Top Regions by Budget</h3>
+                            <div class="space-y-3" id="regionRankings">
+                                <!-- Dynamic content will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sector-Region Matrix -->
+                    <div class="mt-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5">
+                        <h3 class="text-lg font-semibold text-purple-900 mb-4">🎯 High-Value Sector-Region Combinations</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="sectorRegionMatrix">
+                            <!-- Dynamic content will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Overview -->
+                <div id="budgetOverview" style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Budget Overview</h2>
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-green-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-green-600">£725B</div>
+                            <div class="text-sm text-gray-600">Total 10-Year</div>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-blue-600">£72B</div>
+                            <div class="text-sm text-gray-600">Annual Average</div>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-purple-600">150+</div>
+                            <div class="text-sm text-gray-600">Major Clients</div>
+                        </div>
+                        <div class="bg-orange-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-orange-600">9</div>
+                            <div class="text-sm text-gray-600">Regions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Regional Budget Details -->
+                <div id="budgetRegionalDetails" style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6 mb-6 hidden">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4"><span id="budgetRegionName"></span> - Budget Analysis</h2>
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-3">Budget Summary</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span>2025-26:</span>
+                                    <span id="budget2025" class="font-bold text-green-600"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>10-Year:</span>
+                                    <span id="budget10year" class="font-bold text-blue-600"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Major Clients:</span>
+                                    <span id="clientCount" class="font-bold text-purple-600"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-3">Sector Distribution</h3>
+                            <div id="sectorDistribution" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget List -->
+                <div style="background-color: #F7C400;" class="rounded-lg shadow-sm p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Client Budgets</h2>
+                    <div id="budgetsList" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global data
+        const regionalData = {
+            'London': { expectedOpportunities: 45, budgetAllocation: '£115B', keyClients: [{ name: 'Transport for London', budget: '£485M' }, { name: 'Thames Water', budget: '£44B' }, { name: 'Heathrow Airport', budget: '£3.2B' }], strategicFocus: 'Major transport hubs, housing delivery, Crossrail 2', growthAreas: 'East London regeneration, Thames Estuary, airport expansion' },
+            'North West': { expectedOpportunities: 38, budgetAllocation: '£95B', keyClients: [{ name: 'TfGM', budget: '£420M' }, { name: 'United Utilities', budget: '£8.5B' }, { name: 'Peel Ports', budget: '£2.3B' }], strategicFocus: 'Northern Powerhouse Rail, Mass Transit, port expansion', growthAreas: 'Liverpool-Manchester corridor, Preston-Blackpool' },
+            'Scotland': { expectedOpportunities: 32, budgetAllocation: '£78B', keyClients: [{ name: 'Scottish Power', budget: '£12B' }, { name: 'Transport Scotland', budget: '£4.2B' }, { name: 'Scottish Water', budget: '£6.8B' }], strategicFocus: 'Renewable energy grid, rural connectivity', growthAreas: 'Central Belt, Highlands renewable energy' },
+            'South East': { expectedOpportunities: 41, budgetAllocation: '£102B', keyClients: [{ name: 'National Highways', budget: '£18.5B' }, { name: 'Gatwick Airport', budget: '£2.8B' }, { name: 'Southern Water', budget: '£7.1B' }], strategicFocus: 'Aviation expansion, M25 improvements', growthAreas: 'Thames Gateway, Brighton-Hove corridor' },
+            'Midlands': { expectedOpportunities: 35, budgetAllocation: '£89B', keyClients: [{ name: 'HS2 Ltd', budget: '£45B' }, { name: 'West Midlands CA', budget: '£1.8B' }, { name: 'Severn Trent', budget: '£6.9B' }], strategicFocus: 'HS2 delivery, manufacturing infrastructure', growthAreas: 'Birmingham-Coventry corridor' },
+            'Wales': { expectedOpportunities: 24, budgetAllocation: '£52B', keyClients: [{ name: 'Transport for Wales', budget: '£3.2B' }, { name: 'Welsh Water', budget: '£4.5B' }, { name: 'Cardiff Capital Region', budget: '£2.1B' }], strategicFocus: 'Rail electrification, renewable energy', growthAreas: 'Cardiff Bay, Swansea Bay, North Wales' },
+            'North East': { expectedOpportunities: 28, budgetAllocation: '£64B', keyClients: [{ name: 'North East CA', budget: '£1.9B' }, { name: 'Northumbrian Water', budget: '£5.2B' }, { name: 'Port of Tyne', budget: '£800M' }], strategicFocus: 'Offshore wind, Tyne & Wear Metro', growthAreas: 'Newcastle-Gateshead, Sunderland, Teesside' },
+            'South West': { expectedOpportunities: 31, budgetAllocation: '£71B', keyClients: [{ name: 'Hinkley Point C', budget: '£28B' }, { name: 'South West Water', budget: '£3.8B' }, { name: 'Network Rail SW', budget: '£4.2B' }], strategicFocus: 'Nuclear energy, marine technology', growthAreas: 'Bristol-Bath, Plymouth marine hub' }
+        };
+
+        const budgetData = {
+            'London': { budget2025: '£18.2B', budget10Year: '£115B', clients: [{ name: 'Transport for London', sector: 'Transport', budget2025: '£485M', budget10Year: '£12.8B', notes: 'Capital renewals, Piccadilly Line' }, { name: 'Thames Water', sector: 'Utilities', budget2025: '£8.2B', budget10Year: '£44B', notes: 'AMP8 programme' }, { name: 'Heathrow Airport', sector: 'Aviation', budget2025: '£650M', budget10Year: '£3.2B', notes: 'Terminal 6 development' }] },
+            'North West': { budget2025: '£12.8B', budget10Year: '£95B', clients: [{ name: 'TfGM', sector: 'Transport', budget2025: '£420M', budget10Year: '£2.1B', notes: 'Metrolink expansion' }, { name: 'United Utilities', sector: 'Utilities', budget2025: '£1.7B', budget10Year: '£8.5B', notes: 'AMP8 programme' }, { name: 'Peel Ports', sector: 'Ports', budget2025: '£450M', budget10Year: '£2.3B', notes: 'Liverpool expansion' }] },
+            'Scotland': { budget2025: '£8.1B', budget10Year: '£78B', clients: [{ name: 'Scottish Power', sector: 'Utilities', budget2025: '£2.4B', budget10Year: '£12B', notes: 'Grid reinforcement' }, { name: 'Transport Scotland', sector: 'Transport', budget2025: '£850M', budget10Year: '£4.2B', notes: 'Rail electrification' }, { name: 'Scottish Water', sector: 'Utilities', budget2025: '£1.4B', budget10Year: '£6.8B', notes: 'Infrastructure programme' }] },
+            'South East': { budget2025: '£11.4B', budget10Year: '£102B', clients: [{ name: 'National Highways SE', sector: 'Highways', budget2025: '£3.7B', budget10Year: '£18.5B', notes: 'M25 improvements' }, { name: 'Gatwick Airport', sector: 'Aviation', budget2025: '£560M', budget10Year: '£2.8B', notes: 'Second runway prep' }, { name: 'Southern Water', sector: 'Utilities', budget2025: '£1.4B', budget10Year: '£7.1B', notes: 'AMP8 programme' }] },
+            'Midlands': { budget2025: '£9.7B', budget10Year: '£89B', clients: [{ name: 'HS2 Ltd', sector: 'Rail', budget2025: '£8.5B', budget10Year: '£45B', notes: 'Phase 1 & 2a delivery' }, { name: 'West Midlands CA', sector: 'Transport', budget2025: '£360M', budget10Year: '£1.8B', notes: 'Metro expansion' }, { name: 'Severn Trent Water', sector: 'Utilities', budget2025: '£1.4B', budget10Year: '£6.9B', notes: 'AMP8 programme' }] },
+            'Wales': { budget2025: '£5.2B', budget10Year: '£52B', clients: [{ name: 'Transport for Wales', sector: 'Rail', budget2025: '£640M', budget10Year: '£3.2B', notes: 'Rail modernisation' }, { name: 'Welsh Water', sector: 'Utilities', budget2025: '£900M', budget10Year: '£4.5B', notes: 'AMP8 programme' }, { name: 'Cardiff Capital Region', sector: 'Development', budget2025: '£420M', budget10Year: '£2.1B', notes: 'Metro development' }] },
+            'North East': { budget2025: '£4.8B', budget10Year: '£64B', clients: [{ name: 'North East CA', sector: 'Transport', budget2025: '£380M', budget10Year: '£1.9B', notes: 'Metro extensions' }, { name: 'Northumbrian Water', sector: 'Utilities', budget2025: '£1.0B', budget10Year: '£5.2B', notes: 'AMP8 programme' }, { name: 'Port of Tyne', sector: 'Ports', budget2025: '£160M', budget10Year: '£800M', notes: 'Offshore wind support' }] },
+            'South West': { budget2025: '£6.8B', budget10Year: '£71B', clients: [{ name: 'Hinkley Point C', sector: 'Nuclear', budget2025: '£5.6B', budget10Year: '£28B', notes: 'Nuclear construction' }, { name: 'South West Water', sector: 'Utilities', budget2025: '£760M', budget10Year: '£3.8B', notes: 'AMP8 programme' }, { name: 'Network Rail SW', sector: 'Rail', budget2025: '£840M', budget10Year: '£4.2B', notes: 'GWR upgrades' }] }
+        };
+
+        const opportunities = [
+            { id: 1, title: "HS2 Phase 2b Cost Management", sector: "Rail", region: "Midlands", value: "£2.5B", bidRating: "High", currentConsultants: "Unknown", description: "Major cost management role for HS2 Phase 2b", deadline: "2025-08-15", aiInsights: { keyRequirements: ["Mega-project experience (>£1B)", "Rail infrastructure cost management"], clientPriorities: ["Cost certainty after budget overruns", "Schedule adherence"], competitiveAdvantage: ["Rail-specific cost management", "Complex linear infrastructure success"], riskFactors: ["High political scrutiny", "Complex stakeholder environment"], recommendedApproach: "Position as cost certainty specialist with proven rail experience" } },
+            { id: 2, title: "Heathrow Terminal 6 Project Controls", sector: "Aviation", region: "London", value: "£800M", bidRating: "High", currentConsultants: "Unknown", description: "Project controls for Terminal 6 development", deadline: "2025-07-30", aiInsights: { keyRequirements: ["Aviation project experience", "Security clearance"], clientPriorities: ["Minimal operational disruption", "Regulatory compliance"], competitiveAdvantage: ["Aviation-specific expertise", "Operational constraints understanding"], riskFactors: ["Planning permission challenges", "Environmental concerns"], recommendedApproach: "Focus on operational excellence and minimal disruption" } },
+            { id: 3, title: "Thames Water AMP8 Programme", sector: "Utilities", region: "London", value: "£8.2B", bidRating: "High", currentConsultants: "Arup (Lead)", description: "Asset Management Plan 8 delivery support", deadline: "2025-09-30", aiInsights: { keyRequirements: ["Water sector AMP experience", "Regulatory compliance"], clientPriorities: ["OFWAT cost efficiency", "Service improvements"], competitiveAdvantage: ["AMP delivery track record", "Regulatory expertise"], riskFactors: ["Regulatory scrutiny", "Public pricing pressure"], recommendedApproach: "Demonstrate cost efficiency and customer value" } },
+            { id: 4, title: "TfL Piccadilly Line Upgrade", sector: "Rail", region: "London", value: "£2.9B", bidRating: "Medium", currentConsultants: "Siemens Mobility", description: "New trains and signaling system project management", deadline: "2025-08-20", aiInsights: { keyRequirements: ["London Underground experience", "Complex signaling"], clientPriorities: ["Operational continuity", "Passenger capacity"], competitiveAdvantage: ["TfL relationship", "Underground expertise"], riskFactors: ["Night work constraints", "Heritage infrastructure"], recommendedApproach: "Focus on operational excellence and heritage sensitivity" } },
+            { id: 5, title: "Crossrail 2 Development", sector: "Rail", region: "London", value: "£1.2B", bidRating: "Low", currentConsultants: "TBC", description: "Early development phase project controls", deadline: "2025-12-15", aiInsights: { keyRequirements: ["Mega-project development", "London planning"], clientPriorities: ["Funding certainty", "Political support"], competitiveAdvantage: ["Crossrail 1 experience", "London stakeholder management"], riskFactors: ["Funding uncertainty", "Political changes"], recommendedApproach: "Emphasize proven delivery and stakeholder management" } },
+            { id: 6, title: "London Bridge Station Enhancement", sector: "Rail", region: "London", value: "£450M", bidRating: "Medium", currentConsultants: "Unknown", description: "Capacity and accessibility improvements", deadline: "2025-10-05", aiInsights: { keyRequirements: ["Operational railway experience", "Heritage constraints"], clientPriorities: ["Minimal disruption", "Accessibility compliance"], competitiveAdvantage: ["Complex station experience", "Heritage project skills"], riskFactors: ["Operational constraints", "Listed building restrictions"], recommendedApproach: "Focus on innovative solutions and minimal disruption" } },
+            { id: 7, title: "Port of Liverpool Expansion PMO", sector: "Ports", region: "North West", value: "£450M", bidRating: "High", currentConsultants: "Unknown", description: "Programme Management Office for port expansion", deadline: "2025-08-05", aiInsights: { keyRequirements: ["Marine infrastructure experience", "Logistics understanding"], clientPriorities: ["Cargo capacity maximization", "Environmental sustainability"], competitiveAdvantage: ["Port infrastructure expertise", "Logistics operations"], riskFactors: ["Environmental challenges", "Marine engineering complexity"], recommendedApproach: "Position as operational port specialist with environmental credentials" } },
+            { id: 8, title: "Northern Powerhouse Rail Phase 1", sector: "Rail", region: "North West", value: "£3.2B", bidRating: "High", currentConsultants: "Unknown", description: "Manchester-Leeds high-speed rail connection", deadline: "2025-09-12", aiInsights: { keyRequirements: ["High-speed rail experience", "Cross-regional coordination"], clientPriorities: ["Economic connectivity", "Regional development"], competitiveAdvantage: ["High-speed rail expertise", "Northern region knowledge"], riskFactors: ["Multi-authority coordination", "Funding challenges"], recommendedApproach: "Emphasize regional economic benefits and collaboration" } },
+            { id: 9, title: "United Utilities Grid Resilience", sector: "Utilities", region: "North West", value: "£1.7B", bidRating: "Medium", currentConsultants: "Jacobs", description: "Water network resilience improvements", deadline: "2025-08-18", aiInsights: { keyRequirements: ["Water network expertise", "Climate resilience"], clientPriorities: ["Service reliability", "Environmental compliance"], competitiveAdvantage: ["Resilience planning", "Environmental solutions"], riskFactors: ["Climate uncertainty", "Regulatory changes"], recommendedApproach: "Focus on innovative resilience solutions" } },
+            { id: 10, title: "Manchester Airport Terminal Expansion", sector: "Aviation", region: "North West", value: "£1.3B", bidRating: "High", currentConsultants: "Unknown", description: "Terminal 2 expansion project controls", deadline: "2025-07-25", aiInsights: { keyRequirements: ["Airport expansion experience", "Operational constraints"], clientPriorities: ["Passenger capacity", "Operational efficiency"], competitiveAdvantage: ["Airport infrastructure", "Operational planning"], riskFactors: ["Operational disruption", "Planning constraints"], recommendedApproach: "Demonstrate operational continuity expertise" } },
+            { id: 11, title: "TfGM Metrolink Extension", sector: "Rail", region: "North West", value: "£680M", bidRating: "Medium", currentConsultants: "Unknown", description: "Stockport and Heywood line extensions", deadline: "2025-09-30", aiInsights: { keyRequirements: ["Light rail experience", "Urban integration"], clientPriorities: ["Network integration", "Community benefits"], competitiveAdvantage: ["Light rail expertise", "Urban planning"], riskFactors: ["Urban constraints", "Community opposition"], recommendedApproach: "Focus on community engagement and integration" } },
+            { id: 12, title: "Scottish Power Grid Reinforcement", sector: "Utilities", region: "Scotland", value: "£650M", bidRating: "Medium", currentConsultants: "AECOM (Lead)", description: "Grid reinforcement programme cost management", deadline: "2025-08-25", aiInsights: { keyRequirements: ["Transmission network expertise", "OFGEM regulatory knowledge"], clientPriorities: ["RIIO-T2 compliance", "Renewable energy connections"], competitiveAdvantage: ["OFGEM experience", "Grid integration expertise"], riskFactors: ["Scottish planning requirements", "AECOM coordination"], recommendedApproach: "Complement AECOM with specialized renewable energy expertise" } },
+            { id: 13, title: "Offshore Wind Grid Connections", sector: "Utilities", region: "Scotland", value: "£2.1B", bidRating: "High", currentConsultants: "Unknown", description: "Major offshore wind farm grid connections", deadline: "2025-10-15", aiInsights: { keyRequirements: ["Offshore wind experience", "Marine construction"], clientPriorities: ["Grid stability", "Environmental protection"], competitiveAdvantage: ["Offshore expertise", "Environmental planning"], riskFactors: ["Marine conditions", "Environmental approvals"], recommendedApproach: "Emphasize offshore wind track record and environmental credentials" } },
+            { id: 14, title: "Edinburgh Tram Extension", sector: "Rail", region: "Scotland", value: "£290M", bidRating: "Medium", currentConsultants: "Unknown", description: "Tram line extension to Granton", deadline: "2025-08-08", aiInsights: { keyRequirements: ["Tram system experience", "Urban construction"], clientPriorities: ["Schedule certainty", "Cost control"], competitiveAdvantage: ["Tram expertise", "Scottish experience"], riskFactors: ["Previous project issues", "Public scrutiny"], recommendedApproach: "Demonstrate lessons learned and cost certainty" } },
+            { id: 15, title: "Scottish Water Infrastructure Renewal", sector: "Utilities", region: "Scotland", value: "£1.4B", bidRating: "High", currentConsultants: "Unknown", description: "Strategic infrastructure renewal programme", deadline: "2025-09-20", aiInsights: { keyRequirements: ["Water infrastructure", "Rural connectivity"], clientPriorities: ["Service resilience", "Remote area coverage"], competitiveAdvantage: ["Rural infrastructure", "Resilience planning"], riskFactors: ["Remote access", "Weather constraints"], recommendedApproach: "Focus on innovative rural solutions" } },
+            { id: 16, title: "Gatwick Second Runway Programme", sector: "Aviation", region: "South East", value: "£680M", bidRating: "High", currentConsultants: "Unknown", description: "Programme management for second runway", deadline: "2025-09-15", aiInsights: { keyRequirements: ["Airport infrastructure experience", "DCO process knowledge"], clientPriorities: ["Planning consent approval", "Environmental mitigation"], competitiveAdvantage: ["DCO experience", "Airport expansion projects"], riskFactors: ["Local opposition", "Environmental requirements"], recommendedApproach: "Focus on sustainable growth and community engagement" } },
+            { id: 17, title: "M25 Junction Improvements", sector: "Highways", region: "South East", value: "£1.8B", bidRating: "High", currentConsultants: "Costain", description: "Smart motorway and junction upgrades", deadline: "2025-08-30", aiInsights: { keyRequirements: ["Smart motorway experience", "Traffic management"], clientPriorities: ["Traffic flow improvement", "Safety enhancement"], competitiveAdvantage: ["Smart motorway expertise", "Traffic engineering"], riskFactors: ["Public safety concerns", "Operational disruption"], recommendedApproach: "Emphasize safety record and traffic management expertise" } },
+            { id: 18, title: "Southern Water Resilience Programme", sector: "Utilities", region: "South East", value: "£1.4B", bidRating: "Medium", currentConsultants: "Atkins", description: "Drought resilience and supply improvements", deadline: "2025-07-15", aiInsights: { keyRequirements: ["Water resource management", "Environmental compliance"], clientPriorities: ["Supply security", "Environmental protection"], competitiveAdvantage: ["Water resource planning", "Environmental expertise"], riskFactors: ["Environmental constraints", "Planning delays"], recommendedApproach: "Focus on sustainable water resource solutions" } },
+            { id: 19, title: "Dover Port Expansion", sector: "Ports", region: "South East", value: "£890M", bidRating: "High", currentConsultants: "Unknown", description: "Western Docks revival and capacity expansion", deadline: "2025-10-20", aiInsights: { keyRequirements: ["Port infrastructure", "Border facility design"], clientPriorities: ["Freight capacity", "Border efficiency"], competitiveAdvantage: ["Port expansion experience", "Border infrastructure"], riskFactors: ["Brexit implications", "Environmental concerns"], recommendedApproach: "Emphasize border efficiency and freight optimization" } },
+            { id: 20, title: "West Midlands Metro Expansion", sector: "Rail", region: "Midlands", value: "£790M", bidRating: "High", currentConsultants: "Unknown", description: "Metro line extensions across Birmingham", deadline: "2025-09-05", aiInsights: { keyRequirements: ["Metro system experience", "Urban integration"], clientPriorities: ["Network connectivity", "Economic development"], competitiveAdvantage: ["Metro expertise", "Urban regeneration"], riskFactors: ["Urban constraints", "Utility conflicts"], recommendedApproach: "Focus on integrated transport and regeneration benefits" } },
+            { id: 21, title: "Severn Trent AMP8 Delivery", sector: "Utilities", region: "Midlands", value: "£1.4B", bidRating: "Medium", currentConsultants: "MWH Treatment", description: "Water infrastructure investment programme", deadline: "2025-08-12", aiInsights: { keyRequirements: ["AMP delivery experience", "Water treatment"], clientPriorities: ["Regulatory compliance", "Customer value"], competitiveAdvantage: ["AMP expertise", "Treatment technology"], riskFactors: ["Regulatory pressure", "Cost constraints"], recommendedApproach: "Demonstrate regulatory expertise and cost efficiency" } },
+            { id: 22, title: "Birmingham Airport Expansion", sector: "Aviation", region: "Midlands", value: "£1.2B", bidRating: "Medium", currentConsultants: "Unknown", description: "Terminal and runway capacity improvements", deadline: "2025-11-30", aiInsights: { keyRequirements: ["Airport development", "Capacity planning"], clientPriorities: ["Passenger growth", "Operational efficiency"], competitiveAdvantage: ["Airport planning", "Capacity optimization"], riskFactors: ["Environmental constraints", "Community concerns"], recommendedApproach: "Focus on sustainable growth and community benefits" } },
+            { id: 23, title: "Cardiff Metro Phase 2", sector: "Rail", region: "Wales", value: "£380M", bidRating: "High", currentConsultants: "Unknown", description: "Cost management for Metro Phase 2", deadline: "2025-08-30", aiInsights: { keyRequirements: ["Light rail experience", "Welsh language beneficial"], clientPriorities: ["Integrated transport network", "Valley regeneration"], competitiveAdvantage: ["Metro expertise", "Welsh regional development"], riskFactors: ["Network integration complexity", "Topography challenges"], recommendedApproach: "Emphasize regional economic benefits and Welsh community needs" } },
+            { id: 24, title: "South Wales Metro Enhancement", sector: "Rail", region: "Wales", value: "£640M", bidRating: "High", currentConsultants: "Transport for Wales", description: "Valley lines electrification and modernisation", deadline: "2025-09-25", aiInsights: { keyRequirements: ["Rail electrification", "Valley railway experience"], clientPriorities: ["Service improvement", "Environmental benefits"], competitiveAdvantage: ["Electrification expertise", "Welsh valleys knowledge"], riskFactors: ["Challenging terrain", "Heritage constraints"], recommendedApproach: "Focus on environmental benefits and service transformation" } },
+            { id: 25, title: "Welsh Water Infrastructure Programme", sector: "Utilities", region: "Wales", value: "£900M", bidRating: "Medium", currentConsultants: "Unknown", description: "Strategic water infrastructure improvements", deadline: "2025-07-22", aiInsights: { keyRequirements: ["Water infrastructure", "Rural Welsh experience"], clientPriorities: ["Service resilience", "Environmental compliance"], competitiveAdvantage: ["Rural water expertise", "Welsh experience"], riskFactors: ["Remote locations", "Environmental sensitivity"], recommendedApproach: "Emphasize environmental sustainability and rural expertise" } },
+            { id: 26, title: "Swansea Bay Tidal Lagoon", sector: "Utilities", region: "Wales", value: "£1.3B", bidRating: "Low", currentConsultants: "Unknown", description: "Tidal energy project development support", deadline: "2025-12-30", aiInsights: { keyRequirements: ["Marine renewable energy", "Environmental assessment"], clientPriorities: ["Technology viability", "Environmental protection"], competitiveAdvantage: ["Marine energy expertise", "Environmental planning"], riskFactors: ["Technology risk", "Environmental impact"], recommendedApproach: "Focus on innovative marine energy solutions" } },
+            { id: 27, title: "Tyne & Wear Metro Extension", sector: "Rail", region: "North East", value: "£290M", bidRating: "Medium", currentConsultants: "Unknown", description: "Metro extension project controls", deadline: "2025-07-28", aiInsights: { keyRequirements: ["Metro extension experience", "System integration"], clientPriorities: ["Network integration", "Economic development"], competitiveAdvantage: ["Metro integration expertise", "Regional development"], riskFactors: ["Aging infrastructure", "Budget constraints"], recommendedApproach: "Focus on cost-effective solutions and community benefits" } },
+            { id: 28, title: "Teesside Offshore Wind Hub", sector: "Utilities", region: "North East", value: "£1.8B", bidRating: "High", currentConsultants: "Unknown", description: "Major offshore wind development support", deadline: "2025-10-10", aiInsights: { keyRequirements: ["Offshore wind experience", "Port infrastructure"], clientPriorities: ["Industrial regeneration", "Green energy transition"], competitiveAdvantage: ["Offshore wind expertise", "Industrial heritage"], riskFactors: ["Marine conditions", "Grid connection"], recommendedApproach: "Emphasize industrial regeneration and green transition" } },
+            { id: 29, title: "Northumbrian Water AMP8", sector: "Utilities", region: "North East", value: "£1.0B", bidRating: "Medium", currentConsultants: "Unknown", description: "Asset management programme delivery", deadline: "2025-08-15", aiInsights: { keyRequirements: ["AMP delivery", "Rural water systems"], clientPriorities: ["Service reliability", "Environmental improvement"], competitiveAdvantage: ["Rural water expertise", "AMP experience"], riskFactors: ["Remote locations", "Challenging terrain"], recommendedApproach: "Focus on rural service improvements and environmental benefits" } },
+            { id: 30, title: "Newcastle Central Station Upgrade", sector: "Rail", region: "North East", value: "£450M", bidRating: "High", currentConsultants: "Unknown", description: "Historic station modernisation project", deadline: "2025-09-18", aiInsights: { keyRequirements: ["Heritage railway experience", "Operational constraints"], clientPriorities: ["Heritage preservation", "Capacity improvement"], competitiveAdvantage: ["Heritage expertise", "Operational railway"], riskFactors: ["Listed building constraints", "Operational disruption"], recommendedApproach: "Balance heritage preservation with modern functionality" } },
+            { id: 31, title: "A303 Stonehenge Tunnel Review", sector: "Highways", region: "South West", value: "£1.7B", bidRating: "Medium", currentConsultants: "Unknown", description: "Independent cost review for tunnel project", deadline: "2025-07-20", aiInsights: { keyRequirements: ["Independent cost review", "Tunneling expertise"], clientPriorities: ["Objective cost assessment", "Heritage protection"], competitiveAdvantage: ["Complete independence", "Heritage project experience"], riskFactors: ["Public scrutiny", "Archaeological discoveries"], recommendedApproach: "Emphasize independence and heritage sensitivity" } },
+            { id: 32, title: "Hinkley Point C Support Services", sector: "Utilities", region: "South West", value: "£5.6B", bidRating: "High", currentConsultants: "EDF Energy", description: "Nuclear construction project support", deadline: "2025-11-15", aiInsights: { keyRequirements: ["Nuclear project experience", "Security clearance"], clientPriorities: ["Safety excellence", "Schedule adherence"], competitiveAdvantage: ["Nuclear expertise", "Safety culture"], riskFactors: ["Nuclear regulation", "Technical complexity"], recommendedApproach: "Emphasize nuclear safety expertise and regulatory compliance" } },
+            { id: 33, title: "South West Water Investment Programme", sector: "Utilities", region: "South West", value: "£760M", bidRating: "Medium", currentConsultants: "Unknown", description: "AMP8 water infrastructure improvements", deadline: "2025-08-25", aiInsights: { keyRequirements: ["AMP delivery", "Coastal water systems"], clientPriorities: ["Service improvement", "Environmental protection"], competitiveAdvantage: ["Coastal expertise", "Environmental planning"], riskFactors: ["Coastal erosion", "Environmental constraints"], recommendedApproach: "Focus on coastal resilience and environmental protection" } },
+            { id: 34, title: "Bristol Temple Meads Redevelopment", sector: "Rail", region: "South West", value: "£350M", bidRating: "High", currentConsultants: "Unknown", description: "Station redevelopment and capacity upgrade", deadline: "2025-10-30", aiInsights: { keyRequirements: ["Heritage railway", "Urban regeneration"], clientPriorities: ["Heritage preservation", "Urban connectivity"], competitiveAdvantage: ["Heritage railway expertise", "Urban planning"], riskFactors: ["Heritage constraints", "Urban integration"], recommendedApproach: "Balance heritage preservation with modern connectivity needs" } },
+            { id: 35, title: "Plymouth Marine Hub Development", sector: "Ports", region: "South West", value: "£420M", bidRating: "Medium", currentConsultants: "Unknown", description: "Marine technology and offshore wind support hub", deadline: "2025-09-08", aiInsights: { keyRequirements: ["Marine infrastructure", "Technology hub development"], clientPriorities: ["Economic diversification", "Marine technology leadership"], competitiveAdvantage: ["Marine expertise", "Technology development"], riskFactors: ["Market uncertainty", "Technology risks"], recommendedApproach: "Focus on marine technology innovation and economic development" } }
+        ];
+
+        // Global state
+        let currentTab = 'opportunities';
+        let selectedSector = 'All';
+        let selectedRegion = 'All';
+        let selectedBudgetRegion = 'All';
+        let selectedBudgetTime = '2025';
+
+        // Function to calculate budget rankings
+        function calculateBudgetRankings() {
+            const sectorTotals = {};
+            const regionTotals = {};
+            const sectorRegionCombos = [];
+
+            Object.entries(budgetData).forEach(([region, data]) => {
+                let regionBudget = parseFloat(data.budget2025.replace(/[£BM,]/g, ''));
+                if (data.budget2025.includes('B')) {
+                    regionBudget = regionBudget * 1000;
+                }
+                regionTotals[region] = regionBudget;
+
+                data.clients.forEach(client => {
+                    let budget = parseFloat(client.budget2025.replace(/[£BM,]/g, ''));
+                    if (client.budget2025.includes('B')) {
+                        budget = budget * 1000;
+                    }
+                    
+                    if (!sectorTotals[client.sector]) {
+                        sectorTotals[client.sector] = 0;
+                    }
+                    sectorTotals[client.sector] += budget;
+
+                    if (budget >= 500) {
+                        sectorRegionCombos.push({
+                            sector: client.sector,
+                            region: region,
+                            budget: budget,
+                            client: client.name,
+                            budgetFormatted: client.budget2025
+                        });
+                    }
+                });
+            });
+
+            return {
+                sectors: Object.entries(sectorTotals)
+                    .map(([sector, total]) => ({ sector, total }))
+                    .sort((a, b) => b.total - a.total),
+                regions: Object.entries(regionTotals)
+                    .map(([region, total]) => ({ region, total }))
+                    .sort((a, b) => b.total - a.total),
+                combinations: sectorRegionCombos.sort((a, b) => b.budget - a.budget)
+            };
+        }
+
+        function displayBudgetRankings() {
+            const rankings = calculateBudgetRankings();
+
+            const sectorHtml = rankings.sectors.slice(0, 5).map((item, index) => {
+                const colors = ['bg-yellow-500', 'bg-gray-400', 'bg-orange-500', 'bg-blue-500', 'bg-green-500'];
+                const budgetFormatted = item.total >= 1000 ? `£${(item.total/1000).toFixed(1)}B` : `£${item.total.toFixed(0)}M`;
+                
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="${colors[index]} text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">${index + 1}</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">${item.sector}</div>
+                            <div class="text-xs text-gray-600">${budgetFormatted} total budget</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-blue-600 text-sm">${budgetFormatted}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('sectorRankings').innerHTML = sectorHtml;
+
+            const regionHtml = rankings.regions.slice(0, 5).map((item, index) => {
+                const colors = ['bg-yellow-500', 'bg-gray-400', 'bg-orange-500', 'bg-blue-500', 'bg-green-500'];
+                const budgetFormatted = `£${(item.total/1000).toFixed(1)}B`;
+                
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="${colors[index]} text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">${index + 1}</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">${item.region}</div>
+                            <div class="text-xs text-gray-600">${budgetFormatted} total budget</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-green-600 text-sm">${budgetFormatted}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('regionRankings').innerHTML = regionHtml;
+
+            const comboHtml = rankings.combinations.slice(0, 6).map((item, index) => {
+                return `
+                    <div class="bg-white rounded-lg p-3 border border-purple-200">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">${index + 1}</span>
+                            <span class="font-bold text-purple-600 text-sm">${item.budgetFormatted}</span>
+                        </div>
+                        <div class="text-sm font-medium text-gray-900">${item.sector} - ${item.region}</div>
+                        <div class="text-xs text-gray-600 mt-1">${item.client}</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('sectorRegionMatrix').innerHTML = comboHtml;
+        }
+
+        function showOpportunities() {
+            currentTab = 'opportunities';
+            document.getElementById('opportunitiesSection').classList.remove('hidden');
+            document.getElementById('budgetSection').classList.add('hidden');
+            document.getElementById('oppTab').className = 'tab-active py-4 px-6 text-sm font-medium';
+            document.getElementById('budgetTab').className = 'tab-inactive py-4 px-6 text-sm font-medium';
+            filterOpportunities();
+        }
+
+        function showBudget() {
+            currentTab = 'budget';
+            document.getElementById('budgetSection').classList.remove('hidden');
+            document.getElementById('opportunitiesSection').classList.add('hidden');
+            document.getElementById('budgetTab').className = 'tab-active py-4 px-6 text-sm font-medium';
+            document.getElementById('oppTab').className = 'tab-inactive py-4 px-6 text-sm font-medium';
+            displayBudgetRankings();
+            filterBudgets();
+        }
+
+        function filterOpportunities() {
+            selectedSector = document.getElementById('sectorSelect').value;
+            selectedRegion = document.getElementById('regionSelect').value;
+            
+            if (selectedRegion !== 'All' && regionalData[selectedRegion]) {
+                showRegionalDetails();
+                document.getElementById('ukOverview').classList.add('hidden');
+            } else {
+                document.getElementById('regionalDetails').classList.add('hidden');
+                document.getElementById('ukOverview').classList.remove('hidden');
+            }
+            
+            const filtered = opportunities.filter(opp => {
+                const sectorMatch = selectedSector === 'All' || opp.sector === selectedSector;
+                const regionMatch = selectedRegion === 'All' || opp.region === selectedRegion;
+                return sectorMatch && regionMatch;
+            });
+            
+            displayOpportunities(filtered);
+        }
+
+        function showRegionalDetails() {
+            const data = regionalData[selectedRegion];
+            document.getElementById('regionalDetails').classList.remove('hidden');
+            document.getElementById('regionName').textContent = selectedRegion;
+            document.getElementById('regionOpps').textContent = data.expectedOpportunities;
+            document.getElementById('regionBudget').textContent = data.budgetAllocation;
+            document.getElementById('regionFocus').textContent = data.strategicFocus;
+            document.getElementById('regionGrowth').textContent = data.growthAreas;
+            
+            const clientsHtml = data.keyClients.map(client => 
+                `<div class="border rounded p-2"><div class="font-medium text-sm">${client.name}</div><div class="text-sm text-green-600">${client.budget}</div></div>`
+            ).join('');
+            document.getElementById('regionClients').innerHTML = clientsHtml;
+        }
+
+        function displayOpportunities(opps) {
+            const html = opps.map(opp => `
+                <div style="background-color: #F5F5F5;" class="border rounded-lg p-4 hover:shadow-md">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold">${opp.title}</h3>
+                            <p class="text-gray-600 text-sm mb-2">${opp.description}</p>
+                            <div class="flex gap-4 text-sm text-gray-500">
+                                <span>Region: ${opp.region}</span>
+                                <span>Sector: ${opp.sector}</span>
+                                <span>Value: ${opp.value}</span>
+                                <span>Deadline: ${opp.deadline}</span>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getRatingColor(opp.bidRating)}">${opp.bidRating}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-3">
+                        <strong>Current Consultants:</strong> ${opp.currentConsultants}
+                    </div>
+                    <button onclick="toggleInsights(${opp.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        🧠 AI Bid Insights <span id="arrow-${opp.id}">▼</span>
+                    </button>
+                    <div id="insights-${opp.id}" class="hidden mt-3 p-4 bg-blue-50 rounded border">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="font-semibold text-gray-900 mb-2">Key Requirements</h5>
+                                <ul class="list-disc list-inside text-sm space-y-1">
+                                    ${opp.aiInsights.keyRequirements.map(req => `<li>${req}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-gray-900 mb-2">Client Priorities</h5>
+                                <ul class="list-disc list-inside text-sm space-y-1">
+                                    ${opp.aiInsights.clientPriorities.map(priority => `<li>${priority}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-green-700 mb-2">Competitive Advantage</h5>
+                                <ul class="list-disc list-inside text-sm space-y-1">
+                                    ${opp.aiInsights.competitiveAdvantage.map(advantage => `<li>${advantage}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-red-700 mb-2">Risk Factors</h5>
+                                <ul class="list-disc list-inside text-sm space-y-1">
+                                    ${opp.aiInsights.riskFactors.map(risk => `<li>${risk}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-white rounded border">
+                            <h5 class="font-semibold text-blue-800 mb-2">🎯 Recommended Approach</h5>
+                            <p class="text-sm">${opp.aiInsights.recommendedApproach}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('opportunitiesList').innerHTML = html;
+        }
+
+        function filterBudgets() {
+            selectedBudgetRegion = document.getElementById('budgetRegionSelect').value;
+            selectedBudgetTime = document.getElementById('budgetTimeSelect').value;
+            
+            if (selectedBudgetRegion !== 'All' && budgetData[selectedBudgetRegion]) {
+                showBudgetRegionalDetails();
+                document.getElementById('budgetOverview').classList.add('hidden');
+            } else {
+                document.getElementById('budgetRegionalDetails').classList.add('hidden');
+                document.getElementById('budgetOverview').classList.remove('hidden');
+            }
+            
+            displayBudgets();
+        }
+
+        function showBudgetRegionalDetails() {
+            const data = budgetData[selectedBudgetRegion];
+            document.getElementById('budgetRegionalDetails').classList.remove('hidden');
+            document.getElementById('budgetRegionName').textContent = selectedBudgetRegion;
+            document.getElementById('budget2025').textContent = data.budget2025;
+            document.getElementById('budget10year').textContent = data.budget10Year;
+            document.getElementById('clientCount').textContent = data.clients.length;
+            
+            const sectors = {};
+            data.clients.forEach(client => {
+                sectors[client.sector] = (sectors[client.sector] || 0) + 1;
+            });
+            
+            const sectorHtml = Object.entries(sectors).map(([sector, count]) => 
+                `<div class="flex justify-between"><span class="text-sm">${sector}:</span><span class="text-sm font-semibold">${count} clients</span></div>`
+            ).join('');
+            document.getElementById('sectorDistribution').innerHTML = sectorHtml;
+        }
+
+        function displayBudgets() {
+            let clientsToShow = [];
+            
+            if (selectedBudgetRegion === 'All') {
+                Object.entries(budgetData).forEach(([region, data]) => {
+                    data.clients.forEach(client => {
+                        clientsToShow.push({...client, region: region});
+                    });
+                });
+            } else {
+                if (budgetData[selectedBudgetRegion]) {
+                    clientsToShow = budgetData[selectedBudgetRegion].clients.map(client => ({
+                        ...client, 
+                        region: selectedBudgetRegion
+                    }));
+                }
+            }
+            
+            const sortKey = selectedBudgetTime === '10year' ? 'budget10Year' : 'budget2025';
+            clientsToShow.sort((a, b) => {
+                const aVal = parseFloat(a[sortKey].replace(/[£BM,]/g, ''));
+                const bVal = parseFloat(b[sortKey].replace(/[£BM,]/g, ''));
+                return bVal - aVal;
+            });
+            
+            const html = clientsToShow.slice(0, 20).map((client, index) => `
+                <div style="background-color: #F5F5F5;" class="border rounded-lg p-4 hover:shadow-md">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                ${selectedBudgetRegion === 'All' ? `<span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">${index + 1}</span>` : ''}
+                                <h3 class="text-lg font-semibold">${client.name}</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">${client.notes}</p>
+                            <div class="flex gap-4 text-sm text-gray-500">
+                                ${selectedBudgetRegion === 'All' ? `<span>Region: ${client.region}</span>` : ''}
+                                <span>Sector: ${client.sector}</span>
+                                ${selectedBudgetTime === '2025' || selectedBudgetTime === 'both' ? `<span>2025-26: ${client.budget2025}</span>` : ''}
+                                ${selectedBudgetTime === '10year' || selectedBudgetTime === 'both' ? `<span>10-Year: ${client.budget10Year}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium ${getSectorColor(client.sector)}">${client.sector}</span>
+                            ${selectedBudgetTime === '2025' ? `<span class="text-lg font-bold text-green-600">${client.budget2025}</span>` : ''}
+                            ${selectedBudgetTime === '10year' ? `<span class="text-lg font-bold text-blue-600">${client.budget10Year}</span>` : ''}
+                            ${selectedBudgetTime === 'both' ? `
+                                <span class="text-sm font-bold text-green-600">${client.budget2025} (2025)</span>
+                                <span class="text-sm font-bold text-blue-600">${client.budget10Year} (10yr)</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('budgetsList').innerHTML = html;
+        }
+
+        function toggleInsights(oppId) {
+            const insights = document.getElementById(`insights-${oppId}`);
+            const arrow = document.getElementById(`arrow-${oppId}`);
+            
+            if (insights.classList.contains('hidden')) {
+                insights.classList.remove('hidden');
+                arrow.textContent = '▲';
+            } else {
+                insights.classList.add('hidden');
+                arrow.textContent = '▼';
+            }
+        }
+
+        function getRatingColor(rating) {
+            switch(rating) {
+                case 'High': return 'bg-green-100 text-green-800';
+                case 'Medium': return 'bg-yellow-100 text-yellow-800';
+                case 'Low': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getSectorColor(sector) {
+            switch(sector) {
+                case 'Transport': return 'bg-blue-100 text-blue-800';
+                case 'Rail': return 'bg-green-100 text-green-800';
+                case 'Utilities': return 'bg-teal-100 text-teal-800';
+                case 'Aviation': return 'bg-sky-100 text-sky-800';
+                case 'Highways': return 'bg-gray-100 text-gray-800';
+                case 'Ports': return 'bg-indigo-100 text-indigo-800';
+                case 'Development': return 'bg-purple-100 text-purple-800';
+                case 'Nuclear': return 'bg-amber-100 text-amber-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            showOpportunities();
+        });
+    </script>
+</body>
+</html>
