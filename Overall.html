@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Infrastructure Hub</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f3f3f3;
+    }
+    .tab-container {
+      display: flex;
+      flex-wrap: wrap;
+      background: rgb(247, 196, 0);
+    }
+    .tab {
+      flex: 1 1 50%;
+      text-align: center;
+      padding: 1em;
+      cursor: pointer;
+      background: rgb(247, 196, 0);
+      color: white;
+      border-bottom: 2px solid transparent;
+      transition: background 0.3s;
+    }
+    .tab:hover,
+    .tab.active {
+      background: rgb(60, 60, 60);
+    }
+    .tab-content {
+      display: none;
+      padding: 1em;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @media (min-width: 768px) {
+      .tab { flex: 1 1 25%; }
+    }
+    iframe {
+      width: 100%;
+      height: 90vh;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="tab-container">
+    <div class="tab active" data-tab="budget-summary">2025/26 Budget Summary</div>
+    <div class="tab" data-tab="regions">Regions - 2025/26 Projects</div>
+    <div class="tab" data-tab="ten-year-budget">10 Year Budget Summary</div>
+    <div class="tab" data-tab="gleeds-pipeline">Gleeds Pipeline</div>
+  </div>
+
+  <div class="tab-content active" id="budget-summary">
+    <iframe src="budget-summary.html"></iframe>
+  </div>
+
+  <div class="tab-content" id="regions">
+    <iframe src="uk-map.html"></iframe>
+  </div>
+
+  <div class="tab-content" id="ten-year-budget">
+    <p>Content for 10 Year Budget Summary will go here.</p>
+  </div>
+
+  <div class="tab-content" id="gleeds-pipeline">
+    <p>Content for Gleeds Pipeline will go here.</p>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
