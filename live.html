@@ -18,17 +18,27 @@
         padding: 0.5rem;
         vertical-align: top;
       }
-      th {
-        text-align: left;
-      }
-      .meta {
-        margin-bottom: 1rem;
-      }
+      th { text-align: left; }
+      .meta { margin-bottom: 1rem; }
       .empty-message {
         margin-top: 1rem;
         font-style: italic;
         color: #666;
       }
+      .sector-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: bold;
+      }
+      .sector-rail { background-color: #0074d9; }
+      .sector-highways { background-color: #ff851b; }
+      .sector-aviation { background-color: #2ecc40; }
+      .sector-maritime { background-color: #39cccc; }
+      .sector-utilities { background-color: #b10dc9; }
+      .sector-other { background-color: #aaaaaa; }
     </style>
   </head>
   <body>
@@ -42,7 +52,9 @@
           <th>Buyer</th>
           <th>Region</th>
           <th>Deadline</th>
+          <th>Days left</th>
           <th>Estimated value</th>
+          <th>Sector</th>
         </tr>
       </thead>
       <tbody id="live-opportunities"></tbody>
@@ -53,17 +65,5 @@
     </div>
 
     <script src="assets/live-client.js"></script>
-    <script>
-      // Hook into the live-client.js to show "empty" message if no results
-      const originalRender = window.render;
-      window.render = function(items) {
-        if (items && items.length > 0) {
-          document.getElementById('emptyMessage').style.display = 'none';
-        } else {
-          document.getElementById('emptyMessage').style.display = 'block';
-        }
-        originalRender(items);
-      };
-    </script>
   </body>
 </html>
