@@ -1,54 +1,70 @@
 import { getStore } from "@netlify/blobs";
 
+const CPV_CODES = [
+  "71300000","71311000","71311200","71311300",
+  "71312000","71313000","71315200","71317100",
+  "71317210","71324000","71530000","71541000"
+];
+
+const SERVICE_KEYWORDS = [
+  "cost management","quantity surveying","project controls",
+  "project management","cost assurance","procurement advisory",
+  "digital PMO","ESG","net zero","sustainability"
+];
+
+const SECTOR_KEYWORDS = [
+  "rail","railway","station",
+  "aviation","airport","runway","terminal",
+  "maritime","port","dock","harbour","harbor",
+  "utilities","water","wastewater","gas","telecom",
+  "highways","highway","road","roads","bridge"
+];
+
 export async function handler() {
   try {
-    const keywords = [
-      "rail", "railway", "station",
-      "airport", "aviation", "runway", "terminal",
-      "port", "maritime", "dock", "harbour", "harbor",
-      "utilities", "water", "wastewater", "gas", "telecom",
-      "highway", "road", "roads", "bridge"
-    ];
+    const keyword = [...SERVICE_KEYWORDS, ...SECTOR_KEYWORDS].join(" OR ");
 
-    const body = {
-      size: 100,
-      searchTerm: keywords.join(" OR "),
-      filters: { regions: ["England"], status: ["Open"] },
-      sort: { field: "deadline", direction: "asc" }
-    };
-
+    // ✅ V2 search endpoint + correct body shape
     const res = await fetch(
-      "https://www.contractsfinder.service.gov.uk/Published/Notices/Search",
+      "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          searchCriteria: {
+            types: ["Opportunity"],          // live tenders
+            statuses: ["Open"],              // still open
+            regions: "England",              // region filter
+            keyword,                         // our combined keywords
+            cpvCodes: CPV_CODES.join(",")    // narrow to consultancy/QS/PM CPVs
+          },
+          size: 200                          // up to 200 results
+        })
       }
     );
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`Contracts Finder ${res.status} ${res.statusText} — ${text.slice(0,180)}`);
+      throw new Error(`CF V2 ${res.status} ${res.statusText} — ${text.slice(0,180)}`);
     }
 
-    const data = await res.json().catch(() => ({}));
-    const notices = Array.isArray(data?.notices) ? data.notices : [];
-
-    const items = notices.map(n => ({
-      title: n.title || "",
-      organisation: n.organisationName || "",
-      region: n.region || "England",
-      deadline: n.deadline || n.deadlineDate || null,
-      valueLow: n.valueLow ?? null,
-      valueHigh: n.valueHigh ?? null,
-      url: n.noticeIdentifier
-        ? `https://www.contractsfinder.service.gov.uk/Notice/${n.noticeIdentifier}`
-        : ""
-    }));
+    const data = await res.json();
+    const items = (data.noticeList || []).map(x => {
+      const n = x.item || {};
+      return {
+        title: n.title || "",
+        organisation: n.organisationName || "",
+        region: n.regionText || n.region || "England",
+        deadline: n.deadlineDate || null,
+        valueLow: n.valueLow ?? null,
+        valueHigh: n.valueHigh ?? null,
+        url: n.id ? `https://www.contractsfinder.service.gov.uk/notice/${n.id}` : ""
+      };
+    });
 
     const payload = { updatedAt: new Date().toISOString(), items };
 
-    const store = getStore();                // default site store
+    const store = getStore();
     await store.set("latest.json", JSON.stringify(payload));
 
     return { statusCode: 200, body: `Saved ${items.length} notices at ${payload.updatedAt}` };
