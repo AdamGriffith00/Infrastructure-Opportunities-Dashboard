@@ -1,91 +1,67 @@
-import fetch from "node-fetch";
-import { getStore } from "@netlify/blobs";
+// fetch-contracts.mjs
+import { blob } from "@netlify/blobs";
 
-// SERVICES you provide
-const SERVICE_KEYWORDS = [
-  "cost management", "quantity surveying", "project controls",
-  "project management", "cost assurance", "procurement advisory",
-  "digital PMO", "ESG", "net zero", "sustainability"
-];
+export async function handler() {
+  try {
+    // Keywords to filter relevant to your business (no energy)
+    const keywords = [
+      "rail", "railway", "station",
+      "airport", "aviation", "runway", "terminal",
+      "port", "maritime", "dock", "harbour", "harbor",
+      "utilities", "water", "wastewater", "gas", "telecom",
+      "highway", "road", "roads", "bridge"
+    ];
 
-// SECTORS to target (no energy-related terms)
-const SECTOR_KEYWORDS = [
-  "rail", "highways", "road", "aviation", "airport",
-  "maritime", "port", "dock", "utilities", "water",
-  "gas", "telecom", "infrastructure"
-];
+    // POST body for Contracts Finder API
+    const body = {
+      size: 50,
+      searchTerm: keywords.join(" OR "),
+      filters: {
+        regions: ["England"]
+      },
+      sort: { field: "deadline", direction: "asc" }
+    };
 
-// CPV codes for consultancy, PM, QS, etc. in the target sectors
-const CPV_CODES = [
-  "71300000", // Engineering services
-  "71311000", // Civil engineering consultancy
-  "71311200", // Transport systems consultancy
-  "71311300", // Infrastructure consultancy
-  "71312000", // Structural engineering
-  "71313000", // Environmental engineering (non-energy)
-  "71315200", // Building consultancy
-  "71317100", // Highway engineering services
-  "71317210", // Highways consultancy
-  "71324000", // Quantity surveying
-  "71530000", // Construction consultancy
-  "71541000"  // Project management
-];
+    // Use built-in fetch in Node 18+
+    const res = await fetch("https://www.contractsfinder.service.gov.uk/Published/Notices/Search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
 
-// Region filter
-const REGIONS = "England";
+    if (!res.ok) {
+      throw new Error(`Contracts Finder API returned ${res.status} ${res.statusText}`);
+    }
 
-const API_URL = "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json";
+    const data = await res.json();
 
-function buildBody() {
-  const keyword = [...SERVICE_KEYWORDS, ...SECTOR_KEYWORDS].join(" OR ");
-  return {
-    searchCriteria: {
-      types: ["Opportunity"],
-      statuses: ["Open"],
-      regions: REGIONS,
-      keyword,
-      cpvCodes: CPV_CODES.join(",")
-    },
-    size: 200
-  };
-}
-
-export default async () => {
-  const store = getStore("contracts"); // Netlify Blobs store
-  const key = "england-latest.json";
-
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildBody()),
-  });
-
-  if (!res.ok) {
-    return { statusCode: res.status, body: `Contracts Finder error ${res.status}` };
-  }
-
-  const data = await res.json(); // { hitCount, noticeList, ... }
-  const now = new Date().toISOString();
-
-  const items = (data.noticeList || []).map(x => {
-    const n = x.item || {};
-    return {
-      id: n.id,
+    // Map to simplified items
+    const items = (data?.notices || []).map(n => ({
       title: n.title,
       organisation: n.organisationName,
-      region: n.regionText || n.region,
-      deadline: n.deadlineDate,
-      published: n.publishedDate,
+      region: n.region || "",
+      deadline: n.deadline,
       valueLow: n.valueLow,
       valueHigh: n.valueHigh,
-      cpv: n.cpvCodes,
-      url: `https://www.contractsfinder.service.gov.uk/notice/${n.id}`
+      url: n.noticeIdentifier ? `https://www.contractsfinder.service.gov.uk/Notice/${n.noticeIdentifier}` : ""
+    }));
+
+    // Save to Netlify Blobs
+    const store = blob();
+    await store.setJSON("latest", {
+      updatedAt: new Date().toISOString(),
+      items
+    });
+
+    return {
+      statusCode: 200,
+      body: `Saved ${items.length} notices at ${new Date().toISOString()}`
     };
-  });
-
-  const payload = { updatedAt: now, hitCount: data.hitCount || items.length, items };
-
-  await store.set(key, JSON.stringify(payload));
-
-  return { statusCode: 200, body: `Saved ${items.length} notices at ${now}` };
-};
+  } catch (err) {
+    console.error("Fetch contracts error:", err);
+    return {
+      statusCode: 500,
+      body: `Error - ${err.message}`
+    };
+  }
+}
