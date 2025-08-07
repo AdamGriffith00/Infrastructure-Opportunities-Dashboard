@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Live Opportunities (England) — Infrastructure Opportunities Dashboard</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 0.5rem; vertical-align: top; }
+      th { text-align: left; }
+      .meta { margin-bottom: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Live Opportunities (England)</h1>
+    <p class="meta">Last updated: <span id="lastUpdated">—</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Buyer</th>
+          <th>Region</th>
+          <th>Deadline</th>
+          <th>Estimated value</th>
+        </tr>
+      </thead>
+      <tbody id="live-opportunities"></tbody>
+    </table>
+    <script src="assets/live-client.js"></script>
+  </body>
+</html>
