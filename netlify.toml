@@ -1,14 +1,20 @@
 [build]
   publish = "."
 
-[[edge_functions]]
-  function = "events"
-  path = "/events"
-
 [functions]
-  external_node_modules = ["node-fetch", "@netlify/blobs"]
+  # Use the modern bundler so special imports like "netlify:blobs" work
+  node_bundler = "esbuild"
+
+# Optional: if you previously had this, remove it (no longer needed)
+# external_node_modules = ["@netlify/blobs", "node-fetch"]
 
 # Run the fetcher every 5 minutes
 [[scheduled.functions]]
   path = "fetch-contracts"
   schedule = "*/5 * * * *"
+
+# (Optional) If you still want the SSE stream at /events, keep this block
+# and ensure you have netlify/edge-functions/events.ts present.
+# [[edge_functions]]
+#   function = "events"
+#   path = "/events"
