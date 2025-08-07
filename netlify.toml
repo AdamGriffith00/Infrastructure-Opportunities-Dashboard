@@ -3,11 +3,9 @@
 
 [functions]
   node_bundler = "esbuild"
-  node_version = "18"
+  external_node_modules = ["@netlify/blobs"]
 
-# This is the key line — enables the modern functions runtime
-[functions."*"]
-  included_files = ["!node_modules/**"]
-
-[[plugins]]
-  package = "@netlify/plugin-functions-core"
+# Run the fetcher every 5 minutes
+[[scheduled.functions]]
+  path = "fetch-contracts"
+  schedule = "*/5 * * * *"
