@@ -126,21 +126,23 @@
     </div>
 
     <div class="table-wrap">
-      <table id="opps-table">
-        <thead>
-          <tr>
-            <th data-sort="title">Title</th>
-            <th data-sort="organisation">Buyer</th>
-            <th data-sort="region">Region</th>
-            <th data-sort="deadline">Deadline</th>
-            <th data-sort="days">Days left</th>
-            <th data-sort="value">Estimated value</th>
-            <th data-sort="sector">Sector</th>
-            <th data-sort="source">Source</th>
-          </tr>
-        </thead>
-        <tbody id="live-opportunities"></tbody>
-      </table>
+      <div style="overflow-x: auto;">
+        <table id="opps-table">
+          <thead>
+            <tr>
+              <th data-sort="title">Title</th>
+              <th data-sort="organisation">Buyer</th>
+              <th data-sort="region">Region</th>
+              <th data-sort="deadline">Deadline</th>
+              <th data-sort="days">Days left</th>
+              <th data-sort="value">Estimated value</th>
+              <th data-sort="sector">Sector</th>
+              <th data-sort="source">Source</th>
+            </tr>
+          </thead>
+          <tbody id="live-opportunities"></tbody>
+        </table>
+      </div>
     </div>
 
     <div id="emptyMessage" class="empty-message" style="display:none;">
@@ -148,9 +150,8 @@
     </div>
   </div>
 
-  <script src="assets/live-client.js?v=8"></script>
+  <script src="assets/live-client.js?v=9"></script>
   <script>
-    // Sorting & filtering logic
     let currentSort = { key: null, dir: 'asc' };
     let allRows = [];
 
@@ -179,7 +180,6 @@
       `).join('');
     }
 
-    // Filter buttons
     document.querySelectorAll('.filters button').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
@@ -188,7 +188,6 @@
       });
     });
 
-    // Sorting
     document.querySelectorAll('thead th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.dataset.sort;
@@ -207,7 +206,6 @@
       });
     });
 
-    // Hook into existing live-client.js hydration
     const oldHydrate = window.hydrateLiveData;
     window.hydrateLiveData = function(payload) {
       allRows = (payload.items || []).map(i => ({
@@ -222,6 +220,8 @@
         source: i.source || '',
         url: i.url
       }));
+      const lastUpdatedEl = document.getElementById('lastUpdated');
+      if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
       applyFiltersAndRender();
       if (oldHydrate) oldHydrate(payload);
     };
