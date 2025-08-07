@@ -1,9 +1,21 @@
 (function () {
-  const target = document.querySelector("#live-opportunities"); // a <tbody> or <div>
-  const stamp = document.querySelector("#lastUpdated");         // a <span> for timestamp
+  const target = document.querySelector("#live-opportunities"); // table body or container
+  const stamp = document.querySelector("#lastUpdated");         // last updated span
+  const emptyMsg = document.querySelector("#emptyMessage");     // empty message div
 
   function render(items) {
     if (!target) return;
+
+    // If no results, show the empty message and clear the table
+    if (!items || items.length === 0) {
+      if (emptyMsg) emptyMsg.style.display = "block";
+      target.innerHTML = "";
+      return;
+    }
+
+    // Hide the empty message if there are results
+    if (emptyMsg) emptyMsg.style.display = "none";
+
     if (target.tagName === "TBODY") {
       target.innerHTML = items.map(i => `
         <tr>
@@ -33,7 +45,7 @@
     render(payload.items || []);
   }
 
-  // Prefer SSE for instant updates, fall back to polling JSON
+  // Fallback polling if SSE fails
   function fallbackPoll() {
     async function tick() {
       try {
@@ -41,9 +53,11 @@
         if (res.ok) hydrate(await res.json());
       } catch (_) {}
     }
-    tick(); setInterval(tick, 60000);
+    tick();
+    setInterval(tick, 60000);
   }
 
+  // Try SSE first
   try {
     const es = new EventSource("/events");
     es.addEventListener("update", (e) => hydrate(JSON.parse(e.data)));
