@@ -1,18 +1,35 @@
 import fetch from "node-fetch";
 import { getStore } from "@netlify/blobs";
 
-// SERVICES/SECTORS you provided
+// SERVICES you provide
 const SERVICE_KEYWORDS = [
-  "cost management","project management","project controls","programme advisory",
-  "quantity surveying","QS","PMO","schedule","planning","estimating"
+  "cost management", "quantity surveying", "project controls",
+  "project management", "cost assurance", "procurement advisory",
+  "digital PMO", "ESG", "net zero", "sustainability"
 ];
 
+// SECTORS to target (no energy-related terms)
 const SECTOR_KEYWORDS = [
-  "rail","utilities","water","energy","power","aviation","airport","maritime","port","highways","roads"
+  "rail", "highways", "road", "aviation", "airport",
+  "maritime", "port", "dock", "utilities", "water",
+  "gas", "telecom", "infrastructure"
 ];
 
-// Consultancy/PM/QS/engineering/project mgmt CPVs (tune as needed)
-const CPV_CODES = ["71300000","71315200","71324000","71541000","71530000"];
+// CPV codes for consultancy, PM, QS, etc. in the target sectors
+const CPV_CODES = [
+  "71300000", // Engineering services
+  "71311000", // Civil engineering consultancy
+  "71311200", // Transport systems consultancy
+  "71311300", // Infrastructure consultancy
+  "71312000", // Structural engineering
+  "71313000", // Environmental engineering (non-energy)
+  "71315200", // Building consultancy
+  "71317100", // Highway engineering services
+  "71317210", // Highways consultancy
+  "71324000", // Quantity surveying
+  "71530000", // Construction consultancy
+  "71541000"  // Project management
+];
 
 // Region filter
 const REGIONS = "England";

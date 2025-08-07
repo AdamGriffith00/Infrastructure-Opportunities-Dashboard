@@ -5,16 +5,46 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Live Opportunities (England) — Infrastructure Opportunities Dashboard</title>
     <style>
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #ddd; padding: 0.5rem; vertical-align: top; }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 2rem;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        vertical-align: top;
+      }
       th { text-align: left; }
       .meta { margin-bottom: 1rem; }
+      .empty-message {
+        margin-top: 1rem;
+        font-style: italic;
+        color: #666;
+      }
+      .sector-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: bold;
+      }
+      .sector-rail { background-color: #0074d9; }
+      .sector-highways { background-color: #ff851b; }
+      .sector-aviation { background-color: #2ecc40; }
+      .sector-maritime { background-color: #39cccc; }
+      .sector-utilities { background-color: #b10dc9; }
+      .sector-other { background-color: #aaaaaa; }
     </style>
   </head>
   <body>
     <h1>Live Opportunities (England)</h1>
     <p class="meta">Last updated: <span id="lastUpdated">—</span></p>
+
     <table>
       <thead>
         <tr>
@@ -22,11 +52,18 @@
           <th>Buyer</th>
           <th>Region</th>
           <th>Deadline</th>
+          <th>Days left</th>
           <th>Estimated value</th>
+          <th>Sector</th>
         </tr>
       </thead>
       <tbody id="live-opportunities"></tbody>
     </table>
+
+    <div id="emptyMessage" class="empty-message" style="display:none;">
+      No matching opportunities found at this time.
+    </div>
+
     <script src="assets/live-client.js"></script>
   </body>
 </html>
