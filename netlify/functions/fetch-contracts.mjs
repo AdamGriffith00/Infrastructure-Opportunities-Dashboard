@@ -1,10 +1,7 @@
-// netlify/functions/fetch-contracts.mjs
-// Uses built-in fetch (Node 18+) and Netlify Blobs via `netlify:blobs`
-import { getStore } from "netlify:blobs";
+import { getStore } from "@netlify/blobs";
 
 export async function handler() {
   try {
-    // === Sector keywords (no energy) ===
     const keywords = [
       "rail", "railway", "station",
       "airport", "aviation", "runway", "terminal",
@@ -13,7 +10,6 @@ export async function handler() {
       "highway", "road", "roads", "bridge"
     ];
 
-    // Contracts Finder search body (kept simple & broad; England only)
     const body = {
       size: 100,
       searchTerm: keywords.join(" OR "),
@@ -38,7 +34,6 @@ export async function handler() {
     const data = await res.json().catch(() => ({}));
     const notices = Array.isArray(data?.notices) ? data.notices : [];
 
-    // Map into the shape your UI expects
     const items = notices.map(n => ({
       title: n.title || "",
       organisation: n.organisationName || "",
@@ -53,14 +48,10 @@ export async function handler() {
 
     const payload = { updatedAt: new Date().toISOString(), items };
 
-    // Save to Netlify Blobs (built-in runtime)
-    const store = getStore();
+    const store = getStore();                // default site store
     await store.set("latest.json", JSON.stringify(payload));
 
-    return {
-      statusCode: 200,
-      body: `Saved ${items.length} notices at ${payload.updatedAt}`
-    };
+    return { statusCode: 200, body: `Saved ${items.length} notices at ${payload.updatedAt}` };
   } catch (err) {
     console.error("fetch-contracts error:", err);
     return { statusCode: 500, body: `Error - ${err.message}` };
