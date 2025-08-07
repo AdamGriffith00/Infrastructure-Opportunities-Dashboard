@@ -1,69 +1,230 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Live Opportunities — Infrastructure Opportunities Dashboard</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        margin: 2rem;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-      }
-      th, td {
-        border: 1px solid #ddd;
-        padding: 0.5rem;
-        vertical-align: top;
-      }
-      th { text-align: left; }
-      .meta { margin-bottom: 1rem; }
-      .empty-message {
-        margin-top: 1rem;
-        font-style: italic;
-        color: #666;
-      }
-      .sector-badge {
-        display: inline-block;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        color: #fff;
-        font-size: 0.85rem;
-        font-weight: bold;
-      }
-      .sector-rail { background-color: #0074d9; }
-      .sector-highways { background-color: #ff851b; }
-      .sector-aviation { background-color: #2ecc40; }
-      .sector-maritime { background-color: #39cccc; }
-      .sector-utilities { background-color: #b10dc9; }
-      .sector-other { background-color: #aaaaaa; }
-    </style>
-  </head>
-  <body>
-    <h1>Live Opportunities (England)</h1>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live Opportunities — Infrastructure Opportunities Dashboard</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #222222;
+      --muted: #6b7280;
+      --accent: #004d40;
+      --accent-light: #e0f2f1;
+      --border: #d1d5db;
+      --surface: #f9fafb;
+      --badge-rail: #1565c0;
+      --badge-highways: #ef6c00;
+      --badge-aviation: #00838f;
+      --badge-maritime: #01579b;
+      --badge-utilities: #6a1b9a;
+      --badge-other: #757575;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
+    }
+
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    .page-title { margin: 0 0 4px; font-size: 2rem; font-weight: 600; }
+    .meta { margin: 0 0 16px; color: var(--muted); font-size: 0.95rem; }
+
+    /* Filter buttons */
+    .filters { margin-bottom: 16px; }
+    .filters button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      margin-right: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .filters button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      border-bottom: 2px solid var(--border);
+      text-align: left;
+      padding: 12px 14px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    thead th.sort-asc::after { content: " ▲"; font-size: 0.8rem; color: var(--muted); }
+    thead th.sort-desc::after { content: " ▼"; font-size: 0.8rem; color: var(--muted); }
+
+    tbody td {
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      vertical-align: top;
+    }
+    tbody tr:nth-child(even) { background: #fafafa; }
+    tbody tr:hover { background: var(--accent-light); }
+    a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    a:hover { text-decoration: underline; }
+
+    /* Badges */
+    .sector-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .sector-rail { background: var(--badge-rail); }
+    .sector-highways { background: var(--badge-highways); }
+    .sector-aviation { background: var(--badge-aviation); }
+    .sector-maritime { background: var(--badge-maritime); }
+    .sector-utilities { background: var(--badge-utilities); }
+    .sector-other { background: var(--badge-other); }
+
+    .empty-message { margin: 16px 0 0; color: var(--muted); font-style: italic; }
+    #liveErrors { margin-top: 12px; color: #b00020; font-size: 0.9rem; }
+
+    @media (max-width: 900px) {
+      thead th:nth-child(3), tbody td:nth-child(3) { display: none; } /* Hide Region */
+      thead th:nth-child(6), tbody td:nth-child(6) { display: none; } /* Hide Value */
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="page-title">Live Opportunities</h1>
     <p class="meta">Last updated: <span id="lastUpdated">—</span></p>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Buyer</th>
-          <th>Region</th>
-          <th>Deadline</th>
-          <th>Days left</th>
-          <th>Estimated value</th>
-          <th>Sector</th>
-        </tr>
-      </thead>
-      <tbody id="live-opportunities"></tbody>
-    </table>
+    <div class="filters">
+      <button data-sector="all" class="active">All</button>
+      <button data-sector="Rail">Rail</button>
+      <button data-sector="Highways">Highways</button>
+      <button data-sector="Aviation">Aviation</button>
+      <button data-sector="Maritime">Maritime</button>
+      <button data-sector="Utilities">Utilities</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="opps-table">
+        <thead>
+          <tr>
+            <th data-sort="title">Title</th>
+            <th data-sort="organisation">Buyer</th>
+            <th data-sort="region">Region</th>
+            <th data-sort="deadline">Deadline</th>
+            <th data-sort="days">Days left</th>
+            <th data-sort="value">Estimated value</th>
+            <th data-sort="sector">Sector</th>
+            <th data-sort="source">Source</th>
+          </tr>
+        </thead>
+        <tbody id="live-opportunities"></tbody>
+      </table>
+    </div>
 
     <div id="emptyMessage" class="empty-message" style="display:none;">
       No matching opportunities found at this time.
     </div>
+  </div>
 
-    <script src="assets/live-client.js"></script>
-  </body>
+  <script src="assets/live-client.js?v=8"></script>
+  <script>
+    // Sorting & filtering logic
+    let currentSort = { key: null, dir: 'asc' };
+    let allRows = [];
+
+    function applyFiltersAndRender() {
+      const activeBtn = document.querySelector('.filters button.active');
+      const sectorFilter = activeBtn?.dataset?.sector || 'all';
+      const filtered = sectorFilter === 'all'
+        ? allRows
+        : allRows.filter(r => r.sector === sectorFilter);
+      renderTable(filtered);
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById('live-opportunities');
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td><a href="${r.url}" target="_blank">${r.title}</a></td>
+          <td>${r.organisation}</td>
+          <td>${r.region || ''}</td>
+          <td>${r.deadline ? new Date(r.deadline).toLocaleDateString() : ''}</td>
+          <td>${r.daysLeft}</td>
+          <td>${r.value || ''}</td>
+          <td><span class="sector-badge sector-${r.sectorClass}">${r.sector}</span></td>
+          <td>${r.source}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Filter buttons
+    document.querySelectorAll('.filters button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFiltersAndRender();
+      });
+    });
+
+    // Sorting
+    document.querySelectorAll('thead th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        const dir = (currentSort.key === key && currentSort.dir === 'asc') ? 'desc' : 'asc';
+        currentSort = { key, dir };
+        document.querySelectorAll('thead th').forEach(t => t.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add(`sort-${dir}`);
+        allRows.sort((a,b) => {
+          const va = a[key] || '';
+          const vb = b[key] || '';
+          if (va < vb) return dir === 'asc' ? -1 : 1;
+          if (va > vb) return dir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        applyFiltersAndRender();
+      });
+    });
+
+    // Hook into existing live-client.js hydration
+    const oldHydrate = window.hydrateLiveData;
+    window.hydrateLiveData = function(payload) {
+      allRows = (payload.items || []).map(i => ({
+        title: i.title,
+        organisation: i.organisation,
+        region: i.region,
+        deadline: i.deadline,
+        daysLeft: i.daysRemaining || '',
+        value: i.valueDisplay || '',
+        sector: i.sectorName || 'Other',
+        sectorClass: (i.sectorName || 'Other').toLowerCase(),
+        source: i.source || '',
+        url: i.url
+      }));
+      applyFiltersAndRender();
+      if (oldHydrate) oldHydrate(payload);
+    };
+  </script>
+</body>
 </html>
