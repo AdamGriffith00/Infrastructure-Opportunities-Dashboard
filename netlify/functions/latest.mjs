@@ -1,11 +1,12 @@
-// latest.mjs
-import { blob } from "@netlify/blobs";
+// netlify/functions/latest.mjs
+// Reads the last saved snapshot from Netlify Blobs (built-in `netlify:blobs`)
+import { getStore } from "netlify:blobs";
 
 export async function handler() {
   try {
-    const store = blob();
-    // Read whatever the fetcher saved
-    const data = await store.getJSON("latest");
+    const store = getStore();
+    const json = await store.get("latest.json"); // returns string or null
+    const data = json ? JSON.parse(json) : { updatedAt: null, items: [] };
 
     return {
       statusCode: 200,
@@ -13,11 +14,10 @@ export async function handler() {
         "Content-Type": "application/json",
         "Cache-Control": "no-store"
       },
-      body: JSON.stringify(data || { updatedAt: null, items: [] })
+      body: JSON.stringify(data)
     };
   } catch (err) {
     console.error("latest error:", err);
-    // Fail-soft so the page never breaks
     return {
       statusCode: 200,
       headers: {
