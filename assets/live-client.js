@@ -1,6 +1,6 @@
 (function(){
   const API_URL = '/.netlify/functions/latest';
-  const REFRESH_MS = 60 * 1000; // 1 min refresh
+  const REFRESH_MS = 60 * 1000; // 1 min
 
   function fetchData() {
     fetch(API_URL)
@@ -27,7 +27,6 @@
       const diff = Math.ceil((deadline - today) / (1000*60*60*24));
       daysRemaining = diff >= 0 ? diff : 0;
     }
-
     const valueDisplay = formatValue(i.valueLow, i.valueHigh);
     const sectorName = detectSector(i.title, i.organisation);
     const sectorClass = sectorName.toLowerCase();
@@ -81,17 +80,14 @@
     el.textContent = msg;
   }
 
-  // Initial call + interval
+  // Start polling
   fetchData();
   setInterval(fetchData, REFRESH_MS);
 
-  // Default hydrate (replaced by live.html override)
   window.hydrateLiveData = function(payload) {
     const { updatedAt, items } = payload;
     const lastUpdatedEl = document.getElementById('lastUpdated');
-    if (lastUpdatedEl && updatedAt) {
-      lastUpdatedEl.textContent = new Date(updatedAt).toLocaleString();
-    }
+    if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
     const tbody = document.getElementById('live-opportunities');
     if (!tbody) return;
 
