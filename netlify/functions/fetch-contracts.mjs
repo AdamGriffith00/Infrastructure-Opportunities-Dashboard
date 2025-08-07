@@ -24,7 +24,6 @@ export async function handler() {
   try {
     const keyword = [...SERVICE_KEYWORDS, ...SECTOR_KEYWORDS].join(" OR ");
 
-    // ✅ V2 search endpoint + correct body shape
     const res = await fetch(
       "https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json",
       {
@@ -32,13 +31,13 @@ export async function handler() {
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
           searchCriteria: {
-            types: ["Opportunity"],          // live tenders
-            statuses: ["Open"],              // still open
-            regions: "England",              // region filter
-            keyword,                         // our combined keywords
-            cpvCodes: CPV_CODES.join(",")    // narrow to consultancy/QS/PM CPVs
+            types: ["Opportunity"],
+            statuses: ["Open"],
+            regions: "England",
+            keyword,
+            cpvCodes: CPV_CODES.join(",")
           },
-          size: 200                          // up to 200 results
+          size: 200
         })
       }
     );
@@ -64,7 +63,8 @@ export async function handler() {
 
     const payload = { updatedAt: new Date().toISOString(), items };
 
-    const store = getStore();
+    // ✅ Name the store so Netlify knows where to save
+    const store = getStore("contracts-data");
     await store.set("latest.json", JSON.stringify(payload));
 
     return { statusCode: 200, body: `Saved ${items.length} notices at ${payload.updatedAt}` };
