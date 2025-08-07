@@ -1,0 +1,14 @@
+[build]
+  publish = "."
+
+[[edge_functions]]
+  function = "events"
+  path = "/events"
+
+[functions]
+  external_node_modules = ["node-fetch", "@netlify/blobs"]
+
+# Run the fetcher every 5 minutes
+[[scheduled.functions]]
+  path = "fetch-contracts"
+  schedule = "*/5 * * * *"
