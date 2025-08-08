@@ -1,4 +1,4 @@
-// /.netlify/functions/latest
+// /.netlify/functions/latest — FAST: read from Blob store
 import { getStore } from '@netlify/blobs';
 
 export async function handler() {
