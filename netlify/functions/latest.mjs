@@ -1,130 +1,193 @@
-import fetch from 'node-fetch';
-
-export const handler = async () => {
+export async function handler() {
   try {
-    // 1. Fetch both sources (100 results each)
+    let allItems = [];
+
+    // Core government sources
     const cfResults = await fetchContractsFinder();
     const ftsResults = await fetchFindATender();
 
-    console.log(`Contracts Finder returned ${cfResults.length} items`);
-    console.log(`Find a Tender returned ${ftsResults.length} items`);
+    // National Highways split from CF
+    const nhResults = cfResults.filter(r =>
+      (r.organisation || "").toLowerCase().includes("national highways")
+    );
+    const cfWithoutNH = cfResults.filter(r =>
+      !(r.organisation || "").toLowerCase().includes("national highways")
+    );
 
-    // 2. Apply filters for allowed sectors
-    const filteredCF = applyFilters(cfResults);
-    const filteredFTS = applyFilters(ftsResults);
+    // Other live sources
+    const scotWaterResults = await fetchScottishWater();
+    const s2wResults = await fetchSell2Wales();
+    const tfgmResults = await fetchTfGM();
+    const magResults = await fetchMAG();
 
-    console.log(`After filtering: CF = ${filteredCF.length}, FTS = ${filteredFTS.length}`);
+    // Merge all
+    allItems = [
+      ...cfWithoutNH,
+      ...ftsResults,
+      ...nhResults.map(i => ({ ...i, source: "National Highways" })),
+      ...scotWaterResults,
+      ...s2wResults,
+      ...tfgmResults,
+      ...magResults
+    ];
 
-    // 3. Merge results
-    const allItems = [...filteredCF, ...filteredFTS];
+    // Deduplicate
+    allItems = dedupe(allItems);
 
-    // 4. Sort by deadline ascending
+    // Sort by deadline soonest
     allItems.sort((a, b) => {
       if (!a.deadline) return 1;
       if (!b.deadline) return -1;
       return new Date(a.deadline) - new Date(b.deadline);
     });
 
-    // 5. Return with counts
     return {
       statusCode: 200,
       body: JSON.stringify({
         updatedAt: new Date().toISOString(),
-        cfCount: filteredCF.length,
-        ftsCount: filteredFTS.length,
         totalCount: allItems.length,
         items: allItems
       })
     };
-
   } catch (err) {
-    console.error('Error in latest.js', err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch opportunities' })
-    };
+    console.error(err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
-};
+}
 
-// ------------------------------
-// Fetch from Contracts Finder
-// ------------------------------
+// ---------------- Core fetchers ----------------
 async function fetchContractsFinder() {
-  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?order=desc&size=100&status=Open`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`CF API error: ${res.status}`);
+  try {
+    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?order=desc&size=100&status=Open`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.records || []).map(r => ({
+      source: "CF",
+      title: r.title,
+      organisation: r.organisationName,
+      region: r.region,
+      deadline: r.deadline,
+      url: r.noticeIdentifier
+        ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}`
+        : ""
+    }));
+  } catch {
     return [];
   }
-  const data = await res.json();
-  return data.records ? data.records.map(formatCF) : [];
 }
 
-// ------------------------------
-// Fetch from Find a Tender
-// ------------------------------
 async function fetchFindATender() {
-  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?order=desc&size=100&status=Open`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`FTS API error: ${res.status}`);
+  try {
+    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?order=desc&size=100&status=Open`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.records || []).map(r => ({
+      source: "FTS",
+      title: r.title,
+      organisation: r.buyerName,
+      region: r.region,
+      deadline: r.deadline,
+      url: r.noticeIdentifier
+        ? `https://www.find-tender.service.gov.uk/Notice/${r.noticeIdentifier}`
+        : ""
+    }));
+  } catch {
     return [];
   }
-  const data = await res.json();
-  return data.records ? data.records.map(formatFTS) : [];
 }
 
-// ------------------------------
-// Format helpers
-// ------------------------------
-function formatCF(item) {
-  return {
-    title: item.title || '',
-    organisation: item.organisationName || '',
-    region: item.region || '',
-    deadline: item.deadline || '',
-    valueLow: item.valueLow || null,
-    valueHigh: item.valueHigh || null,
-    source: 'CF',
-    url: item.noticeIdentifier
-      ? `https://www.contractsfinder.service.gov.uk/Notice/${item.noticeIdentifier}`
-      : ''
-  };
+async function fetchScottishWater() {
+  try {
+    const url = `https://publiccontractsscotland.scot/api/NoticeSearch?keyword=Scottish%20Water`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.notices || []).map(n => ({
+      source: "Scottish Water",
+      title: n.title,
+      organisation: n.organisationName || "Scottish Water",
+      region: "Scotland",
+      deadline: n.deadlineDate,
+      url: n.noticeUrl
+    }));
+  } catch {
+    return [];
+  }
 }
 
-function formatFTS(item) {
-  return {
-    title: item.title || '',
-    organisation: item.buyerName || '',
-    region: item.region || '',
-    deadline: item.deadline || '',
-    valueLow: item.valueLow || null,
-    valueHigh: item.valueHigh || null,
-    source: 'FTS',
-    url: item.noticeIdentifier
-      ? `https://www.find-tender.service.gov.uk/Notice/${item.noticeIdentifier}`
-      : ''
-  };
+async function fetchSell2Wales() {
+  try {
+    const url = `https://www.sell2wales.gov.wales/api/searchnotices?keyword=utilities`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.notices || []).map(n => ({
+      source: "Sell2Wales",
+      title: n.title,
+      organisation: n.organisationName,
+      region: "Wales",
+      deadline: n.deadlineDate,
+      url: n.noticeUrl
+    }));
+  } catch {
+    return [];
+  }
 }
 
-// ------------------------------
-// Sector filter with synonyms + buyer names
-// ------------------------------
-function applyFilters(items) {
-  const keywords = [
-    // Rail
-    'rail', 'railway', 'station', 'network rail',
-    // Highways
-    'highway', 'road', 'bridge', 'highways england', 'national highways',
-    // Aviation
-    'aviation', 'airport', 'runway', 'terminal', 'heathrow', 'gatwick', 'manchester airport',
-    // Maritime
-    'maritime', 'port', 'dock', 'harbour', 'harbor', 'abp', 'associated british ports',
-    // Utilities
-    'utilities', 'water', 'wastewater', 'gas', 'telecom', 'electricity', 'severn trent', 'thames water'
-  ];
-  return items.filter(i => {
-    const haystack = `${i.title} ${i.organisation}`.toLowerCase();
-    return keywords.some(k => haystack.includes(k));
+// ---------------- Simple HTML scrapers ----------------
+async function fetchTfGM() {
+  try {
+    const url = `https://procontract.due-north.com/Advert?advertId=&fromAdvert=true&SearchString=tfGM`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // Simple regex to find links + titles
+    const matches = [...html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?Deadline:(.*?)</g)];
+    return matches.map(m => ({
+      source: "TfGM",
+      title: m[2].trim(),
+      organisation: "Transport for Greater Manchester",
+      region: "England",
+      deadline: m[3] ? m[3].trim() : "",
+      url: m[1].startsWith("http") ? m[1] : `https://procontract.due-north.com${m[1]}`
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function fetchMAG() {
+  try {
+    const url = `https://www.magairports.com/current-opportunities/`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // Simple regex for table rows with a link
+    const matches = [...html.matchAll(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?Closing Date:?<\/strong>([^<]+)/gi)];
+    return matches.map(m => ({
+      source: "MAG",
+      title: m[2].trim(),
+      organisation: "Manchester Airports Group",
+      region: "England",
+      deadline: m[3] ? m[3].trim() : "",
+      url: m[1].startsWith("http") ? m[1] : `https://www.magairports.com${m[1]}`
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ---------------- Utils ----------------
+function dedupe(arr) {
+  const seen = new Set();
+  return arr.filter(item => {
+    const key = `${item.title}|${item.organisation}|${item.deadline}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
