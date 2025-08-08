@@ -1,47 +1,45 @@
-// netlify/functions/latest.mjs
-// Reads the most recent cached results from Netlify Blobs and returns them.
-
-import { getStore as _getStore } from '@netlify/blobs';
-
-function getTendersStore() {
-  // Try native site-integrated Blobs first
-  try {
-    return _getStore('tenders');
-  } catch {
-    // Fallback to manual token + site id if UI isn't enabled
-    const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-    const token  = process.env.NETLIFY_BLOBS_TOKEN;
-    if (!siteID || !token) {
-      throw new Error('Netlify Blobs not configured (missing NETLIFY_SITE_ID or NETLIFY_BLOBS_TOKEN).');
-    }
-    return _getStore({ name: 'tenders', siteID, token });
-  }
-}
+// Read the most recent tender snapshot from Netlify Blobs and return it
+import { getStore } from '@netlify/blobs';
 
 export async function handler() {
   try {
-    const store = getTendersStore();
+    const store = getStore({ name: 'tenders' });
 
-    const payload = await store.getJSON('latest.json');
-    if (!payload) {
+    // Prefer the typed getter; fall back to text+parse if needed
+    let data = await store.get('latest.json', { type: 'json' });
+    if (!data) {
+      const txt = await store.get('latest.json');
+      data = txt ? JSON.parse(txt) : null;
+    }
+
+    if (!data || !Array.isArray(data.items)) {
       return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No cached tenders yet. Run /update-tenders once.' })
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ updatedAt: null, items: [] })
       };
     }
+
+    // Sort by soonest deadline, keep future only (just in case)
+    const now = Date.now();
+    const items = data.items
+      .filter(i => i.deadline && !isNaN(Date.parse(i.deadline)) && Date.parse(i.deadline) >= now)
+      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        // a tiny bit of browser caching is ok
-        'Cache-Control': 'max-age=60, must-revalidate'
+        'content-type': 'application/json',
+        'cache-control': 'no-store'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ updatedAt: data.updatedAt || new Date().toISOString(), items })
     };
   } catch (err) {
-    console.error('latest.mjs error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    console.error('latest.mjs error', err);
+    return {
+      statusCode: 500,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ error: err.message })
+    };
   }
 }
