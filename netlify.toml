@@ -1,15 +1,11 @@
-[functions]
-  directory = "netlify/functions"
+[build]
+  command = ""
+  publish = "."
 
-# Scheduled run: 9 AM UK time (08:00 UTC during winter, 07:00 UTC during summer)
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["node-fetch", "@netlify/blobs"]
+
+# Scheduled background run at 9 AM UK time (UTC in winter)
 [[functions."update-tenders-background".schedule]]
   cron = "0 9 * * *"
-
-# Build settings
-[build]
-  publish = "public"
-  command = "npm install && npm run build"
-
-# Environment for Node fetch + blobs
-[functions.environment]
-  NODE_VERSION = "18"
