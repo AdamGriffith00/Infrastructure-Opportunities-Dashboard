@@ -1,48 +1,39 @@
-// Reads the last snapshot written by update-tenders (store "tenders", key "latest.json")
-// Filters out expired deadlines and returns items sorted by soonest deadline.
-import { getStore as _getStore } from '@netlify/blobs';
+// netlify/functions/latest.mjs
+// Serves the latest tenders.json from Netlify Blobs.
+// Requires env vars: BLOBS_SITE_ID, BLOBS_TOKEN
+// npm dep: @netlify/blobs
 
-function getStore(name) {
-  const siteID = process.env.BLOBS_SITE_ID || 'PASTE_YOUR_SITE_ID';
-  const token  = process.env.BLOBS_TOKEN   || 'PASTE_YOUR_BLOBS_TOKEN';
-  return _getStore({ name, siteID, token });
+import { getStore } from '@netlify/blobs';
+
+const STORE_NAME = 'tenders';
+const siteID = process.env.BLOBS_SITE_ID;
+const token  = process.env.BLOBS_TOKEN;
+
+if (!siteID || !token) {
+  throw new Error('Missing BLOBS_SITE_ID or BLOBS_TOKEN environment variables.');
+}
+
+function store() {
+  return getStore({ name: STORE_NAME, siteID, token });
 }
 
 export async function handler() {
   try {
-    const store = getStore('tenders');
-
-    // Try typed read first, then fall back to text+parse if needed
-    let data = await store.get('latest.json', { type: 'json' });
-    if (!data) {
-      const txt = await store.get('latest.json');
-      data = txt ? JSON.parse(txt) : null;
+    const latest = await store().getJSON('latest.json');
+    if (!latest) {
+      return json({ ok: false, error: 'No data available yet' }, 404);
     }
-
-    if (!data || !Array.isArray(data.items)) {
-      return resp({ updatedAt: null, items: [] });
-    }
-
-    // only future deadlines, sort by soonest
-    const now = Date.now();
-    const items = data.items
-      .filter(i => i.deadline && !isNaN(Date.parse(i.deadline)) && Date.parse(i.deadline) >= now)
-      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-    return resp({ updatedAt: data.updatedAt || new Date().toISOString(), items });
+    return json(latest);
   } catch (err) {
-    console.error('latest error', err);
-    return { statusCode: 500, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ error: err.message }) };
+    console.error('latest function error:', err);
+    return json({ ok: false, error: err.message }, 500);
   }
 }
 
-function resp(body) {
+function json(obj, code = 200) {
   return {
-    statusCode: 200,
-    headers: {
-      'content-type': 'application/json',
-      'cache-control': 'no-store'
-    },
-    body: JSON.stringify(body)
+    statusCode: code,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(obj)
   };
 }
