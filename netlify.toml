@@ -1,5 +1,9 @@
+[build]
+  functions = "netlify/functions"
+  publish = "public"  # or "." if you have no front-end
+
 [functions]
+  node_bundler = "esbuild"
 
   [functions.update-tenders-background]
-  # Runs at 08:00 and 09:00 UTC (covers UK 09:00 all year)
   schedule = "0 8,9 * * *"
