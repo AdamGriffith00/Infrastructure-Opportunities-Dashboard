@@ -16,6 +16,12 @@
       padding: 20px;
       margin: 0;
     }
+    #last-updated {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
+    }
     .table-container {
       overflow-x: auto;
       padding: 0 10px 20px;
@@ -24,7 +30,7 @@
       border-collapse: collapse;
       width: 100%;
       background-color: white;
-      min-width: 800px; /* ensure Source always shows */
+      min-width: 800px;
     }
     th, td {
       border: 1px solid #ddd;
@@ -52,6 +58,7 @@
 </head>
 <body>
   <h1>Live Infrastructure Opportunities</h1>
+  <div id="last-updated">Last updated: --</div>
   <div class="table-container">
     <table id="opportunities-table">
       <thead>
@@ -77,6 +84,12 @@
         const tbody = document.querySelector('#opportunities-table tbody');
         tbody.innerHTML = '';
 
+        // Update timestamp
+        if (data.updatedAt) {
+          document.getElementById('last-updated').textContent =
+            'Last updated: ' + new Date(data.updatedAt).toLocaleString();
+        }
+
         if (!data.items || data.items.length === 0) {
           tbody.innerHTML = '<tr><td colspan="5">No live tenders found</td></tr>';
           return;
@@ -101,8 +114,7 @@
     }
 
     loadOpportunities();
-    // Auto-refresh every 10 mins
-    setInterval(loadOpportunities, 600000);
+    setInterval(loadOpportunities, 600000); // 10 min refresh
   </script>
 </body>
 </html>
