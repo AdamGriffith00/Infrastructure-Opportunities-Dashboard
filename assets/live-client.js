@@ -9,6 +9,8 @@
         if (data && data.items) {
           hydrateLiveData({
             updatedAt: data.updatedAt,
+            cfCount: data.cfCount || 0,
+            ftsCount: data.ftsCount || 0,
             items: data.items.map(formatItem)
           });
         }
@@ -80,14 +82,19 @@
     el.textContent = msg;
   }
 
-  // Start polling
   fetchData();
   setInterval(fetchData, REFRESH_MS);
 
   window.hydrateLiveData = function(payload) {
-    const { updatedAt, items } = payload;
+    const { updatedAt, items, cfCount, ftsCount } = payload;
     const lastUpdatedEl = document.getElementById('lastUpdated');
+    const cfEl = document.getElementById('cfCount');
+    const ftsEl = document.getElementById('ftsCount');
+
     if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
+    if (cfEl) cfEl.textContent = cfCount;
+    if (ftsEl) ftsEl.textContent = ftsCount;
+
     const tbody = document.getElementById('live-opportunities');
     if (!tbody) return;
 
@@ -103,11 +110,19 @@
         <td>${i.organisation}</td>
         <td>${i.region || ''}</td>
         <td>${i.deadline ? new Date(i.deadline).toLocaleDateString() : ''}</td>
-        <td>${i.daysRemaining}</td>
+        <td>${daysBadge(i.daysRemaining)}</td>
         <td>${i.valueDisplay || ''}</td>
         <td><span class="sector-badge sector-${i.sectorClass}">${i.sectorName}</span></td>
         <td>${i.source}</td>
       </tr>
     `).join('');
   };
+
+  function daysBadge(days) {
+    if (days === '' || days === null) return '';
+    const d = parseInt(days, 10);
+    if (d <= 3) return `<span class="days-badge days-urgent">${d}</span>`;
+    if (d <= 10) return `<span class="days-badge days-soon">${d}</span>`;
+    return `<span class="days-badge days-plenty">${d}</span>`;
+  }
 })();
