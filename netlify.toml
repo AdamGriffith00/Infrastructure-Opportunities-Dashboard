@@ -1,10 +1,7 @@
-[build]
-  functions = "netlify/functions"
-  publish   = "."
-
 [functions."update-tenders-background"]
   schedule = "0 */3 * * *" # every 3 hours UTC
+
 [[functions."update-tenders-background".schedule]]
-  cron = "0 9 * * *" # 9 AM UK time (winter)
+  cron = "0 9 * * *" # 9 AM UK winter (UTC)
 [[functions."update-tenders-background".schedule]]
-  cron = "0 8 * * *" # 9 AM UK time (summer - UTC+1)
+  cron = "0 8 * * *" # 9 AM UK summer (UTC+1)
