@@ -1,25 +1,33 @@
+import fetch from "node-fetch";
+import { getStore } from "@netlify/blobs";
+
 export async function handler() {
   try {
-    // 1️⃣ Load from your Blob store
-    const store = getStore();
-    let data = await store.get("tenders.json");
-    let items = [];
+    const cf = await fetchCF();
+    const fts = await fetchFTS();
 
-    if (data) {
-      items = JSON.parse(data);
+    // Merge, dedupe
+    let items = dedupe([...(cf.items || []), ...(fts.items || [])]);
 
-      // Filter: remove expired tenders + unwanted sectors
-      const now = new Date();
-      items = items.filter(t => {
-        const deadline = t.deadline ? new Date(t.deadline) : null;
-        const isExpired = deadline && deadline < now;
-        const isOtherSector = (t.sector || "").toLowerCase().includes("other");
-        return !isExpired && !isOtherSector;
-      });
-    }
+    // Remove expired and unwanted sectors
+    const now = new Date();
+    items = items.filter(item => {
+      if (!item.deadline) return false;
+      const deadlineDate = new Date(item.deadline);
+      if (deadlineDate < now) return false; // expired
+      if (
+        /other sector/i.test(item.sector || "") ||
+        /unspecified/i.test(item.sector || "")
+      ) return false; // irrelevant
+      return true;
+    });
 
-    // 2️⃣ Trigger background refresh (non-blocking)
-    triggerBackgroundUpdate();
+    // Sort by deadline
+    items.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+    // Optionally store latest in blobs (so background updates can use it too)
+    const store = getStore({ name: "tenders" });
+    await store.setJSON("latest.json", items);
 
     return {
       statusCode: 200,
@@ -30,28 +38,57 @@ export async function handler() {
         items
       })
     };
-
   } catch (err) {
     console.error("❌ latest.js fatal:", err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
 
-/* ---------- utils ---------- */
-import { createClient } from "@netlify/blobs";
+/* ---------------- Fetch Contracts Finder ---------------- */
+async function fetchCF() {
+  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?status=Open&order=desc&pageSize=50&page=1`;
+  const res = await fetch(url, { headers: { "Accept": "application/json" } });
+  const data = await res.json();
+  const records = Array.isArray(data.records) ? data.records : Array.isArray(data.releases) ? data.releases : [];
+  
+  const items = records.map(r => ({
+    source: "CF",
+    title: r.title || r.tender?.title || "",
+    organisation: r.buyerName || r.parties?.find(p => p.roles?.includes("buyer"))?.name || "",
+    sector: r.sector || "",
+    deadline: r.deadline || r.tender?.tenderPeriod?.endDate || "",
+    url: r.noticeIdentifier ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}` : ""
+  }));
 
-function getStore() {
-  const storeId = process.env.BLOBS_SITE_ID;
-  const token = process.env.BLOBS_TOKEN;
-  if (!storeId || !token) throw new Error("Missing BLOBS_SITE_ID or BLOBS_TOKEN");
-  return createClient({ siteID: storeId, token });
+  return { items };
 }
 
-async function triggerBackgroundUpdate() {
-  try {
-    await fetch(`${process.env.URL}/.netlify/functions/update-tenders-background`);
-    console.log("Background update triggered");
-  } catch (err) {
-    console.error("Failed to trigger background update", err);
-  }
+/* ---------------- Fetch Find a Tender ---------------- */
+async function fetchFTS() {
+  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?stages=tender&limit=100`;
+  const res = await fetch(url, { headers: { "Accept": "application/json" } });
+  const data = await res.json();
+  const records = Array.isArray(data.packages) ? data.packages.flatMap(p => p.releases || []) : Array.isArray(data.releases) ? data.releases : [];
+  
+  const items = records.map(r => ({
+    source: "FTS",
+    title: r.title || r.tender?.title || "",
+    organisation: r.buyerName || r.parties?.find(p => p.roles?.includes("buyer"))?.name || "",
+    sector: r.sector || "",
+    deadline: r.deadline || r.tender?.tenderPeriod?.endDate || "",
+    url: r.ocid ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(r.ocid)}` : ""
+  }));
+
+  return { items };
+}
+
+/* ---------------- Utils ---------------- */
+function dedupe(arr) {
+  const seen = new Set();
+  return arr.filter(item => {
+    const key = `${item.title}|${item.organisation}|${item.deadline}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
