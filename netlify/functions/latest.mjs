@@ -1,131 +1,83 @@
-(function(){
-  const API_URL = '/.netlify/functions/latest';
-  const REFRESH_MS = 60 * 1000; // 1 min
+export async function handler() {
+  try {
+    const cfResults = await fetchContractsFinder();
+    const ftsResults = await fetchFindATender();
 
-  function fetchData() {
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.items) {
-          hydrateLiveData({
-            updatedAt: data.updatedAt,
-            cfCount: data.cfCount || 0,
-            ftsCount: data.ftsCount || 0,
-            totalCount: data.totalCount || 0,
-            items: data.items.map(formatItem)
-          });
-        }
-      })
-      .catch(err => {
-        console.error('Fetch error', err);
-        showError('Unable to load opportunities at this time.');
-      });
-  }
+    let allItems = [...cfResults, ...ftsResults];
+    allItems = dedupe(allItems);
 
-  function formatItem(i) {
-    const deadline = i.deadline ? new Date(i.deadline) : null;
-    const today = new Date();
-    let daysRemaining = '';
-    if (deadline) {
-      const diff = Math.ceil((deadline - today) / (1000*60*60*24));
-      daysRemaining = diff >= 0 ? diff : 0;
-    }
-    const valueDisplay = formatValue(i.valueLow, i.valueHigh);
-    const sectorName = detectSector(i.title, i.organisation);
-    const sectorClass = sectorName.toLowerCase();
+    // Sort by deadline soonest
+    allItems.sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
 
     return {
-      title: i.title || '',
-      organisation: i.organisation || '',
-      region: i.region || '',
-      deadline: i.deadline || '',
-      daysRemaining,
-      valueDisplay,
-      sectorName,
-      sectorClass,
-      source: i.source || '',
-      url: i.url || ''
+      statusCode: 200,
+      body: JSON.stringify({
+        updatedAt: new Date().toISOString(),
+        items: allItems
+      })
     };
+  } catch (err) {
+    console.error(err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
+}
 
-  function formatValue(low, high) {
-    if (low && high && high !== low) {
-      return `£${numFmt(low)} – £${numFmt(high)}`;
-    } else if (low) {
-      return `£${numFmt(low)}`;
-    } else if (high) {
-      return `£${numFmt(high)}`;
-    }
-    return '';
+// ---------- Fetchers ----------
+async function fetchContractsFinder() {
+  try {
+    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return (data.records || []).map(r => ({
+      source: "CF",
+      title: r.title,
+      organisation: r.organisationName,
+      region: r.region,
+      deadline: r.deadline,
+      url: r.noticeIdentifier
+        ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}`
+        : ""
+    }));
+  } catch {
+    return [];
   }
+}
 
-  function numFmt(n) {
-    return Number(n).toLocaleString('en-GB', { maximumFractionDigits: 0 });
+async function fetchFindATender() {
+  try {
+    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&order=desc`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return (data.records || []).map(r => ({
+      source: "FTS",
+      title: r.title,
+      organisation: r.buyerName,
+      region: r.region,
+      deadline: r.deadline,
+      url: r.noticeIdentifier
+        ? `https://www.find-tender.service.gov.uk/Notice/${r.noticeIdentifier}`
+        : ""
+    }));
+  } catch {
+    return [];
   }
+}
 
-  function detectSector(text, buyer) {
-    const hay = `${text} ${buyer}`.toLowerCase();
-    if (/rail|railway|station/.test(hay)) return 'Rail';
-    if (/highway|road|bridge/.test(hay)) return 'Highways';
-    if (/aviation|airport|runway|terminal/.test(hay)) return 'Aviation';
-    if (/maritime|port|dock|harbour|harbor/.test(hay)) return 'Maritime';
-    if (/utilities|water|wastewater|gas|telecom/.test(hay)) return 'Utilities';
-    return 'Other';
-  }
-
-  function showError(msg) {
-    let el = document.getElementById('liveErrors');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'liveErrors';
-      document.querySelector('.wrap').appendChild(el);
-    }
-    el.textContent = msg;
-  }
-
-  fetchData();
-  setInterval(fetchData, REFRESH_MS);
-
-  window.hydrateLiveData = function(payload) {
-    const { updatedAt, items, cfCount, ftsCount, totalCount } = payload;
-    const lastUpdatedEl = document.getElementById('lastUpdated');
-    const cfEl = document.getElementById('cfCount');
-    const ftsEl = document.getElementById('ftsCount');
-    const totalEl = document.getElementById('totalCount');
-
-    if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
-    if (cfEl) cfEl.textContent = cfCount;
-    if (ftsEl) ftsEl.textContent = ftsCount;
-    if (totalEl) totalEl.textContent = totalCount;
-
-    const tbody = document.getElementById('live-opportunities');
-    if (!tbody) return;
-
-    if (!items.length) {
-      document.getElementById('emptyMessage').style.display = 'block';
-      tbody.innerHTML = '';
-      return;
-    }
-    document.getElementById('emptyMessage').style.display = 'none';
-    tbody.innerHTML = items.map(i => `
-      <tr>
-        <td><a href="${i.url}" target="_blank">${i.title}</a></td>
-        <td>${i.organisation}</td>
-        <td>${i.region || ''}</td>
-        <td>${i.deadline ? new Date(i.deadline).toLocaleDateString() : ''}</td>
-        <td>${daysBadge(i.daysRemaining)}</td>
-        <td>${i.valueDisplay || ''}</td>
-        <td><span class="sector-badge sector-${i.sectorClass}">${i.sectorName}</span></td>
-        <td>${i.source}</td>
-      </tr>
-    `).join('');
-  };
-
-  function daysBadge(days) {
-    if (days === '' || days === null) return '';
-    const d = parseInt(days, 10);
-    if (d <= 3) return `<span class="days-badge days-urgent">${d}</span>`;
-    if (d <= 10) return `<span class="days-badge days-soon">${d}</span>`;
-    return `<span class="days-badge days-plenty">${d}</span>`;
-  }
-})();
+// ---------- Utils ----------
+function dedupe(arr) {
+  const seen = new Set();
+  return arr.filter(item => {
+    const key = `${item.title}|${item.organisation}|${item.deadline}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
