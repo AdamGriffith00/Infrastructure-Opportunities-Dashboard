@@ -1,21 +1,12 @@
 export async function handler() {
   try {
-    // Fetch CF and FTS only
     const cfResults = await fetchContractsFinder();
-    console.log("=== CF Debug ===");
-    console.log("CF raw count:", cfResults.length);
-    if (cfResults[0]) console.log("CF first item:", cfResults[0]);
-
     const ftsResults = await fetchFindATender();
-    console.log("=== FTS Debug ===");
-    console.log("FTS raw count:", ftsResults.length);
-    if (ftsResults[0]) console.log("FTS first item:", ftsResults[0]);
 
-    // Merge & dedupe
     let allItems = [...cfResults, ...ftsResults];
     allItems = dedupe(allItems);
 
-    // Sort soonest deadline first
+    // Sort by deadline soonest
     allItems.sort((a, b) => {
       if (!a.deadline) return 1;
       if (!b.deadline) return -1;
@@ -35,17 +26,14 @@ export async function handler() {
   }
 }
 
-// ---------- Simple CF / FTS fetchers ----------
+// ---------- Fetchers ----------
 async function fetchContractsFinder() {
   try {
-    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=10`;
+    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50`;
     const res = await fetch(url);
-    if (!res.ok) {
-      console.error("CF fetch failed:", res.status);
-      return [];
-    }
+    if (!res.ok) return [];
     const data = await res.json();
-    console.log("CF API keys:", Object.keys(data)); // See structure
+
     return (data.records || []).map(r => ({
       source: "CF",
       title: r.title,
@@ -56,22 +44,18 @@ async function fetchContractsFinder() {
         ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}`
         : ""
     }));
-  } catch (err) {
-    console.error("CF error:", err);
+  } catch {
     return [];
   }
 }
 
 async function fetchFindATender() {
   try {
-    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=10&order=desc`;
+    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&order=desc`;
     const res = await fetch(url);
-    if (!res.ok) {
-      console.error("FTS fetch failed:", res.status);
-      return [];
-    }
+    if (!res.ok) return [];
     const data = await res.json();
-    console.log("FTS API keys:", Object.keys(data)); // See structure
+
     return (data.records || []).map(r => ({
       source: "FTS",
       title: r.title,
@@ -82,8 +66,7 @@ async function fetchFindATender() {
         ? `https://www.find-tender.service.gov.uk/Notice/${r.noticeIdentifier}`
         : ""
     }));
-  } catch (err) {
-    console.error("FTS error:", err);
+  } catch {
     return [];
   }
 }
