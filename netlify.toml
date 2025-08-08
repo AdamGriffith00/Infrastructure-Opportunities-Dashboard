@@ -1,8 +1,13 @@
 [build]
   functions = "netlify/functions"
-  publish = "."
+  publish   = "."
 
-# run every 10 minutes (example)
+# Winter schedule (UK time = GMT)
 [[scheduled.functions]]
   path = "update-tenders-background"
-  schedule = "*/10 * * * *"
+  schedule = "0 9 * * *"
+
+# Summer schedule (UK time = BST)
+[[scheduled.functions]]
+  path = "update-tenders-background"
+  schedule = "0 8 * * *"
