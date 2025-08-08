@@ -1,9 +1,8 @@
 {
   "name": "infrastructure-opportunities-dashboard",
-  "version": "1.0.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "dependencies": {
-    "@netlify/blobs": "^6.3.0"
+    "@netlify/blobs": "^6.5.0"
   }
 }
