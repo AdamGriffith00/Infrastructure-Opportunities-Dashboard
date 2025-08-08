@@ -1,37 +1,36 @@
-// netlify/functions/latest.mjs
-// Read the cached tenders list from Netlify Blobs using the older API.
-
-import { getJSON } from '@netlify/blobs';
-
-const BLOB_SITE = process.env.BLOBS_SITE_ID;
-const BLOB_TOKEN = process.env.BLOBS_TOKEN;
+import { createClient } from "@netlify/blobs";
 
 export async function handler() {
   try {
-    if (!BLOB_SITE || !BLOB_TOKEN) {
-      return reply({ error: "Blobs not configured (missing BLOBS_SITE_ID/BLOBS_TOKEN)" }, 503);
+    const { BLOBS_SITE_ID, BLOBS_TOKEN } = process.env;
+    const blobs = createClient({ siteID: BLOBS_SITE_ID, token: BLOBS_TOKEN });
+    const store = blobs.store("tenders");
+
+    let data = await store.getJSON("latest.json");
+    if (!data || !Array.isArray(data.items)) {
+      // First run fallback: try to refresh now
+      const kicked = await kickRefresh();
+      data = await store.getJSON("latest.json");
+      if (!data) data = { updatedAt: null, items: [] };
+      data._refreshKicked = kicked;
     }
-
-    const payload = await getJSON("tenders/latest.json", {
-      siteID: BLOB_SITE,
-      token: BLOB_TOKEN
-    });
-
-    if (!payload || !Array.isArray(payload.items)) {
-      return reply({ error: "No tender data yet. Run the background update." }, 404);
-    }
-
-    return reply(payload, 200);
+    return {
+      statusCode: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(data)
+    };
   } catch (e) {
-    console.error("latest error:", e?.stack || e?.message || e);
-    return reply({ error: "Internal error in /latest" }, 500);
+    return { statusCode: 500, body: JSON.stringify({ error: String(e?.message || e) }) };
   }
 }
 
-function reply(obj, status = 200) {
-  return {
-    statusCode: status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-    body: JSON.stringify(obj)
-  };
+async function kickRefresh() {
+  // call our own updater internally
+  const url = `${process.env.URL || ""}/.netlify/functions/update-tenders`;
+  try {
+    const res = await fetch(url);
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
