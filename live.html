@@ -102,19 +102,37 @@
     .sector-utilities { background: var(--badge-utilities); }
     .sector-other { background: var(--badge-other); }
 
+    /* Days left badges */
+    .days-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .days-urgent { background: #b91c1c; }
+    .days-soon { background: #f59e0b; }
+    .days-plenty { background: #15803d; }
+
     .empty-message { margin: 16px 0 0; color: var(--muted); font-style: italic; }
     #liveErrors { margin-top: 12px; color: #b00020; font-size: 0.9rem; }
 
     @media (max-width: 900px) {
-      thead th:nth-child(3), tbody td:nth-child(3) { display: none; } /* Hide Region */
-      thead th:nth-child(6), tbody td:nth-child(6) { display: none; } /* Hide Value */
+      thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
+      thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1 class="page-title">Live Opportunities</h1>
-    <p class="meta">Last updated: <span id="lastUpdated">—</span></p>
+    <p class="meta">
+      Last updated: <span id="lastUpdated">—</span>
+      | CF: <span id="cfCount">0</span>
+      | FTS: <span id="ftsCount">0</span>
+    </p>
 
     <div class="filters">
       <button data-sector="all" class="active">All</button>
@@ -150,81 +168,6 @@
     </div>
   </div>
 
-  <script src="assets/live-client.js?v=9"></script>
-  <script>
-    let currentSort = { key: null, dir: 'asc' };
-    let allRows = [];
-
-    function applyFiltersAndRender() {
-      const activeBtn = document.querySelector('.filters button.active');
-      const sectorFilter = activeBtn?.dataset?.sector || 'all';
-      const filtered = sectorFilter === 'all'
-        ? allRows
-        : allRows.filter(r => r.sector === sectorFilter);
-      renderTable(filtered);
-    }
-
-    function renderTable(rows) {
-      const tbody = document.getElementById('live-opportunities');
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td><a href="${r.url}" target="_blank">${r.title}</a></td>
-          <td>${r.organisation}</td>
-          <td>${r.region || ''}</td>
-          <td>${r.deadline ? new Date(r.deadline).toLocaleDateString() : ''}</td>
-          <td>${r.daysLeft}</td>
-          <td>${r.value || ''}</td>
-          <td><span class="sector-badge sector-${r.sectorClass}">${r.sector}</span></td>
-          <td>${r.source}</td>
-        </tr>
-      `).join('');
-    }
-
-    document.querySelectorAll('.filters button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        applyFiltersAndRender();
-      });
-    });
-
-    document.querySelectorAll('thead th[data-sort]').forEach(th => {
-      th.addEventListener('click', () => {
-        const key = th.dataset.sort;
-        const dir = (currentSort.key === key && currentSort.dir === 'asc') ? 'desc' : 'asc';
-        currentSort = { key, dir };
-        document.querySelectorAll('thead th').forEach(t => t.classList.remove('sort-asc', 'sort-desc'));
-        th.classList.add(`sort-${dir}`);
-        allRows.sort((a,b) => {
-          const va = a[key] || '';
-          const vb = b[key] || '';
-          if (va < vb) return dir === 'asc' ? -1 : 1;
-          if (va > vb) return dir === 'asc' ? 1 : -1;
-          return 0;
-        });
-        applyFiltersAndRender();
-      });
-    });
-
-    const oldHydrate = window.hydrateLiveData;
-    window.hydrateLiveData = function(payload) {
-      allRows = (payload.items || []).map(i => ({
-        title: i.title,
-        organisation: i.organisation,
-        region: i.region,
-        deadline: i.deadline,
-        daysLeft: i.daysRemaining || '',
-        value: i.valueDisplay || '',
-        sector: i.sectorName || 'Other',
-        sectorClass: (i.sectorName || 'Other').toLowerCase(),
-        source: i.source || '',
-        url: i.url
-      }));
-      const lastUpdatedEl = document.getElementById('lastUpdated');
-      if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
-      applyFiltersAndRender();
-      if (oldHydrate) oldHydrate(payload);
-    };
-  </script>
+  <script src="assets/live-client.js?v=10"></script>
 </body>
 </html>
