@@ -1,4 +1,5 @@
-// /.netlify/functions/latest  — DIAGNOSTIC BUILD
+// /.netlify/functions/latest  — CF (OCDS) + FTS (stages/cursor) with proper mapping
+
 const UA = {
   headers: {
     'Accept': 'application/json, text/plain, */*',
@@ -8,21 +9,26 @@ const UA = {
 
 module.exports.handler = async function () {
   try {
-    const cf = await fetchCF_DIAG();
-    const fts = await fetchFTS_DIAG();
+    const cfItems = await fetchAllCF_OCDS();
+    const ftsItems = await fetchAllFTS_OCDS();
 
-    let items = dedupe([...(cf.items || []), ...(fts.items || [])]);
-    items.sort((a, b) => (!a.deadline) - (!b.deadline) || new Date(a.deadline) - new Date(b.deadline));
+    console.log('✅ CF total:', cfItems.length, 'FTS total:', ftsItems.length);
+
+    let items = dedupe([...cfItems, ...ftsItems]);
+
+    // Sort by soonest deadline
+    items.sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         updatedAt: new Date().toISOString(),
-        debug: {
-          cf: { status: cf.status, type: cf.type, keys: cf.keys, rawCount: cf.rawCount },
-          fts: { status: fts.status, type: fts.type, keys: fts.keys, rawCount: fts.rawCount }
-        },
+        total: items.length,
         items
       })
     };
@@ -32,95 +38,131 @@ module.exports.handler = async function () {
   }
 };
 
-/* ---------------- CF (Contracts Finder) ---------------- */
-async function fetchCF_DIAG() {
-  // primary endpoint
-  let url = 'https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50&page=1';
-  let res = await fetch(url, UA);
-  let type = res.headers.get('content-type') || '';
-  let status = res.status;
-  let text = await res.text();
+/* ---------------- CF via OCDS ----------------
+   The HTML search endpoint 404s; the OCDS endpoint works.
+   It can return:
+   - { releases: [ release, ... ] }
+   - { records: [ { compiledRelease: {...} } ] }
+   - { packages: [ { releases:[...]} ] }
+------------------------------------------------ */
+async function fetchAllCF_OCDS() {
+  const all = [];
+  let page = 1;
 
-  console.log('CF status=', status, 'type=', type);
-  console.log('CF body preview:', text.slice(0, 600));
+  while (page <= 50) { // safety cap
+    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?status=Open&order=desc&pageSize=100&page=${page}`;
+    console.log('CF OCDS GET page', page);
+    const res = await fetch(url, UA);
+    if (!res.ok) break;
 
-  // if HTML page or empty JSON, try OCDS variant as a fallback
-  if (!type.includes('application/json')) {
-    const alt = 'https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?status=Open&order=desc&pageSize=50&page=1';
-    console.log('CF retrying ALT endpoint:', alt);
-    res = await fetch(alt, UA);
-    type = res.headers.get('content-type') || '';
-    status = res.status;
-    text = await res.text();
-    console.log('CF(ALT) status=', status, 'type=', type);
-    console.log('CF(ALT) body preview:', text.slice(0, 600));
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch { break; }
+
+    let raw = [];
+    if (Array.isArray(data.releases)) {
+      raw = data.releases;
+    } else if (Array.isArray(data.records)) {
+      raw = data.records.flatMap(r => r.compiledRelease ? [r.compiledRelease] : []);
+    } else if (Array.isArray(data.packages)) {
+      raw = data.packages.flatMap(p => Array.isArray(p.releases) ? p.releases : []);
+    }
+
+    if (!raw.length) break;
+
+    const mapped = raw.map(normalizeOCDSRelease).filter(Boolean);
+    all.push(...mapped);
+    page++;
   }
 
-  let data = {};
-  try { data = JSON.parse(text); } catch { return { status, type, keys: [], rawCount: 0, items: [] }; }
-  const keys = Object.keys(data || {});
-
-  // common shapes
-  const records = Array.isArray(data.records) ? data.records
-                : Array.isArray(data.results) ? data.results
-                : Array.isArray(data.items)   ? data.items
-                : Array.isArray(data.releases)? data.releases
-                : [];
-
-  console.log('CF detected records:', records.length);
-
-  const items = records.map(r => ({
-    source: 'CF',
-    title: r.title || r.noticeTitle || '',
-    organisation: r.organisationName || r.buyerName || '',
-    region: r.region || r.location || '',
-    deadline: r.deadline || r.tenderEndDate || r.submissionDeadline || '',
-    url: r.noticeIdentifier
-      ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}`
-      : (r.url || r.link || '')
-  }));
-
-  if (items[0]) console.log('CF first mapped:', items[0]);
-  return { status, type, keys, rawCount: records.length, items };
+  return all;
 }
 
-/* ---------------- FTS (Find a Tender) ---------------- */
-async function fetchFTS_DIAG() {
-  const url = 'https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&page=1&order=desc';
-  const res = await fetch(url, UA);
-  const type = res.headers.get('content-type') || '';
-  const status = res.status;
-  const text = await res.text();
+/* ---------------- FTS via OCDS ----------------
+   FTS now wants: stages, limit, cursor (no status/size/page/order).
+   We’ll fetch stage=tender, limit=100, follow nextCursor.
+------------------------------------------------ */
+async function fetchAllFTS_OCDS() {
+  const all = [];
+  const base = 'https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages';
+  let cursor = '';
+  let loops = 0;
 
-  console.log('FTS status=', status, 'type=', type);
-  console.log('FTS body preview:', text.slice(0, 600));
+  while (loops < 50) { // safety cap
+    const params = new URLSearchParams({
+      stages: 'tender',
+      limit: '100'
+    });
+    if (cursor) params.set('cursor', cursor);
 
-  let data = {};
-  try { data = JSON.parse(text); } catch { return { status, type, keys: [], rawCount: 0, items: [] }; }
-  const keys = Object.keys(data || {});
+    const url = `${base}?${params.toString()}`;
+    console.log('FTS OCDS GET', cursor ? '(cursor)' : '(first)', cursor || '');
+    const res = await fetch(url, UA);
+    if (!res.ok) break;
 
-  let records = [];
-  if (Array.isArray(data.records)) records = data.records;
-  else if (Array.isArray(data.packages)) records = data.packages.flatMap(p => p.releases || []);
-  else if (Array.isArray(data.releases)) records = data.releases;
-  else if (Array.isArray(data.items)) records = data.items;
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch { break; }
 
-  console.log('FTS detected records:', records.length);
+    let raw = [];
+    // common FTS shapes
+    if (Array.isArray(data.releases)) {
+      raw = data.releases;
+    } else if (Array.isArray(data.packages)) {
+      raw = data.packages.flatMap(p => Array.isArray(p.releases) ? p.releases : []);
+    } else if (Array.isArray(data.records)) {
+      raw = data.records.flatMap(r => r.compiledRelease ? [r.compiledRelease] : []);
+    }
 
-  const items = records.map(r => {
-    const title = r.title || r.tender?.title || r.ocid || '';
-    const buyerName = r.buyerName || r.buyer?.name || (r.parties?.find(p => p.roles?.includes('buyer'))?.name || '');
-    const region = r.region || r.tender?.deliveryAddresses?.[0]?.region || r.tender?.deliveryLocations?.[0]?.nuts || '';
-    const deadline = r.deadline || r.tender?.tenderPeriod?.endDate || r.tender?.enquiryPeriod?.endDate || '';
-    const noticeId = r.noticeIdentifier || r.id || r.ocid || '';
-    const urlLink = noticeId
-      ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(noticeId)}`
-      : (r.url || r.links?.self || '');
-    return { source: 'FTS', title, organisation: buyerName, region, deadline, url: urlLink };
-  });
+    if (!raw.length) break;
 
-  if (items[0]) console.log('FTS first mapped:', items[0]);
-  return { status, type, keys, rawCount: records.length, items };
+    const mapped = raw.map(normalizeOCDSRelease).filter(Boolean);
+    all.push(...mapped);
+
+    // pagination
+    cursor = data.nextCursor || data.cursor || '';
+    if (!cursor) break;
+
+    loops++;
+  }
+
+  return all;
+}
+
+/* ---------------- Normalize one OCDS release to our item shape ---------------- */
+function normalizeOCDSRelease(r0) {
+  // Some APIs return a wrapper with releases:[...] — we already flattened but keep a last safety:
+  const r = Array.isArray(r0?.releases) ? r0.releases[0] : (r0 || {});
+  const tender = r.tender || {};
+  const parties = r.parties || [];
+  const buyerName = (r.buyer && r.buyer.name)
+    || parties.find(p => Array.isArray(p.roles) && p.roles.includes('buyer'))?.name
+    || '';
+
+  const title = tender.title || r.title || '';
+  const deadline = tender.tenderPeriod?.endDate || tender.enquiryPeriod?.endDate || r.tenderPeriod?.endDate || '';
+  const region =
+    tender.deliveryAddresses?.[0]?.region
+    || tender.deliveryLocations?.[0]?.nuts
+    || tender.items?.[0]?.deliveryLocation?.region
+    || '';
+
+  // Make a usable link if possible
+  const noticeId = r.id || r.ocid || '';
+  let url = '';
+  if (noticeId) {
+    // Prefer FTS path when ocid/id looks like FTS; otherwise CF will often resolve by ocid as well.
+    url = `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(noticeId)}`;
+  }
+  // Fallback URL in case CF
+  if (!url && r.planning?.documents?.[0]?.url) url = r.planning.documents[0].url;
+
+  return {
+    source: r.publisher?.name?.includes('Find a Tender') ? 'FTS' : 'CF',
+    title,
+    organisation: buyerName,
+    region,
+    deadline,
+    url
+  };
 }
 
 /* ---------------- Utils ---------------- */
