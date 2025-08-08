@@ -1,36 +1,27 @@
-import { createClient } from "@netlify/blobs";
+import { getStore } from "@netlify/blobs";
 
 export async function handler() {
   try {
     const { BLOBS_SITE_ID, BLOBS_TOKEN } = process.env;
-    const blobs = createClient({ siteID: BLOBS_SITE_ID, token: BLOBS_TOKEN });
-    const store = blobs.store("tenders");
+    if (!BLOBS_SITE_ID || !BLOBS_TOKEN) {
+      return json(500, { error: "Missing BLOBS_SITE_ID or BLOBS_TOKEN" });
+    }
+
+    const store = getStore({ name: "tenders", siteID: BLOBS_SITE_ID, token: BLOBS_TOKEN });
 
     let data = await store.getJSON("latest.json");
     if (!data || !Array.isArray(data.items)) {
-      // First run fallback: try to refresh now
-      const kicked = await kickRefresh();
-      data = await store.getJSON("latest.json");
-      if (!data) data = { updatedAt: null, items: [] };
-      data._refreshKicked = kicked;
+      // first-run fallback: try to refresh now
+      await fetch(`${process.env.URL || ""}/.netlify/functions/update-tenders`).catch(()=>{});
+      data = await store.getJSON("latest.json") || { updatedAt: null, items: [] };
     }
-    return {
-      statusCode: 200,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(data)
-    };
+
+    return { statusCode: 200, headers: { "content-type": "application/json" }, body: JSON.stringify(data) };
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: String(e?.message || e) }) };
+    return json(500, { error: String(e?.message || e) });
   }
 }
 
-async function kickRefresh() {
-  // call our own updater internally
-  const url = `${process.env.URL || ""}/.netlify/functions/update-tenders`;
-  try {
-    const res = await fetch(url);
-    return res.ok;
-  } catch {
-    return false;
-  }
+function json(status, obj) {
+  return { statusCode: status, headers: { "content-type": "application/json" }, body: JSON.stringify(obj) };
 }
