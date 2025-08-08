@@ -2,5 +2,5 @@
   directory = "netlify/functions"
 
 # Run the background crawler every 10 minutes
-[scheduled.functions.update-tenders]
+[scheduled.functions."update-tenders"]
   cron = "*/10 * * * *"
