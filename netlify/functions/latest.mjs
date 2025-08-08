@@ -1,26 +1,47 @@
-// /.netlify/functions/latest — FAST: read from Blob store
-import { getStore } from '@netlify/blobs';
+// netlify/functions/latest.mjs
+// Reads the most recent cached results from Netlify Blobs and returns them.
+
+import { getStore as _getStore } from '@netlify/blobs';
+
+function getTendersStore() {
+  // Try native site-integrated Blobs first
+  try {
+    return _getStore('tenders');
+  } catch {
+    // Fallback to manual token + site id if UI isn't enabled
+    const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+    const token  = process.env.NETLIFY_BLOBS_TOKEN;
+    if (!siteID || !token) {
+      throw new Error('Netlify Blobs not configured (missing NETLIFY_SITE_ID or NETLIFY_BLOBS_TOKEN).');
+    }
+    return _getStore({ name: 'tenders', siteID, token });
+  }
+}
 
 export async function handler() {
   try {
-    const store = getStore('tenders');
-    const json = await store.get('latest.json', { type: 'json' });
+    const store = getTendersStore();
 
-    if (!json || !Array.isArray(json.items) || !json.items.length) {
+    const payload = await store.getJSON('latest.json');
+    if (!payload) {
       return {
-        statusCode: 503,
+        statusCode: 404,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No tender data available yet.' })
+        body: JSON.stringify({ error: 'No cached tenders yet. Run /update-tenders once.' })
       };
     }
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(json)
+      headers: {
+        'Content-Type': 'application/json',
+        // a tiny bit of browser caching is ok
+        'Cache-Control': 'max-age=60, must-revalidate'
+      },
+      body: JSON.stringify(payload)
     };
-  } catch (e) {
-    console.error('latest.mjs error:', e);
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+  } catch (err) {
+    console.error('latest.mjs error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
