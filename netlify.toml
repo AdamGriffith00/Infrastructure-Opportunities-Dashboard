@@ -2,20 +2,6 @@
   publish = "."
   functions = "netlify/functions"
 
-[functions]
-  node_bundler = "esbuild"
-
+# Optional: schedule a background refresh once each morning (09:05 UK time ~ 09:05 UTC winter)
 [functions.update-tenders-background]
-  # Run at 9 AM UTC (simple; if you want 9 AM UK local year-round use 0 8,9 * * * instead)
-  schedule = "0 9 * * *"
-
-# Convenience routes for your browser
-[[redirects]]
-  from = "/update-tenders-background"
-  to = "/.netlify/functions/update-tenders-background"
-  status = 200
-
-[[redirects]]
-  from = "/latest"
-  to = "/.netlify/functions/latest"
-  status = 200
+  schedule = "5 9 * * *"
