@@ -1,94 +1,51 @@
-import fetch from "node-fetch";
-import { getStore } from "@netlify/blobs";
+const fetch = require('node-fetch');
 
-export async function handler() {
+const BLOBS_SITE_ID = process.env.BLOBS_SITE_ID;
+const BLOBS_TOKEN = process.env.BLOBS_TOKEN;
+const STORE_NAME = 'tenders';
+
+module.exports.handler = async function () {
   try {
-    const cf = await fetchCF();
-    const fts = await fetchFTS();
+    // 1️⃣ Try to load tenders from Blob store
+    let tenders = await loadFromStore();
 
-    // Merge, dedupe
-    let items = dedupe([...(cf.items || []), ...(fts.items || [])]);
-
-    // Remove expired and unwanted sectors
-    const now = new Date();
-    items = items.filter(item => {
-      if (!item.deadline) return false;
-      const deadlineDate = new Date(item.deadline);
-      if (deadlineDate < now) return false; // expired
-      if (
-        /other sector/i.test(item.sector || "") ||
-        /unspecified/i.test(item.sector || "")
-      ) return false; // irrelevant
-      return true;
-    });
-
-    // Sort by deadline
-    items.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-    // Optionally store latest in blobs (so background updates can use it too)
-    const store = getStore({ name: "tenders" });
-    await store.setJSON("latest.json", items);
+    // 2️⃣ If no data, trigger background update
+    if (!tenders || tenders.length === 0) {
+      console.log("No cached tenders found — triggering background update...");
+      await triggerBackgroundUpdate();
+      tenders = await loadFromStore();
+    }
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         updatedAt: new Date().toISOString(),
-        count: items.length,
-        items
+        items: tenders || []
       })
     };
-  } catch (err) {
-    console.error("❌ latest.js fatal:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  } catch (e) {
+    console.error('latest.js fatal:', e);
+    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
-}
+};
 
-/* ---------------- Fetch Contracts Finder ---------------- */
-async function fetchCF() {
-  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?status=Open&order=desc&pageSize=50&page=1`;
-  const res = await fetch(url, { headers: { "Accept": "application/json" } });
-  const data = await res.json();
-  const records = Array.isArray(data.records) ? data.records : Array.isArray(data.releases) ? data.releases : [];
-  
-  const items = records.map(r => ({
-    source: "CF",
-    title: r.title || r.tender?.title || "",
-    organisation: r.buyerName || r.parties?.find(p => p.roles?.includes("buyer"))?.name || "",
-    sector: r.sector || "",
-    deadline: r.deadline || r.tender?.tenderPeriod?.endDate || "",
-    url: r.noticeIdentifier ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}` : ""
-  }));
-
-  return { items };
-}
-
-/* ---------------- Fetch Find a Tender ---------------- */
-async function fetchFTS() {
-  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?stages=tender&limit=100`;
-  const res = await fetch(url, { headers: { "Accept": "application/json" } });
-  const data = await res.json();
-  const records = Array.isArray(data.packages) ? data.packages.flatMap(p => p.releases || []) : Array.isArray(data.releases) ? data.releases : [];
-  
-  const items = records.map(r => ({
-    source: "FTS",
-    title: r.title || r.tender?.title || "",
-    organisation: r.buyerName || r.parties?.find(p => p.roles?.includes("buyer"))?.name || "",
-    sector: r.sector || "",
-    deadline: r.deadline || r.tender?.tenderPeriod?.endDate || "",
-    url: r.ocid ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(r.ocid)}` : ""
-  }));
-
-  return { items };
-}
-
-/* ---------------- Utils ---------------- */
-function dedupe(arr) {
-  const seen = new Set();
-  return arr.filter(item => {
-    const key = `${item.title}|${item.organisation}|${item.deadline}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+async function loadFromStore() {
+  const url = `https://api.netlify.com/api/v1/blobs/${BLOBS_SITE_ID}/${STORE_NAME}/latest`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${BLOBS_TOKEN}` }
   });
+
+  if (!res.ok) {
+    console.warn(`Blob fetch failed: ${res.status}`);
+    return [];
+  }
+
+  const data = await res.json();
+  return data.items || [];
+}
+
+async function triggerBackgroundUpdate() {
+  const url = `${process.env.URL || 'https://YOUR-SITE.netlify.app'}/.netlify/functions/update-tenders-background`;
+  await fetch(url);
 }
