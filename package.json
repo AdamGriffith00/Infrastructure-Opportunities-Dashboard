@@ -1,7 +1,8 @@
 {
+  "name": "infrastructure-opportunities-dashboard",
+  "private": true,
   "type": "module",
   "dependencies": {
-    "@netlify/blobs": "^6.5.0"
-  },
-  "engines": { "node": ">=18" }
+    "@netlify/blobs": "^6.0.0"
+  }
 }
