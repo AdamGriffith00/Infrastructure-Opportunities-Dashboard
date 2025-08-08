@@ -1,185 +1,189 @@
-// /.netlify/functions/update-tenders — SCHEDULED CRAWLER (every 10 min)
-import { getStore } from '@netlify/blobs';
+// netlify/functions/update-tenders.mjs
+// Fetches from CF (OCDS) + FTS, merges, filters and stores into Netlify Blobs.
 
-const MAX_CF_PAGES_PER_RUN    = 6;   // keep under function time limit
-const MAX_FTS_BATCHES_PER_RUN = 5;
+import { getStore as _getStore } from '@netlify/blobs';
 
-const UA = {
-  headers: {
-    'Accept': 'application/json, text/plain, */*',
-    'User-Agent': 'Mozilla/5.0 (Infrastructure Dashboard)'
+function getTendersStore() {
+  try {
+    return _getStore('tenders');
+  } catch {
+    const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+    const token  = process.env.NETLIFY_BLOBS_TOKEN;
+    if (!siteID || !token) {
+      throw new Error('Netlify Blobs not configured (missing NETLIFY_SITE_ID or NETLIFY_BLOBS_TOKEN).');
+    }
+    return _getStore({ name: 'tenders', siteID, token });
   }
+}
+
+// ---- sector filter config (broad but clean) ----
+const SECTOR_KEYWORDS = {
+  rail:      [/rail(way)?/i, /network\s*rail/i, /tram/i, /light\s*rail/i],
+  aviation:  [/airport/i, /aviation/i, /heathrow/i, /gatwick/i, /ltn|luton/i, /manchester\s*airport|mag\b/i],
+  maritime:  [/port\b/i, /harbour|harbor/i, /maritime/i, /dock/i],
+  utilities: [/water\b/i, /wastewater|sewer/i, /gas\b/i, /electric/i, /utilities?/i, /scottish\s*water/i, /united\s*utilities/i, /ukpn|uk\s*power\s*networks/i],
+  highways:  [/highway/i, /road(?!map)/i, /\bmotorway\b/i, /transport\s*(for\s*)?london|tfl/i]
 };
 
-export async function handler() {
-  try {
-    const store = getStore('tenders');
+// keep only these five families
+const SECTORS_ALLOW = Object.keys(SECTOR_KEYWORDS);
 
-    const state = await store.get('state.json', { type: 'json' }) || { cfPage: 1, ftsCursor: '' };
-    const existing = await store.get('latest.json', { type: 'json' }) || { updatedAt: null, items: [] };
-    let items = Array.isArray(existing.items) ? existing.items : [];
-
-    const [cfBatch, ftsBatch] = await Promise.all([
-      fetchCF_OCDS_Pages(state.cfPage, MAX_CF_PAGES_PER_RUN),
-      fetchFTS_OCDS_Cursor(state.ftsCursor, MAX_FTS_BATCHES_PER_RUN)
-    ]);
-
-    const merged = dedupe([...cfBatch.items, ...ftsBatch.items, ...items])
-      .filter(filterFutureAndValid);
-
-    const payload = {
-      updatedAt: new Date().toISOString(),
-      items: merged
-    };
-    await store.setJSON('latest.json', payload);
-
-    const newState = {
-      cfPage: cfBatch.nextPage || state.cfPage,
-      ftsCursor: ftsBatch.nextCursor || state.ftsCursor
-    };
-    await store.setJSON('state.json', newState);
-
-    console.log('update-tenders: stored', merged.length, 'nextState:', newState);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message: 'Update completed',
-        addedThisRun: cfBatch.items.length + ftsBatch.items.length,
-        totalStored: merged.length,
-        nextState: newState,
-        updatedAt: payload.updatedAt
-      })
-    };
-  } catch (e) {
-    console.error('update-tenders error:', e);
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+function classifySector(title = '', org = '') {
+  const hay = `${title} ${org}`;
+  for (const [sector, patterns] of Object.entries(SECTOR_KEYWORDS)) {
+    if (patterns.some(rx => rx.test(hay))) return sector;
   }
+  return null; // treat as "Other" -> will be filtered out
 }
 
-/* ---------- FILTERS: future deadlines only, skip "Other" sector ---------- */
-function filterFutureAndValid(item) {
-  if (!item.deadline) return false;
-  const d = new Date(item.deadline);
-  if (isNaN(d) || d < new Date()) return false;
-  if (item.sector && item.sector.toLowerCase().includes('other')) return false;
-  return true;
+function futureISO(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return isFinite(d.valueOf()) ? d.toISOString() : null;
 }
 
-/* ---------- CF OCDS (paged) ---------- */
-async function fetchCF_OCDS_Pages(startPage = 1, maxPages = 5) {
-  const collected = [];
-  let page = Math.max(1, parseInt(startPage, 10) || 1);
-  let fetched = 0;
-
-  while (fetched < maxPages) {
-    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?status=Open&order=desc&pageSize=100&page=${page}`;
-    console.log('CF OCDS GET page', page);
-    const res = await fetch(url, UA);
-    if (!res.ok) break;
-
-    const text = await res.text();
-    let data; try { data = JSON.parse(text); } catch { break; }
-
-    let raw = [];
-    if (Array.isArray(data.releases)) raw = data.releases;
-    else if (Array.isArray(data.records)) raw = data.records.flatMap(r => r.compiledRelease ? [r.compiledRelease] : []);
-    else if (Array.isArray(data.packages)) raw = data.packages.flatMap(p => p.releases || []);
-
-    if (!raw.length) break;
-
-    collected.push(...raw.map(normalizeOCDSRelease).filter(Boolean));
-    page++; fetched++;
-  }
-
-  return { items: collected, nextPage: page };
+function isFuture(dateStr) {
+  if (!dateStr) return true; // if no deadline provided, keep it (safer)
+  const d = new Date(dateStr);
+  return isFinite(d.valueOf()) && d.getTime() > Date.now();
 }
 
-/* ---------- FTS OCDS (cursor) ---------- */
-async function fetchFTS_OCDS_Cursor(startCursor = '', maxBatches = 5) {
-  const collected = [];
-  const base = 'https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages';
-  let cursor = startCursor || '';
-  let batches = 0;
-
-  while (batches < maxBatches) {
-    const params = new URLSearchParams({ stages: 'tender', limit: '100' });
-    if (cursor) params.set('cursor', cursor);
-
-    const url = `${base}?${params.toString()}`;
-    console.log('FTS OCDS GET', cursor ? `(cursor ${cursor})` : '(first)');
-    const res = await fetch(url, UA);
-    if (!res.ok) break;
-
-    const text = await res.text();
-    let data; try { data = JSON.parse(text); } catch { break; }
-
-    let raw = [];
-    if (Array.isArray(data.releases)) raw = data.releases;
-    else if (Array.isArray(data.packages)) raw = data.packages.flatMap(p => p.releases || []);
-    else if (Array.isArray(data.records)) raw = data.records.flatMap(r => r.compiledRelease ? [r.compiledRelease] : []);
-
-    if (!raw.length) break;
-
-    collected.push(...raw.map(normalizeOCDSRelease).filter(Boolean));
-
-    const next = data.nextCursor || '';
-    if (!next) { cursor = ''; break; }
-    cursor = next; batches++;
-  }
-
-  return { items: collected, nextCursor: cursor };
-}
-
-/* ---------- Normalize OCDS ---------- */
-function normalizeOCDSRelease(r0) {
-  const r = Array.isArray(r0?.releases) ? r0.releases[0] : (r0 || {});
-  const tender = r.tender || {};
-  const parties = r.parties || [];
-
-  const buyerName =
-    (r.buyer && r.buyer.name)
-    || parties.find(p => Array.isArray(p.roles) && p.roles.includes('buyer'))?.name
-    || '';
-
-  const title = tender.title || r.title || '';
-  const deadline =
-    tender.tenderPeriod?.endDate
-    || tender.enquiryPeriod?.endDate
-    || r.tenderPeriod?.endDate
-    || '';
-
-  const region =
-    tender.deliveryAddresses?.[0]?.region
-    || tender.deliveryLocations?.[0]?.nuts
-    || tender.items?.[0]?.deliveryLocation?.region
-    || '';
-
-  const sector = tender.sector || r.sector || '';
-
-  const noticeId = r.id || r.ocid || '';
-  let url = noticeId
-    ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(noticeId)}`
-    : '';
-
-  return {
-    source: r.publisher?.name?.includes('Find a Tender') ? 'FTS' : 'CF',
-    title,
-    organisation: buyerName,
-    region,
-    deadline,
-    sector,
-    url
-  };
-}
-
-/* ---------- Deduplicate ---------- */
-function dedupe(arr) {
+function dedupe(items) {
   const seen = new Set();
-  return arr.filter(it => {
+  return items.filter(it => {
     const key = `${(it.title||'').trim()}|${(it.organisation||'').trim()}|${(it.deadline||'').trim()}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+// ---- CF (Contracts Finder) via OCDS, paginated ----
+async function fetchCF_OCDS({ maxPages = 20, pageSize = 100, timeBudgetMs = 25000 } = {}) {
+  const base = 'https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search';
+  const started = Date.now();
+  let page = 1;
+  const all = [];
+
+  while (page <= maxPages && (Date.now() - started) < timeBudgetMs) {
+    const url = `${base}?status=Open&order=desc&pageSize=${pageSize}&page=${page}`;
+    console.log('CF OCDS GET page', page);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) break;
+
+    const data = await res.json().catch(() => ({}));
+    const releases = Array.isArray(data.releases) ? data.releases : [];
+    if (!releases.length) break;
+
+    for (const r of releases) {
+      const title = r.tender?.title || r.title || '';
+      const buyer = r.parties?.find(p => p.roles?.includes('buyer'))?.name || r.buyer?.name || '';
+      const deadline = r.tender?.tenderPeriod?.endDate || r.tender?.enquiryPeriod?.endDate || '';
+      const ocid = r.ocid || r.id || '';
+      const urlN = ocid ? `https://www.contractsfinder.service.gov.uk/Notice/${encodeURIComponent(ocid)}` : '';
+
+      all.push({
+        source: 'CF',
+        title,
+        organisation: buyer,
+        region: r.tender?.deliveryLocations?.[0]?.nuts || r.tender?.deliveryAddresses?.[0]?.region || '',
+        deadline: futureISO(deadline),
+        url: urlN
+      });
+    }
+
+    page += 1;
+  }
+  return all;
+}
+
+// ---- FTS (Find a Tender) OCDS API, cursor-based pagination ----
+async function fetchFTS({ limit = 100, maxPages = 20, timeBudgetMs = 20000 } = {}) {
+  // allowed params per error msg: stages, limit, cursor, updatedFrom, updatedTo
+  const base = 'https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages';
+  const started = Date.now();
+  let cursor = '';
+  let pages = 0;
+  const all = [];
+
+  while (pages < maxPages && (Date.now() - started) < timeBudgetMs) {
+    const url = new URL(base);
+    url.searchParams.set('stages', 'tender');
+    url.searchParams.set('limit', String(limit));
+    if (cursor) url.searchParams.set('cursor', cursor);
+
+    console.log('FTS GET', url.toString());
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) break;
+
+    const data = await res.json().catch(() => ({}));
+    // Typical shapes: { packages: [ { releases: [...] } ], links: { next: 'cursor...' } }
+    const releases = Array.isArray(data.packages)
+      ? data.packages.flatMap(p => p.releases || [])
+      : (Array.isArray(data.releases) ? data.releases : []);
+
+    for (const r of releases) {
+      const title = r.tender?.title || r.title || '';
+      const buyer = r.parties?.find(p => p.roles?.includes('buyer'))?.name || r.buyer?.name || '';
+      const deadline = r.tender?.tenderPeriod?.endDate || r.tender?.enquiryPeriod?.endDate || '';
+      const ocid = r.ocid || r.id || '';
+      const urlN = ocid ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(ocid)}` : '';
+
+      all.push({
+        source: 'FTS',
+        title,
+        organisation: buyer,
+        region: r.tender?.deliveryLocations?.[0]?.nuts || r.tender?.deliveryAddresses?.[0]?.region || '',
+        deadline: futureISO(deadline),
+        url: urlN
+      });
+    }
+
+    // cursor/next handling
+    cursor = data?.links?.next || data?.next || '';
+    if (!cursor) break;
+    pages += 1;
+  }
+
+  return all;
+}
+
+export async function handler() {
+  try {
+    // 1) fetch from both sources (in parallel)
+    const [cf, fts] = await Promise.all([
+      fetchCF_OCDS(),
+      fetchFTS()
+    ]);
+
+    // 2) merge + dedupe
+    let items = dedupe([...cf, ...fts]);
+
+    // 3) apply sector + deadline filters
+    items = items
+      .map(it => ({ ...it, sector: classifySector(it.title, it.organisation) }))
+      .filter(it => it.sector && SECTORS_ALLOW.includes(it.sector))
+      .filter(it => isFuture(it.deadline));
+
+    // 4) sort by soonest deadline
+    items.sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+
+    // 5) store to blobs
+    const store = getTendersStore();
+    const payload = { updatedAt: new Date().toISOString(), items };
+    await store.setJSON('latest.json', payload);
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, counts: { cf: cf.length, fts: fts.length, final: items.length } })
+    };
+  } catch (err) {
+    console.error('update-tenders.mjs error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  }
 }
