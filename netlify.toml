@@ -1,6 +1,8 @@
-[functions]
-  directory = "netlify/functions"
+[build]
+  functions = "netlify/functions"
+  publish = "."
 
-# Run the background crawler every 10 minutes
-[scheduled.functions."update-tenders"]
-  cron = "*/10 * * * *"
+# run every 10 minutes (example)
+[[scheduled.functions]]
+  path = "update-tenders-background"
+  schedule = "*/10 * * * *"
