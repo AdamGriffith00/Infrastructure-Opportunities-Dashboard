@@ -2,12 +2,9 @@
   functions = "netlify/functions"
   publish   = "."
 
-# Winter schedule (UK time = GMT)
-[[scheduled.functions]]
-  path = "update-tenders-background"
-  schedule = "0 9 * * *"
-
-# Summer schedule (UK time = BST)
-[[scheduled.functions]]
-  path = "update-tenders-background"
-  schedule = "0 8 * * *"
+[functions."update-tenders-background"]
+  schedule = "0 */3 * * *" # every 3 hours UTC
+[[functions."update-tenders-background".schedule]]
+  cron = "0 9 * * *" # 9 AM UK time (winter)
+[[functions."update-tenders-background".schedule]]
+  cron = "0 8 * * *" # 9 AM UK time (summer - UTC+1)
