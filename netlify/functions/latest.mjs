@@ -1,125 +1,131 @@
-import fetch from 'node-fetch';
+(function(){
+  const API_URL = '/.netlify/functions/latest';
+  const REFRESH_MS = 60 * 1000; // 1 min
 
-export const handler = async () => {
-  try {
-    // 1. Fetch both sources
-    const cfResults = await fetchContractsFinder();
-    const ftsResults = await fetchFindATender();
-
-    console.log(`Contracts Finder returned ${cfResults.length} items`);
-    console.log(`Find a Tender returned ${ftsResults.length} items`);
-
-    // 2. Apply filters for allowed sectors
-    const filteredCF = applyFilters(cfResults);
-    const filteredFTS = applyFilters(ftsResults);
-
-    console.log(`After filtering: CF = ${filteredCF.length}, FTS = ${filteredFTS.length}`);
-
-    // 3. Merge results
-    const allItems = [...filteredCF, ...filteredFTS];
-
-    // 4. Sort by deadline ascending
-    allItems.sort((a, b) => {
-      if (!a.deadline) return 1;
-      if (!b.deadline) return -1;
-      return new Date(a.deadline) - new Date(b.deadline);
-    });
-
-    // 5. Return with counts
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        updatedAt: new Date().toISOString(),
-        cfCount: filteredCF.length,
-        ftsCount: filteredFTS.length,
-        totalCount: allItems.length,
-        items: allItems
+  function fetchData() {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.items) {
+          hydrateLiveData({
+            updatedAt: data.updatedAt,
+            cfCount: data.cfCount || 0,
+            ftsCount: data.ftsCount || 0,
+            totalCount: data.totalCount || 0,
+            items: data.items.map(formatItem)
+          });
+        }
       })
-    };
+      .catch(err => {
+        console.error('Fetch error', err);
+        showError('Unable to load opportunities at this time.');
+      });
+  }
 
-  } catch (err) {
-    console.error('Error in latest.js', err);
+  function formatItem(i) {
+    const deadline = i.deadline ? new Date(i.deadline) : null;
+    const today = new Date();
+    let daysRemaining = '';
+    if (deadline) {
+      const diff = Math.ceil((deadline - today) / (1000*60*60*24));
+      daysRemaining = diff >= 0 ? diff : 0;
+    }
+    const valueDisplay = formatValue(i.valueLow, i.valueHigh);
+    const sectorName = detectSector(i.title, i.organisation);
+    const sectorClass = sectorName.toLowerCase();
+
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch opportunities' })
+      title: i.title || '',
+      organisation: i.organisation || '',
+      region: i.region || '',
+      deadline: i.deadline || '',
+      daysRemaining,
+      valueDisplay,
+      sectorName,
+      sectorClass,
+      source: i.source || '',
+      url: i.url || ''
     };
   }
-};
 
-// ------------------------------
-// Fetch from Contracts Finder
-// ------------------------------
-async function fetchContractsFinder() {
-  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?order=desc&size=50&status=Open`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`CF API error: ${res.status}`);
-    return [];
+  function formatValue(low, high) {
+    if (low && high && high !== low) {
+      return `£${numFmt(low)} – £${numFmt(high)}`;
+    } else if (low) {
+      return `£${numFmt(low)}`;
+    } else if (high) {
+      return `£${numFmt(high)}`;
+    }
+    return '';
   }
-  const data = await res.json();
-  return data.records ? data.records.map(formatCF) : [];
-}
 
-// ------------------------------
-// Fetch from Find a Tender
-// ------------------------------
-async function fetchFindATender() {
-  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?order=desc&size=50&status=Open`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`FTS API error: ${res.status}`);
-    return [];
+  function numFmt(n) {
+    return Number(n).toLocaleString('en-GB', { maximumFractionDigits: 0 });
   }
-  const data = await res.json();
-  return data.records ? data.records.map(formatFTS) : [];
-}
 
-// ------------------------------
-// Format helpers
-// ------------------------------
-function formatCF(item) {
-  return {
-    title: item.title || '',
-    organisation: item.organisationName || '',
-    region: item.region || '',
-    deadline: item.deadline || '',
-    valueLow: item.valueLow || null,
-    valueHigh: item.valueHigh || null,
-    source: 'CF',
-    url: item.noticeIdentifier
-      ? `https://www.contractsfinder.service.gov.uk/Notice/${item.noticeIdentifier}`
-      : ''
+  function detectSector(text, buyer) {
+    const hay = `${text} ${buyer}`.toLowerCase();
+    if (/rail|railway|station/.test(hay)) return 'Rail';
+    if (/highway|road|bridge/.test(hay)) return 'Highways';
+    if (/aviation|airport|runway|terminal/.test(hay)) return 'Aviation';
+    if (/maritime|port|dock|harbour|harbor/.test(hay)) return 'Maritime';
+    if (/utilities|water|wastewater|gas|telecom/.test(hay)) return 'Utilities';
+    return 'Other';
+  }
+
+  function showError(msg) {
+    let el = document.getElementById('liveErrors');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'liveErrors';
+      document.querySelector('.wrap').appendChild(el);
+    }
+    el.textContent = msg;
+  }
+
+  fetchData();
+  setInterval(fetchData, REFRESH_MS);
+
+  window.hydrateLiveData = function(payload) {
+    const { updatedAt, items, cfCount, ftsCount, totalCount } = payload;
+    const lastUpdatedEl = document.getElementById('lastUpdated');
+    const cfEl = document.getElementById('cfCount');
+    const ftsEl = document.getElementById('ftsCount');
+    const totalEl = document.getElementById('totalCount');
+
+    if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
+    if (cfEl) cfEl.textContent = cfCount;
+    if (ftsEl) ftsEl.textContent = ftsCount;
+    if (totalEl) totalEl.textContent = totalCount;
+
+    const tbody = document.getElementById('live-opportunities');
+    if (!tbody) return;
+
+    if (!items.length) {
+      document.getElementById('emptyMessage').style.display = 'block';
+      tbody.innerHTML = '';
+      return;
+    }
+    document.getElementById('emptyMessage').style.display = 'none';
+    tbody.innerHTML = items.map(i => `
+      <tr>
+        <td><a href="${i.url}" target="_blank">${i.title}</a></td>
+        <td>${i.organisation}</td>
+        <td>${i.region || ''}</td>
+        <td>${i.deadline ? new Date(i.deadline).toLocaleDateString() : ''}</td>
+        <td>${daysBadge(i.daysRemaining)}</td>
+        <td>${i.valueDisplay || ''}</td>
+        <td><span class="sector-badge sector-${i.sectorClass}">${i.sectorName}</span></td>
+        <td>${i.source}</td>
+      </tr>
+    `).join('');
   };
-}
 
-function formatFTS(item) {
-  return {
-    title: item.title || '',
-    organisation: item.buyerName || '',
-    region: item.region || '',
-    deadline: item.deadline || '',
-    valueLow: item.valueLow || null,
-    valueHigh: item.valueHigh || null,
-    source: 'FTS',
-    url: item.noticeIdentifier
-      ? `https://www.find-tender.service.gov.uk/Notice/${item.noticeIdentifier}`
-      : ''
-  };
-}
-
-// ------------------------------
-// Sector filter with synonyms
-// ------------------------------
-function applyFilters(items) {
-  const keywords = [
-    'rail', 'railway', 'station', 'network rail',
-    'highway', 'road', 'bridge', 'highways england',
-    'aviation', 'airport', 'runway', 'terminal',
-    'maritime', 'port', 'dock', 'harbour', 'harbor',
-    'utilities', 'water', 'wastewater', 'gas', 'telecom'
-  ];
-  return items.filter(i => {
-    const haystack = `${i.title} ${i.organisation}`.toLowerCase();
-    return keywords.some(k => haystack.includes(k));
-  });
-}
+  function daysBadge(days) {
+    if (days === '' || days === null) return '';
+    const d = parseInt(days, 10);
+    if (d <= 3) return `<span class="days-badge days-urgent">${d}</span>`;
+    if (d <= 10) return `<span class="days-badge days-soon">${d}</span>`;
+    return `<span class="days-badge days-plenty">${d}</span>`;
+  }
+})();
