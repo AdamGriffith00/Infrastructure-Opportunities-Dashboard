@@ -3,8 +3,8 @@ export async function handler() {
     const cfResults = await fetchAllCF();
     const ftsResults = await fetchAllFTS();
 
-    console.log(`CF fetched: ${cfResults.length} tenders`);
-    console.log(`FTS fetched: ${ftsResults.length} tenders`);
+    console.log(`✅ CF fetched: ${cfResults.length} tenders`);
+    console.log(`✅ FTS fetched: ${ftsResults.length} tenders`);
 
     let allItems = [...cfResults, ...ftsResults];
     allItems = dedupe(allItems);
@@ -25,25 +25,25 @@ export async function handler() {
     };
 
   } catch (err) {
-    console.error("Error in latest.js:", err);
+    console.error("❌ Error in latest.js:", err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
 
-// ---------- Fetch all CF tenders ----------
+// ---------- Fetch ALL CF tenders ----------
 async function fetchAllCF() {
   let results = [];
   let page = 1;
   let keepGoing = true;
 
-  while (keepGoing) {
+  while (keepGoing && page <= 100) { // max 100 pages safeguard
+    console.log(`📄 Fetching CF page ${page}...`);
     const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50&page=${page}`;
-    console.log(`Fetching CF page ${page}...`);
     const res = await fetch(url);
     if (!res.ok) break;
     const data = await res.json();
-
     const records = data.records || [];
+
     if (records.length === 0) {
       keepGoing = false;
     } else {
@@ -65,20 +65,20 @@ async function fetchAllCF() {
   return results;
 }
 
-// ---------- Fetch all FTS tenders ----------
+// ---------- Fetch ALL FTS tenders ----------
 async function fetchAllFTS() {
   let results = [];
-  let page = 0;
+  let page = 1;
   let keepGoing = true;
 
-  while (keepGoing) {
-    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&order=desc&from=${page * 50}`;
-    console.log(`Fetching FTS page starting at ${page * 50}...`);
+  while (keepGoing && page <= 100) { // max 100 pages safeguard
+    console.log(`📄 Fetching FTS page ${page}...`);
+    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&page=${page}&order=desc`;
     const res = await fetch(url);
     if (!res.ok) break;
     const data = await res.json();
-
     const records = data.records || [];
+
     if (records.length === 0) {
       keepGoing = false;
     } else {
