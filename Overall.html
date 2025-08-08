@@ -8,141 +8,76 @@
     * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f3f3f3;
-      color: #222;
+      margin: 0; padding: 0;
+      background: #f3f3f3; color: #222;
     }
     /* Tabs */
     .tab-container {
-      display: flex;
-      flex-wrap: wrap;
-      background: rgb(247, 196, 0); /* Gleeds yellow */
+      display: flex; flex-wrap: wrap;
+      background: rgb(247,196,0); /* Gleeds yellow */
     }
     .tab {
-      flex: 1 1 50%;
-      text-align: center;
-      padding: 1em;
-      cursor: pointer;
-      background: rgb(247, 196, 0);
-      color: #fff;
-      border-bottom: 2px solid transparent;
-      transition: background 0.25s;
+      flex: 1 1 50%; text-align: center; padding: 1em;
+      cursor: pointer; background: rgb(247,196,0); color: #fff;
+      border-bottom: 2px solid transparent; transition: background .25s;
       user-select: none;
     }
-    .tab:hover,
-    .tab.active {
-      background: rgb(60, 60, 60); /* Gleeds charcoal */
-    }
-    .tab-content {
-      display: none;
-      padding: 1em;
-      background: #fff;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    @media (min-width: 768px) {
-      .tab { flex: 1 1 20%; }
-    }
-    /* Iframes for other tabs */
-    iframe {
-      width: 100%;
-      height: 90vh;
-      border: none;
-      background: #fff;
-    }
+    .tab:hover, .tab.active { background: rgb(60,60,60); } /* charcoal */
+    .tab-content { display: none; padding: 1em; background: #fff; }
+    .tab-content.active { display: block; }
+    @media (min-width: 768px){ .tab { flex: 1 1 20%; } }
 
-    /* Live Opportunities panel */
-    .live-wrap {
-      max-width: 1200px;
-      margin: 0 auto;
+    /* Iframes for other tabs */
+    iframe { width: 100%; height: 90vh; border: none; background: #fff; }
+
+    /* Live Opportunities */
+    .live-wrap { max-width: 1200px; margin: 0 auto; }
+    .live-header { display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; margin-bottom:.5rem; }
+    .live-title { font-size:1.75rem; font-weight:700; margin:0; }
+    .last-updated { color:#555; font-size:.95rem; }
+    .error { color:#b00020; margin:.5rem 0 0; font-weight:600; }
+
+    /* Filter bar */
+    .filter-bar {
+      display:flex; flex-wrap:wrap; gap:.5rem; margin:.5rem 0 1rem;
     }
-    .live-header {
-      display: flex;
-      align-items: baseline;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: .5rem;
+    .filter-pill {
+      border:1px solid #ddd; background:#fff; color:#333;
+      padding:.35rem .6rem; border-radius:999px; font-size:.9rem; cursor:pointer;
+      user-select:none;
     }
-    .live-title {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin: 0;
-    }
-    .last-updated {
-      color: #555;
-      font-size: 0.95rem;
-    }
-    .error {
-      color: #b00020;
-      margin: .5rem 0 0;
-      font-weight: 600;
-    }
+    .filter-pill.active { background: rgb(60,60,60); color:#fff; border-color: rgb(60,60,60); }
 
     /* Table container (mobile scroll) */
-    .table-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid #e5e5e5;
-      border-radius: 8px;
-      background: #fff;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px; /* allow horizontal scroll on mobile */
-    }
+    .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid #e5e5e5; border-radius:8px; background:#fff; }
+    table { width:100%; border-collapse:collapse; min-width:900px; }
     thead th {
-      position: sticky;
-      top: 0;
-      background: #f8f8f8;
-      z-index: 1;
-      text-align: left;
-      padding: 10px 12px;
-      font-weight: 700;
-      border-bottom: 1px solid #e5e5e5;
-      white-space: nowrap;
+      position:sticky; top:0; background:#f8f8f8; z-index:1;
+      text-align:left; padding:10px 12px; font-weight:700; border-bottom:1px solid #e5e5e5; white-space:nowrap;
     }
-    tbody td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #eee;
-      vertical-align: top;
-    }
-    tbody tr:hover {
-      background: #fafafa;
-    }
-    a.title-link {
-      color: #0b63ce;
-      text-decoration: none;
-    }
-    a.title-link:hover {
-      text-decoration: underline;
-    }
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      line-height: 1.6;
-      background: #eef2f7;
-      color: #333;
-      white-space: nowrap;
-    }
-    /* Subtle sector colouring in a professional palette */
-    .pill.aviation   { background:#e8f2ff; }
-    .pill.utilities  { background:#efeaff; }
-    .pill.rail       { background:#eaf7ee; }
-    .pill.highways   { background:#fff4e5; }
-    .pill.maritime   { background:#e9f7fa; }
-    .pill.infrastructure { background:#f1f3f5; }
+    tbody td { padding:10px 12px; border-bottom:1px solid #eee; vertical-align:top; }
+    tbody tr:hover { background:#fafafa; }
+    a.title-link { color:#0b63ce; text-decoration:none; }
+    a.title-link:hover { text-decoration:underline; }
 
-    .muted { color:#666; font-size: 0.9rem; }
+    .pill {
+      display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; line-height:1.6;
+      background:#eef2f7; color:#333; white-space:nowrap;
+    }
+    /* sector tints */
+    .pill.aviation{background:#e8f2ff;}
+    .pill.utilities{background:#efeaff;}
+    .pill.rail{background:#eaf7ee;}
+    .pill.highways{background:#fff4e5;}
+    .pill.maritime{background:#e9f7fa;}
+    .pill.infrastructure{background:#f1f3f5;}
+
+    .muted { color:#666; font-size:.9rem; }
     .right { text-align:right; }
   </style>
 </head>
 <body>
-  <!-- Tabs -->
+  <!-- Top tabs -->
   <div class="tab-container">
     <div class="tab active" data-tab="budget-summary">2025/26 Budget Summary</div>
     <div class="tab" data-tab="regions">Regions - 2025/26 Projects</div>
@@ -151,7 +86,7 @@
     <div class="tab" data-tab="live">Live Opportunities</div>
   </div>
 
-  <!-- Tab contents -->
+  <!-- Tab bodies -->
   <div class="tab-content active" id="budget-summary">
     <iframe src="budget-summary.html" title="Budget Summary"></iframe>
   </div>
@@ -168,7 +103,7 @@
     <p>Content for Gleeds Pipeline will go here.</p>
   </div>
 
-  <!-- LIVE OPPORTUNITIES (no iframe; pulls /.netlify/functions/latest) -->
+  <!-- LIVE OPPORTUNITIES -->
   <div class="tab-content" id="live">
     <div class="live-wrap">
       <div class="live-header">
@@ -176,6 +111,11 @@
         <div class="last-updated" id="lastUpdated">Last updated: —</div>
       </div>
       <div id="liveError" class="error" style="display:none;"></div>
+
+      <!-- Sector filters -->
+      <div class="filter-bar" id="filterBar">
+        <!-- pills injected -->
+      </div>
 
       <div class="table-scroll">
         <table id="liveTable">
@@ -199,7 +139,7 @@
   </div>
 
   <script>
-    // Tab wiring (unchanged behaviour)
+    /* ---------- Tab wiring ---------- */
     const tabs = document.querySelectorAll('.tab');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => {
@@ -210,7 +150,6 @@
         document.getElementById(tab.dataset.tab).classList.add('active');
 
         if (tab.dataset.tab === 'live') {
-          // Lazy load when the tab is first opened
           if (!document.getElementById('liveTable').dataset.loaded) {
             loadLive();
           }
@@ -218,14 +157,28 @@
       });
     });
 
+    /* ---------- Live data + filters ---------- */
+    let allItems = [];
+    let activeKey = 'all'; // 'all' | sector keys
+
+    const FILTERS = [
+      { key:'all',           label:'All' },
+      { key:'aviation',      label:'Aviation' },
+      { key:'utilities',     label:'Utilities' },
+      { key:'rail',          label:'Rail' },
+      { key:'highways',      label:'Highways' },
+      { key:'maritime',      label:'Maritime' },
+      { key:'infrastructure',label:'Infrastructure' },
+    ];
+
     async function loadLive() {
       const tbody = document.querySelector('#liveTable tbody');
       const errEl = document.getElementById('liveError');
       const updatedEl = document.getElementById('lastUpdated');
       const countEl = document.getElementById('liveCount');
 
-      errEl.style.display = 'none';
-      errEl.textContent = '';
+      errEl.style.display = 'none'; errEl.textContent = '';
+      tbody.innerHTML = ''; countEl.textContent = '';
 
       try {
         const res = await fetch('/.netlify/functions/latest', { cache: 'no-store' });
@@ -233,21 +186,59 @@
         const data = await res.json();
 
         updatedEl.textContent = `Last updated: ${formatDateTime(data.updatedAt)}`;
+        allItems = Array.isArray(data.items) ? data.items.map(normalizeSector) : [];
 
-        const items = Array.isArray(data.items) ? data.items : [];
-        tbody.innerHTML = items.map(renderRow).join('');
-        countEl.textContent = `${items.length} opportunities`;
+        // build filter bar (with counts)
+        buildFilters();
 
-        // mark as loaded so we don’t refetch on every tab click
+        // initial render
+        applyFilter();
         document.getElementById('liveTable').dataset.loaded = '1';
       } catch (e) {
         errEl.textContent = `Error: ${e.message}`;
         errEl.style.display = 'block';
-        tbody.innerHTML = '';
-        countEl.textContent = '';
       }
     }
 
+    function buildFilters(){
+      const bar = document.getElementById('filterBar');
+      const counts = countBySector(allItems);
+      bar.innerHTML = FILTERS.map(f => {
+        const c = f.key === 'all' ? allItems.length : (counts[f.key] || 0);
+        const active = f.key === activeKey ? 'active' : '';
+        return `<span class="filter-pill ${active}" data-key="${f.key}">${f.label} (${c})</span>`;
+      }).join('');
+      bar.querySelectorAll('.filter-pill').forEach(pill=>{
+        pill.addEventListener('click', ()=>{
+          activeKey = pill.dataset.key;
+          bar.querySelectorAll('.filter-pill').forEach(el=>el.classList.toggle('active', el===pill));
+          applyFilter();
+        });
+      });
+    }
+
+    function applyFilter(){
+      const tbody = document.querySelector('#liveTable tbody');
+      const countEl = document.getElementById('liveCount');
+
+      const filtered = activeKey === 'all'
+        ? allItems
+        : allItems.filter(it => (it._sectorKey || '') === activeKey);
+
+      tbody.innerHTML = filtered.map(renderRow).join('');
+      countEl.textContent = `${filtered.length} opportunities`;
+    }
+
+    function countBySector(items){
+      const m = {};
+      for (const it of items){
+        const k = it._sectorKey || 'infrastructure';
+        m[k] = (m[k]||0)+1;
+      }
+      return m;
+    }
+
+    /* ---------- Rendering ---------- */
     function renderRow(it) {
       const title = esc(it.title || 'Untitled');
       const buyer = esc(it.organisation || '');
@@ -262,15 +253,12 @@
       const valueLow = num(it.valueLow);
       const valueHigh = num(it.valueHigh);
       const valueTxt =
-        valueLow === null && valueHigh === null
-          ? '—'
-          : valueLow !== null && valueHigh !== null
-            ? `${gbp(valueLow)} – ${gbp(valueHigh)}`
-            : gbp(valueLow ?? valueHigh);
+        valueLow === null && valueHigh === null ? '—'
+        : valueLow !== null && valueHigh !== null ? `${gbp(valueLow)} – ${gbp(valueHigh)}`
+        : gbp(valueLow ?? valueHigh);
 
-      const sector = (it.sector || '').toLowerCase();
-      const sectorClass = sectorClassName(sector);
-      const sectorLabel = sector ? cap(sector) : '—';
+      const sectorKey = it._sectorKey || '';
+      const sectorLabel = sectorKey ? cap(sectorKey) : '—';
 
       const source = esc(it.source || '—');
 
@@ -282,15 +270,15 @@
           <td>${deadlineTxt}</td>
           <td>${daysTxt}</td>
           <td class="right">${valueTxt}</td>
-          <td><span class="pill ${sectorClass}">${sectorLabel}</span></td>
+          <td><span class="pill ${sectorKey}">${sectorLabel}</span></td>
           <td>${source}</td>
         </tr>
       `;
     }
 
-    /* Utilities */
+    /* ---------- Helpers ---------- */
     function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+    function cap(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
     function num(x){ const n = Number(x); return Number.isFinite(n) ? n : null; }
     function gbp(n){
       try { return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n); }
@@ -299,7 +287,6 @@
     function formatDateTime(iso){
       const d = new Date(iso);
       if (isNaN(d)) return '—';
-      // dd/mm/yyyy, HH:MM:ss
       const pad = v=>String(v).padStart(2,'0');
       return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
@@ -309,20 +296,32 @@
       const ms = d - new Date();
       return Math.ceil(ms / (1000*60*60*24));
     }
-    function sectorClassName(s){
-      // map to a small set of classes for subtle tinting
-      if (s.includes('aviation')) return 'aviation';
-      if (s.includes('utilities') || s.includes('utility')) return 'utilities';
-      if (s.includes('rail')) return 'rail';
-      if (s.includes('highway') || s.includes('roads')) return 'highways';
-      if (s.includes('maritime') || s.includes('ports')) return 'maritime';
-      if (s) return 'infrastructure';
-      return '';
-    }
 
-    // Optional: prefetch on first page load so it’s ready when tab is opened
-    // Comment out if you prefer lazy-only.
-    // loadLive();
+    // Normalize/derive a consistent sector key for filtering
+    function normalizeSector(it){
+      const raw = (it.sector || '').toString().toLowerCase();
+      let key = '';
+      // direct matches
+      if (/aviation/.test(raw)) key = 'aviation';
+      else if (/utilit(y|ies)/.test(raw)) key = 'utilities';
+      else if (/rail/.test(raw)) key = 'rail';
+      else if (/highway|road/.test(raw)) key = 'highways';
+      else if (/maritime|port|harbour|harbor/.test(raw)) key = 'maritime';
+      else if (/infrastructure/.test(raw)) key = 'infrastructure';
+
+      // if not provided, infer from title/org
+      if (!key){
+        const hay = `${(it.title||'')} ${(it.organisation||'')}`.toLowerCase();
+        if (/airport|airfield|airside|aviation/.test(hay)) key = 'aviation';
+        else if (/water|gas|electric|utilities|utility|sewer|wastewater/.test(hay)) key = 'utilities';
+        else if (/rail|rolling stock|station|track/.test(hay)) key = 'rail';
+        else if (/highway|roads?\b|junction|carriageway/.test(hay)) key = 'highways';
+        else if (/port|harbour|harbor|dock|maritime|ferry/.test(hay)) key = 'maritime';
+        else key = 'infrastructure'; // sensible default bucket
+      }
+      it._sectorKey = key;
+      return it;
+    }
   </script>
 </body>
 </html>
