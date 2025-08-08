@@ -1,11 +1,5 @@
-[build]
-  command = ""
-  publish = "."
-
 [functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["node-fetch", "@netlify/blobs"]
 
-# Scheduled background run at 9 AM UK time (UTC in winter)
-[[functions."update-tenders-background".schedule]]
-  cron = "0 9 * * *"
+  [functions.update-tenders-background]
+  # Runs at 08:00 and 09:00 UTC (covers UK 09:00 all year)
+  schedule = "0 8,9 * * *"
