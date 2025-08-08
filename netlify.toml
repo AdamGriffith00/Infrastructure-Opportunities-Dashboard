@@ -1,8 +1,6 @@
-[build]
-  functions = "netlify/functions"
-  publish = "."
+[functions]
+  directory = "netlify/functions"
 
-[[redirects]]
-  from = "/live"
-  to = "/live.html"
-  status = 200
+# Run the background crawler every 10 minutes
+[scheduled.functions.update-tenders]
+  cron = "*/10 * * * *"
