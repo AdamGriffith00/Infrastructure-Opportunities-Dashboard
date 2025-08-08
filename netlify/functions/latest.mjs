@@ -1,27 +1,44 @@
-import { getStore } from "@netlify/blobs";
+// netlify/functions/latest.mjs
+import { getStore } from '@netlify/blobs';
+
+const SITE_ID = process.env.BLOBS_SITE_ID;
+const TOKEN   = process.env.BLOBS_TOKEN;
 
 export async function handler() {
   try {
-    const { BLOBS_SITE_ID, BLOBS_TOKEN } = process.env;
-    if (!BLOBS_SITE_ID || !BLOBS_TOKEN) {
-      return json(500, { error: "Missing BLOBS_SITE_ID or BLOBS_TOKEN" });
+    const store = getStore({ name: 'tenders', siteID: SITE_ID, token: TOKEN });
+    if (!store) {
+      return resp(500, { error: 'Blobs store not initialised. Check BLOBS_SITE_ID/BLOBS_TOKEN.' });
     }
 
-    const store = getStore({ name: "tenders", siteID: BLOBS_SITE_ID, token: BLOBS_TOKEN });
-
-    let data = await store.getJSON("latest.json");
-    if (!data || !Array.isArray(data.items)) {
-      // first-run fallback: try to refresh now
-      await fetch(`${process.env.URL || ""}/.netlify/functions/update-tenders`).catch(()=>{});
-      data = await store.getJSON("latest.json") || { updatedAt: null, items: [] };
+    // read raw text and parse (some blobs versions don't have getJSON)
+    const raw = await store.get('latest.json');
+    if (!raw) {
+      return resp(404, { error: 'No snapshot found yet. Run /update-tenders first.' });
     }
 
-    return { statusCode: 200, headers: { "content-type": "application/json" }, body: JSON.stringify(data) };
-  } catch (e) {
-    return json(500, { error: String(e?.message || e) });
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return resp(500, { error: 'Corrupt snapshot JSON.' });
+    }
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        // keep it fresh but cache for a minute client-side
+        'Cache-Control': 'public, max-age=60'
+      },
+      body: JSON.stringify(data)
+    };
+  } catch (err) {
+    console.error('latest error:', err);
+    return resp(500, { error: err.message || String(err) });
   }
 }
 
-function json(status, obj) {
-  return { statusCode: status, headers: { "content-type": "application/json" }, body: JSON.stringify(obj) };
+function resp(statusCode, body) {
+  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }
