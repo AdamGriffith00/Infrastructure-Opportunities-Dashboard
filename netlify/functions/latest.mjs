@@ -1,14 +1,11 @@
 // netlify/functions/latest.mjs
-
 export async function handler() {
   try {
-    const cfItems = await fetchAllCF();
-    const ftsItems = await fetchAllFTS();
+    const cf = await fetchCF();
+    const fts = await fetchFTS();
 
-    console.log(`✅ CF total fetched: ${cfItems.length}`);
-    console.log(`✅ FTS total fetched: ${ftsItems.length}`);
-
-    let items = dedupe([...cfItems, ...ftsItems]);
+    // Merge & dedupe
+    let items = dedupe([...(cf.items || []), ...(fts.items || [])]);
 
     // Sort by soonest deadline
     items.sort((a, b) => {
@@ -19,101 +16,92 @@ export async function handler() {
 
     return {
       statusCode: 200,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         updatedAt: new Date().toISOString(),
-        total: items.length,
         items
       })
     };
   } catch (err) {
-    console.error("❌ latest.js fatal:", err);
+    console.error("❌ latest.mjs fatal:", err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
 
-/* ---------------- Contracts Finder ---------------- */
-async function fetchAllCF() {
-  let page = 1;
-  const all = [];
-  while (true) {
-    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50&page=${page}`;
-    console.log(`🔎 CF GET ${url}`);
-    const res = await fetch(url);
-    const text = await res.text();
+/* ---------------- CF (Contracts Finder) ---------------- */
+async function fetchCF() {
+  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50&page=1`;
+  const res = await fetch(url);
+  const text = await res.text();
 
-    let data;
-    try { data = JSON.parse(text); } catch (e) { break; }
-
-    let records = data.records || data.results || data.items || [];
-    if (!records.length) break;
-
-    const mapped = records.map(r => ({
-      source: "CF",
-      title: r.title || r.noticeTitle || "",
-      organisation: r.organisationName || r.buyerName || "",
-      region: r.region || r.location || "",
-      deadline: r.deadline || r.tenderEndDate || r.submissionDeadline || "",
-      url: r.noticeIdentifier
-        ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}`
-        : (r.url || r.link || "")
-    }));
-
-    all.push(...mapped);
-    page++;
-    if (page > 100) break; // safeguard
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { items: [] };
   }
-  return all;
+
+  let records = [];
+  if (Array.isArray(data.records)) records = data.records;
+  else if (Array.isArray(data.results)) records = data.results;
+  else if (Array.isArray(data.items)) records = data.items;
+  else if (Array.isArray(data.releases)) records = data.releases;
+
+  const items = records.map(r => ({
+    source: "CF",
+    title: r.title || r.noticeTitle || "",
+    organisation: r.organisationName || r.buyerName || "",
+    region: r.region || r.location || "",
+    deadline: r.deadline || r.tenderEndDate || r.submissionDeadline || "",
+    url: r.noticeIdentifier
+      ? `https://www.contractsfinder.service.gov.uk/Notice/${r.noticeIdentifier}`
+      : (r.url || r.link || "")
+  }));
+
+  return { items };
 }
 
-/* ---------------- Find a Tender ---------------- */
-async function fetchAllFTS() {
-  let page = 1;
-  const all = [];
-  while (true) {
-    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&page=${page}&order=desc`;
-    console.log(`🔎 FTS GET ${url}`);
-    const res = await fetch(url);
-    const text = await res.text();
+/* ---------------- FTS (Find a Tender) ---------------- */
+async function fetchFTS() {
+  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&page=1&order=desc`;
+  const res = await fetch(url);
+  const text = await res.text();
 
-    let data;
-    try { data = JSON.parse(text); } catch (e) { break; }
-
-    let records = [];
-    if (Array.isArray(data.records)) {
-      records = data.records;
-    } else if (Array.isArray(data.packages)) {
-      records = data.packages.flatMap(p => p.releases || []);
-    } else if (Array.isArray(data.releases)) {
-      records = data.releases;
-    } else if (Array.isArray(data.items)) {
-      records = data.items;
-    }
-
-    if (!records.length) break;
-
-    const mapped = records.map(r => {
-      const title = r.title || r.tender?.title || r.ocid || "";
-      const buyerName =
-        r.buyerName || r.buyer?.name || r.parties?.find(p => p.roles?.includes('buyer'))?.name || "";
-      const region =
-        r.region || r.tender?.deliveryAddresses?.[0]?.region || r.tender?.deliveryLocations?.[0]?.nuts || "";
-      const deadline =
-        r.deadline || r.tender?.tenderPeriod?.endDate || r.tender?.enquiryPeriod?.endDate || "";
-      const noticeId =
-        r.noticeIdentifier || r.id || r.ocid || "";
-
-      const urlLink = noticeId
-        ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(noticeId)}`
-        : (r.url || r.links?.self || "");
-
-      return { source: "FTS", title, organisation: buyerName, region, deadline, url: urlLink };
-    });
-
-    all.push(...mapped);
-    page++;
-    if (page > 100) break; // safeguard
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { items: [] };
   }
-  return all;
+
+  let records = [];
+  if (Array.isArray(data.records)) records = data.records;
+  else if (Array.isArray(data.packages)) records = data.packages.flatMap(p => p.releases || []);
+  else if (Array.isArray(data.releases)) records = data.releases;
+  else if (Array.isArray(data.items)) records = data.items;
+
+  const items = records.map(r => {
+    const title = r.title || r.tender?.title || r.ocid || "";
+    const buyerName = r.buyerName || r.buyer?.name || r.parties?.find(p => p.roles?.includes('buyer'))?.name || "";
+    const region = r.region || r.tender?.deliveryAddresses?.[0]?.region || r.tender?.deliveryLocations?.[0]?.nuts || "";
+    const deadline = r.deadline || r.tender?.tenderPeriod?.endDate || r.tender?.enquiryPeriod?.endDate || "";
+    const noticeId = r.noticeIdentifier || r.id || r.ocid || "";
+
+    const url = noticeId
+      ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(noticeId)}`
+      : (r.url || r.links?.self || "");
+
+    return {
+      source: "FTS",
+      title,
+      organisation: buyerName,
+      region,
+      deadline,
+      url
+    };
+  });
+
+  return { items };
 }
 
 /* ---------------- Utils ---------------- */
