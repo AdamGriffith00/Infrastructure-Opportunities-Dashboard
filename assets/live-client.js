@@ -11,6 +11,7 @@
             updatedAt: data.updatedAt,
             cfCount: data.cfCount || 0,
             ftsCount: data.ftsCount || 0,
+            totalCount: data.totalCount || 0,
             items: data.items.map(formatItem)
           });
         }
@@ -86,14 +87,16 @@
   setInterval(fetchData, REFRESH_MS);
 
   window.hydrateLiveData = function(payload) {
-    const { updatedAt, items, cfCount, ftsCount } = payload;
+    const { updatedAt, items, cfCount, ftsCount, totalCount } = payload;
     const lastUpdatedEl = document.getElementById('lastUpdated');
     const cfEl = document.getElementById('cfCount');
     const ftsEl = document.getElementById('ftsCount');
+    const totalEl = document.getElementById('totalCount');
 
     if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
     if (cfEl) cfEl.textContent = cfCount;
     if (ftsEl) ftsEl.textContent = ftsCount;
+    if (totalEl) totalEl.textContent = totalCount;
 
     const tbody = document.getElementById('live-opportunities');
     if (!tbody) return;
