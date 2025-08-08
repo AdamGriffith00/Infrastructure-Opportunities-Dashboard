@@ -1,18 +1,15 @@
 {
-  "name": "tenders-dashboard",
+  "name": "infrastructure-opportunities-dashboard",
   "version": "1.0.0",
-  "description": "Dashboard for pulling and displaying tender opportunities",
-  "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "echo 'No build step'",
-    "start": "netlify dev"
+    "build": "echo 'No front-end build required'"
   },
   "dependencies": {
     "node-fetch": "^3.3.2",
-    "@netlify/blobs": "^5.0.0"
+    "@netlify/blobs": "^6.5.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   }
 }
