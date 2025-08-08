@@ -1,39 +1,57 @@
-// netlify/functions/latest.mjs
-// Serves the latest tenders.json from Netlify Blobs.
-// Requires env vars: BLOBS_SITE_ID, BLOBS_TOKEN
-// npm dep: @netlify/blobs
-
-import { getStore } from '@netlify/blobs';
-
-const STORE_NAME = 'tenders';
-const siteID = process.env.BLOBS_SITE_ID;
-const token  = process.env.BLOBS_TOKEN;
-
-if (!siteID || !token) {
-  throw new Error('Missing BLOBS_SITE_ID or BLOBS_TOKEN environment variables.');
-}
-
-function store() {
-  return getStore({ name: STORE_NAME, siteID, token });
-}
-
 export async function handler() {
   try {
-    const latest = await store().getJSON('latest.json');
-    if (!latest) {
-      return json({ ok: false, error: 'No data available yet' }, 404);
+    // 1️⃣ Load from your Blob store
+    const store = getStore();
+    let data = await store.get("tenders.json");
+    let items = [];
+
+    if (data) {
+      items = JSON.parse(data);
+
+      // Filter: remove expired tenders + unwanted sectors
+      const now = new Date();
+      items = items.filter(t => {
+        const deadline = t.deadline ? new Date(t.deadline) : null;
+        const isExpired = deadline && deadline < now;
+        const isOtherSector = (t.sector || "").toLowerCase().includes("other");
+        return !isExpired && !isOtherSector;
+      });
     }
-    return json(latest);
+
+    // 2️⃣ Trigger background refresh (non-blocking)
+    triggerBackgroundUpdate();
+
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        updatedAt: new Date().toISOString(),
+        count: items.length,
+        items
+      })
+    };
+
   } catch (err) {
-    console.error('latest function error:', err);
-    return json({ ok: false, error: err.message }, 500);
+    console.error("❌ latest.js fatal:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
 
-function json(obj, code = 200) {
-  return {
-    statusCode: code,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(obj)
-  };
+/* ---------- utils ---------- */
+import { createClient } from "@netlify/blobs";
+
+function getStore() {
+  const storeId = process.env.BLOBS_SITE_ID;
+  const token = process.env.BLOBS_TOKEN;
+  if (!storeId || !token) throw new Error("Missing BLOBS_SITE_ID or BLOBS_TOKEN");
+  return createClient({ siteID: storeId, token });
+}
+
+async function triggerBackgroundUpdate() {
+  try {
+    await fetch(`${process.env.URL}/.netlify/functions/update-tenders-background`);
+    console.log("Background update triggered");
+  } catch (err) {
+    console.error("Failed to trigger background update", err);
+  }
 }
