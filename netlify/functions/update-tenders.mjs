@@ -1,7 +1,7 @@
-// /.netlify/functions/update-tenders
+// /.netlify/functions/update-tenders — SCHEDULED CRAWLER (every 10 min)
 import { getStore } from '@netlify/blobs';
 
-const MAX_CF_PAGES_PER_RUN  = 6;
+const MAX_CF_PAGES_PER_RUN    = 6;   // keep under function time limit
 const MAX_FTS_BATCHES_PER_RUN = 5;
 
 const UA = {
@@ -25,7 +25,7 @@ export async function handler() {
     ]);
 
     const merged = dedupe([...cfBatch.items, ...ftsBatch.items, ...items])
-      .filter(filterFutureAndValid); // Apply deadline + sector filter
+      .filter(filterFutureAndValid);
 
     const payload = {
       updatedAt: new Date().toISOString(),
@@ -35,7 +35,7 @@ export async function handler() {
 
     const newState = {
       cfPage: cfBatch.nextPage || state.cfPage,
-      ftsCursor: ftsBatch.nextCursor || state.ftsCursor,
+      ftsCursor: ftsBatch.nextCursor || state.ftsCursor
     };
     await store.setJSON('state.json', newState);
 
@@ -57,23 +57,22 @@ export async function handler() {
   }
 }
 
-/* ---------- FILTERS ---------- */
+/* ---------- FILTERS: future deadlines only, skip "Other" sector ---------- */
 function filterFutureAndValid(item) {
-  if (!item.deadline) return false; // No deadline → ignore
-  const deadlineDate = new Date(item.deadline);
-  if (isNaN(deadlineDate) || deadlineDate < new Date()) return false; // Expired → ignore
-
-  if (item.sector && item.sector.toLowerCase().includes('other')) return false; // Skip "Other"
+  if (!item.deadline) return false;
+  const d = new Date(item.deadline);
+  if (isNaN(d) || d < new Date()) return false;
+  if (item.sector && item.sector.toLowerCase().includes('other')) return false;
   return true;
 }
 
-/* ---------- CF OCDS ---------- */
+/* ---------- CF OCDS (paged) ---------- */
 async function fetchCF_OCDS_Pages(startPage = 1, maxPages = 5) {
   const collected = [];
   let page = Math.max(1, parseInt(startPage, 10) || 1);
-  let fetchedPages = 0;
+  let fetched = 0;
 
-  while (fetchedPages < maxPages) {
+  while (fetched < maxPages) {
     const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?status=Open&order=desc&pageSize=100&page=${page}`;
     console.log('CF OCDS GET page', page);
     const res = await fetch(url, UA);
@@ -90,14 +89,13 @@ async function fetchCF_OCDS_Pages(startPage = 1, maxPages = 5) {
     if (!raw.length) break;
 
     collected.push(...raw.map(normalizeOCDSRelease).filter(Boolean));
-    page++;
-    fetchedPages++;
+    page++; fetched++;
   }
 
   return { items: collected, nextPage: page };
 }
 
-/* ---------- FTS OCDS Cursor ---------- */
+/* ---------- FTS OCDS (cursor) ---------- */
 async function fetchFTS_OCDS_Cursor(startCursor = '', maxBatches = 5) {
   const collected = [];
   const base = 'https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages';
@@ -127,8 +125,7 @@ async function fetchFTS_OCDS_Cursor(startCursor = '', maxBatches = 5) {
 
     const next = data.nextCursor || '';
     if (!next) { cursor = ''; break; }
-    cursor = next;
-    batches++;
+    cursor = next; batches++;
   }
 
   return { items: collected, nextCursor: cursor };
@@ -158,12 +155,12 @@ function normalizeOCDSRelease(r0) {
     || tender.items?.[0]?.deliveryLocation?.region
     || '';
 
+  const sector = tender.sector || r.sector || '';
+
   const noticeId = r.id || r.ocid || '';
   let url = noticeId
     ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(noticeId)}`
     : '';
-
-  const sector = tender.sector || r.sector || ''; // might be empty
 
   return {
     source: r.publisher?.name?.includes('Find a Tender') ? 'FTS' : 'CF',
