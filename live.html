@@ -1,173 +1,119 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Live Opportunities — Infrastructure Opportunities Dashboard</title>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Infrastructure Opportunities</title>
   <style>
-    :root {
-      --bg: #ffffff;
-      --text: #222222;
-      --muted: #6b7280;
-      --accent: #004d40;
-      --accent-light: #e0f2f1;
-      --border: #d1d5db;
-      --surface: #f9fafb;
-      --badge-rail: #1565c0;
-      --badge-highways: #ef6c00;
-      --badge-aviation: #00838f;
-      --badge-maritime: #01579b;
-      --badge-utilities: #6a1b9a;
-      --badge-other: #757575;
-    }
-
-    html, body {
-      background: var(--bg);
-      color: var(--text);
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
+      padding: 0;
     }
-
-    .wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
-
-    .page-title { margin: 0 0 4px; font-size: 2rem; font-weight: 600; }
-    .meta { margin: 0 0 16px; color: var(--muted); font-size: 0.95rem; }
-
-    /* Filter buttons */
-    .filters { margin-bottom: 16px; }
-    .filters button {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 12px;
-      margin-right: 8px;
-      font-size: 0.9rem;
-      cursor: pointer;
+    h1 {
+      text-align: center;
+      padding: 20px;
+      margin: 0;
     }
-    .filters button.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
+    #last-updated {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
     }
-
-    /* Table */
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    .table-container {
+      overflow-x: auto;
+      padding: 0 10px 20px;
     }
-    table { border-collapse: separate; border-spacing: 0; width: 100%; }
-    thead th {
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      border-bottom: 2px solid var(--border);
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background-color: white;
+      min-width: 800px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
       text-align: left;
-      padding: 12px 14px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    thead th.sort-asc::after { content: " ▲"; font-size: 0.8rem; color: var(--muted); }
-    thead th.sort-desc::after { content: " ▼"; font-size: 0.8rem; color: var(--muted); }
-
-    tbody td {
-      border-top: 1px solid var(--border);
-      padding: 10px 14px;
-      font-size: 0.95rem;
       vertical-align: top;
     }
-    tbody tr:nth-child(even) { background: #fafafa; }
-    tbody tr:hover { background: var(--accent-light); }
-    a { color: var(--accent); text-decoration: none; font-weight: 500; }
-    a:hover { text-decoration: underline; }
-
-    /* Badges */
-    .sector-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 0.75rem;
-      font-weight: 600;
+    th {
+      background-color: #333;
+      color: white;
       white-space: nowrap;
     }
-    .sector-rail { background: var(--badge-rail); }
-    .sector-highways { background: var(--badge-highways); }
-    .sector-aviation { background: var(--badge-aviation); }
-    .sector-maritime { background: var(--badge-maritime); }
-    .sector-utilities { background: var(--badge-utilities); }
-    .sector-other { background: var(--badge-other); }
-
-    /* Days left badges */
-    .days-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 0.75rem;
-      font-weight: 600;
-      white-space: nowrap;
+    td {
+      word-wrap: break-word;
     }
-    .days-urgent { background: #b91c1c; }
-    .days-soon { background: #f59e0b; }
-    .days-plenty { background: #15803d; }
-
-    .empty-message { margin: 16px 0 0; color: var(--muted); font-style: italic; }
-    #liveErrors { margin-top: 12px; color: #b00020; font-size: 0.9rem; }
-
-    @media (max-width: 900px) {
-      thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
-      thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    @media (max-width: 600px) {
+      table {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1 class="page-title">Live Opportunities</h1>
-    <p class="meta">
-      Last updated: <span id="lastUpdated">—</span>
-      | CF: <span id="cfCount">0</span>
-      | FTS: <span id="ftsCount">0</span>
-    </p>
-
-    <div class="filters">
-      <button data-sector="all" class="active">All</button>
-      <button data-sector="Rail">Rail</button>
-      <button data-sector="Highways">Highways</button>
-      <button data-sector="Aviation">Aviation</button>
-      <button data-sector="Maritime">Maritime</button>
-      <button data-sector="Utilities">Utilities</button>
-    </div>
-
-    <div class="table-wrap">
-      <div style="overflow-x: auto;">
-        <table id="opps-table">
-          <thead>
-            <tr>
-              <th data-sort="title">Title</th>
-              <th data-sort="organisation">Buyer</th>
-              <th data-sort="region">Region</th>
-              <th data-sort="deadline">Deadline</th>
-              <th data-sort="days">Days left</th>
-              <th data-sort="value">Estimated value</th>
-              <th data-sort="sector">Sector</th>
-              <th data-sort="source">Source</th>
-            </tr>
-          </thead>
-          <tbody id="live-opportunities"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="emptyMessage" class="empty-message" style="display:none;">
-      No matching opportunities found at this time.
-    </div>
+  <h1>Live Infrastructure Opportunities</h1>
+  <div id="last-updated">Last updated: --</div>
+  <div class="table-container">
+    <table id="opportunities-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Organisation</th>
+          <th>Source</th>
+          <th>Deadline</th>
+          <th>Region</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5">Loading...</td></tr>
+      </tbody>
+    </table>
   </div>
 
-  <script src="assets/live-client.js?v=10"></script>
+  <script>
+    async function loadOpportunities() {
+      try {
+        const res = await fetch('/.netlify/functions/latest');
+        const data = await res.json();
+        const tbody = document.querySelector('#opportunities-table tbody');
+        tbody.innerHTML = '';
+
+        if (data.updatedAt) {
+          document.getElementById('last-updated').textContent =
+            'Last updated: ' + new Date(data.updatedAt).toLocaleString();
+        }
+
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">No live tenders found</td></tr>';
+          return;
+        }
+
+        data.items.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><a href="${item.url}" target="_blank">${item.title || ''}</a></td>
+            <td>${item.organisation || ''}</td>
+            <td>${item.source || ''}</td>
+            <td>${item.deadline || ''}</td>
+            <td>${item.region || ''}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        document.querySelector('#opportunities-table tbody').innerHTML =
+          '<tr><td colspan="5">Error loading tenders</td></tr>';
+      }
+    }
+
+    loadOpportunities();
+    setInterval(loadOpportunities, 600000);
+  </script>
 </body>
 </html>
