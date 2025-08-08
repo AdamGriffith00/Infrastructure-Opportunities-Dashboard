@@ -1,15 +1,8 @@
 {
-  "name": "infrastructure-opportunities-dashboard",
-  "version": "1.0.0",
+  "name": "infrastructure-dashboard",
+  "private": true,
   "type": "module",
-  "scripts": {
-    "build": "echo 'No front-end build required'"
-  },
   "dependencies": {
-    "node-fetch": "^3.3.2",
-    "@netlify/blobs": "^6.5.0"
-  },
-  "engines": {
-    "node": ">=18"
+    "@netlify/blobs": "^6.0.0"
   }
 }
