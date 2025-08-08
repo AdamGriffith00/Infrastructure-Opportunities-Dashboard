@@ -1,8 +1,19 @@
 {
-  "name": "infrastructure-opportunities-dashboard",
-  "private": true,
+  "name": "infrastructure-opportunitites-dashboard",
+  "version": "1.0.0",
+  "description": "Fetches and stores tenders from Contracts Finder and Find a Tender into Netlify Blobs for dashboard display.",
+  "main": "netlify/functions/latest.js",
   "type": "module",
+  "scripts": {
+    "start": "netlify dev",
+    "build": "echo 'No build step required' && exit 0"
+  },
   "dependencies": {
-    "@netlify/blobs": "^6.5.0"
-  }
+    "@netlify/blobs": "^6.3.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
 }
