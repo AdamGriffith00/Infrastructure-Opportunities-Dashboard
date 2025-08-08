@@ -1,11 +1,18 @@
-// Read the most recent tender snapshot from Netlify Blobs and return it
-import { getStore } from '@netlify/blobs';
+// Reads the last snapshot written by update-tenders (store "tenders", key "latest.json")
+// Filters out expired deadlines and returns items sorted by soonest deadline.
+import { getStore as _getStore } from '@netlify/blobs';
+
+function getStore(name) {
+  const siteID = process.env.BLOBS_SITE_ID || 'PASTE_YOUR_SITE_ID';
+  const token  = process.env.BLOBS_TOKEN   || 'PASTE_YOUR_BLOBS_TOKEN';
+  return _getStore({ name, siteID, token });
+}
 
 export async function handler() {
   try {
-    const store = getStore({ name: 'tenders' });
+    const store = getStore('tenders');
 
-    // Prefer the typed getter; fall back to text+parse if needed
+    // Try typed read first, then fall back to text+parse if needed
     let data = await store.get('latest.json', { type: 'json' });
     if (!data) {
       const txt = await store.get('latest.json');
@@ -13,33 +20,29 @@ export async function handler() {
     }
 
     if (!data || !Array.isArray(data.items)) {
-      return {
-        statusCode: 200,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ updatedAt: null, items: [] })
-      };
+      return resp({ updatedAt: null, items: [] });
     }
 
-    // Sort by soonest deadline, keep future only (just in case)
+    // only future deadlines, sort by soonest
     const now = Date.now();
     const items = data.items
       .filter(i => i.deadline && !isNaN(Date.parse(i.deadline)) && Date.parse(i.deadline) >= now)
       .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
-    return {
-      statusCode: 200,
-      headers: {
-        'content-type': 'application/json',
-        'cache-control': 'no-store'
-      },
-      body: JSON.stringify({ updatedAt: data.updatedAt || new Date().toISOString(), items })
-    };
+    return resp({ updatedAt: data.updatedAt || new Date().toISOString(), items });
   } catch (err) {
-    console.error('latest.mjs error', err);
-    return {
-      statusCode: 500,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: err.message })
-    };
+    console.error('latest error', err);
+    return { statusCode: 500, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ error: err.message }) };
   }
+}
+
+function resp(body) {
+  return {
+    statusCode: 200,
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'no-store'
+    },
+    body: JSON.stringify(body)
+  };
 }
