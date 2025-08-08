@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 
 export const handler = async () => {
   try {
-    // 1. Fetch both sources
+    // 1. Fetch both sources (100 results each)
     const cfResults = await fetchContractsFinder();
     const ftsResults = await fetchFindATender();
 
@@ -50,7 +50,7 @@ export const handler = async () => {
 // Fetch from Contracts Finder
 // ------------------------------
 async function fetchContractsFinder() {
-  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?order=desc&size=50&status=Open`;
+  const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?order=desc&size=100&status=Open`;
   const res = await fetch(url);
   if (!res.ok) {
     console.error(`CF API error: ${res.status}`);
@@ -64,7 +64,7 @@ async function fetchContractsFinder() {
 // Fetch from Find a Tender
 // ------------------------------
 async function fetchFindATender() {
-  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?order=desc&size=50&status=Open`;
+  const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?order=desc&size=100&status=Open`;
   const res = await fetch(url);
   if (!res.ok) {
     console.error(`FTS API error: ${res.status}`);
@@ -108,15 +108,20 @@ function formatFTS(item) {
 }
 
 // ------------------------------
-// Sector filter with synonyms
+// Sector filter with synonyms + buyer names
 // ------------------------------
 function applyFilters(items) {
   const keywords = [
+    // Rail
     'rail', 'railway', 'station', 'network rail',
-    'highway', 'road', 'bridge', 'highways england',
-    'aviation', 'airport', 'runway', 'terminal',
-    'maritime', 'port', 'dock', 'harbour', 'harbor',
-    'utilities', 'water', 'wastewater', 'gas', 'telecom'
+    // Highways
+    'highway', 'road', 'bridge', 'highways england', 'national highways',
+    // Aviation
+    'aviation', 'airport', 'runway', 'terminal', 'heathrow', 'gatwick', 'manchester airport',
+    // Maritime
+    'maritime', 'port', 'dock', 'harbour', 'harbor', 'abp', 'associated british ports',
+    // Utilities
+    'utilities', 'water', 'wastewater', 'gas', 'telecom', 'electricity', 'severn trent', 'thames water'
   ];
   return items.filter(i => {
     const haystack = `${i.title} ${i.organisation}`.toLowerCase();
