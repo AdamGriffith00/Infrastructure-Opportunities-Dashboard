@@ -2,9 +2,12 @@ export async function handler() {
   try {
     let allItems = [];
 
-    // Core government sources
+    // Fetch from core government sources
     const cfResults = await fetchContractsFinder();
+    console.log(`CF items: ${cfResults.length}`);
+
     const ftsResults = await fetchFindATender();
+    console.log(`FTS items: ${ftsResults.length}`);
 
     // National Highways split from CF
     const nhResults = cfResults.filter(r =>
@@ -13,12 +16,13 @@ export async function handler() {
     const cfWithoutNH = cfResults.filter(r =>
       !(r.organisation || "").toLowerCase().includes("national highways")
     );
+    console.log(`National Highways items: ${nhResults.length}`);
 
     // Other live sources
-    const scotWaterResults = await fetchScottishWater();
-    const s2wResults = await fetchSell2Wales();
-    const tfgmResults = await fetchTfGM();
-    const magResults = await fetchMAG();
+    const scotWaterResults = await safeFetch(fetchScottishWater, "Scottish Water");
+    const s2wResults = await safeFetch(fetchSell2Wales, "Sell2Wales");
+    const tfgmResults = await safeFetch(fetchTfGM, "TfGM");
+    const magResults = await safeFetch(fetchMAG, "MAG");
 
     // Merge all
     allItems = [
@@ -45,7 +49,6 @@ export async function handler() {
       statusCode: 200,
       body: JSON.stringify({
         updatedAt: new Date().toISOString(),
-        totalCount: allItems.length,
         items: allItems
       })
     };
@@ -58,7 +61,7 @@ export async function handler() {
 // ---------------- Core fetchers ----------------
 async function fetchContractsFinder() {
   try {
-    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?order=desc&size=100&status=Open`;
+    const url = `https://www.contractsfinder.service.gov.uk/Published/Notices/Search?status=Open&order=desc&pageSize=50`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -79,7 +82,7 @@ async function fetchContractsFinder() {
 
 async function fetchFindATender() {
   try {
-    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?order=desc&size=100&status=Open`;
+    const url = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?status=Open&size=50&order=desc`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -99,89 +102,68 @@ async function fetchFindATender() {
 }
 
 async function fetchScottishWater() {
-  try {
-    const url = `https://publiccontractsscotland.scot/api/NoticeSearch?keyword=Scottish%20Water`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.notices || []).map(n => ({
-      source: "Scottish Water",
-      title: n.title,
-      organisation: n.organisationName || "Scottish Water",
-      region: "Scotland",
-      deadline: n.deadlineDate,
-      url: n.noticeUrl
-    }));
-  } catch {
-    return [];
-  }
+  const url = `https://publiccontractsscotland.scot/api/NoticeSearch?keyword=Scottish%20Water`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.notices || []).map(n => ({
+    source: "Scottish Water",
+    title: n.title,
+    organisation: n.organisationName || "Scottish Water",
+    region: "Scotland",
+    deadline: n.deadlineDate,
+    url: n.noticeUrl
+  }));
 }
 
 async function fetchSell2Wales() {
-  try {
-    const url = `https://www.sell2wales.gov.wales/api/searchnotices?keyword=utilities`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.notices || []).map(n => ({
-      source: "Sell2Wales",
-      title: n.title,
-      organisation: n.organisationName,
-      region: "Wales",
-      deadline: n.deadlineDate,
-      url: n.noticeUrl
-    }));
-  } catch {
-    return [];
-  }
+  const url = `https://www.sell2wales.gov.wales/api/searchnotices?keyword=utilities`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.notices || []).map(n => ({
+    source: "Sell2Wales",
+    title: n.title,
+    organisation: n.organisationName,
+    region: "Wales",
+    deadline: n.deadlineDate,
+    url: n.noticeUrl
+  }));
 }
 
-// ---------------- Simple HTML scrapers ----------------
 async function fetchTfGM() {
-  try {
-    const url = `https://procontract.due-north.com/Advert?advertId=&fromAdvert=true&SearchString=tfGM`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const html = await res.text();
-
-    // Simple regex to find links + titles
-    const matches = [...html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?Deadline:(.*?)</g)];
-    return matches.map(m => ({
-      source: "TfGM",
-      title: m[2].trim(),
-      organisation: "Transport for Greater Manchester",
-      region: "England",
-      deadline: m[3] ? m[3].trim() : "",
-      url: m[1].startsWith("http") ? m[1] : `https://procontract.due-north.com${m[1]}`
-    }));
-  } catch {
-    return [];
-  }
+  const url = `https://procontract.due-north.com/Advert?advertId=&fromAdvert=true&SearchString=tfGM`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const html = await res.text();
+  const matches = [...html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?Deadline:(.*?)</g)];
+  return matches.map(m => ({
+    source: "TfGM",
+    title: m[2].trim(),
+    organisation: "Transport for Greater Manchester",
+    region: "England",
+    deadline: m[3] ? m[3].trim() : "",
+    url: m[1].startsWith("http") ? m[1] : `https://procontract.due-north.com${m[1]}`
+  }));
 }
 
 async function fetchMAG() {
-  try {
-    const url = `https://www.magairports.com/current-opportunities/`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const html = await res.text();
-
-    // Simple regex for table rows with a link
-    const matches = [...html.matchAll(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?Closing Date:?<\/strong>([^<]+)/gi)];
-    return matches.map(m => ({
-      source: "MAG",
-      title: m[2].trim(),
-      organisation: "Manchester Airports Group",
-      region: "England",
-      deadline: m[3] ? m[3].trim() : "",
-      url: m[1].startsWith("http") ? m[1] : `https://www.magairports.com${m[1]}`
-    }));
-  } catch {
-    return [];
-  }
+  const url = `https://www.magairports.com/current-opportunities/`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const html = await res.text();
+  const matches = [...html.matchAll(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?Closing Date:?<\/strong>([^<]+)/gi)];
+  return matches.map(m => ({
+    source: "MAG",
+    title: m[2].trim(),
+    organisation: "Manchester Airports Group",
+    region: "England",
+    deadline: m[3] ? m[3].trim() : "",
+    url: m[1].startsWith("http") ? m[1] : `https://www.magairports.com${m[1]}`
+  }));
 }
 
-// ---------------- Utils ----------------
+// ---------------- Helpers ----------------
 function dedupe(arr) {
   const seen = new Set();
   return arr.filter(item => {
@@ -190,4 +172,15 @@ function dedupe(arr) {
     seen.add(key);
     return true;
   });
+}
+
+async function safeFetch(fn, name) {
+  try {
+    const result = await fn();
+    console.log(`${name} items: ${result.length}`);
+    return result;
+  } catch (err) {
+    console.error(`${name} fetch failed:`, err);
+    return [];
+  }
 }
