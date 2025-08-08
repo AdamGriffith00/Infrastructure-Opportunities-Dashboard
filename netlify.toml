@@ -1,7 +1,15 @@
-[functions."update-tenders-background"]
-  schedule = "0 */3 * * *" # every 3 hours UTC
+[functions]
+  directory = "netlify/functions"
 
+# Scheduled run: 9 AM UK time (08:00 UTC during winter, 07:00 UTC during summer)
 [[functions."update-tenders-background".schedule]]
-  cron = "0 9 * * *" # 9 AM UK winter (UTC)
-[[functions."update-tenders-background".schedule]]
-  cron = "0 8 * * *" # 9 AM UK summer (UTC+1)
+  cron = "0 9 * * *"
+
+# Build settings
+[build]
+  publish = "public"
+  command = "npm install && npm run build"
+
+# Environment for Node fetch + blobs
+[functions.environment]
+  NODE_VERSION = "18"
