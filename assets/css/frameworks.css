@@ -1,0 +1,35 @@
+.fw-controls { display:flex; gap:12px; align-items:center; margin:12px 0; }
+.fw-input { border:1px solid #E5E7EB; border-radius:8px; padding:8px 10px; }
+.fw-time { margin-left:auto; font-size:12px; color:#6B7280; }
+
+.fw-table-wrap { overflow-x:auto; border:1px solid #E5E7EB; border-radius:12px; }
+.fw-table { width:100%; border-collapse:collapse; font-size:14px; }
+.fw-table thead { background:#F9FAFB; }
+.fw-table th, .fw-table td { text-align:left; padding:12px; border-bottom:1px solid #F3F4F6; }
+
+.fw-name { font-weight:600; }
+.fw-bold { font-weight:600; }
+.muted { color:#6B7280; font-size:12px; }
+.chip { display:inline-block; padding:2px 8px; border:1px solid #E5E7EB; border-radius:999px; font-size:12px; background:#F3F4F6; }
+.plain { margin:0; padding-left:16px; }
+
+.btn { background:#111827; color:#fff; border:1px solid #111827; border-radius:8px; padding:8px 12px; cursor:pointer; }
+.btn-secondary { background:#fff; color:#111827; border:1px solid #D1D5DB; border-radius:8px; padding:6px 10px; cursor:pointer; }
+
+.fw-modal { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:50; }
+.fw-modal-card { width:min(900px, 92vw); max-height:90vh; overflow:auto; background:#fff; border-radius:12px; border:1px solid #E5E7EB; padding:16px; }
+.fw-modal-head { display:flex; justify-content:space-between; align-items:center; }
+.fw-kicker { font-size:12px; color:#6B7280; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+.lab { display:block; font-weight:600; margin-bottom:6px; }
+.counter { display:inline-flex; align-items:center; gap:8px; }
+.scoreband { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid #E5E7EB; border-radius:8px; margin:12px 0; }
+.scoreband.good { background:#DCFCE7; } .scoreband.ok { background:#FEF9C3; } .scoreband.bad { background:#FEE2E2; }
+.score { font-size:28px; font-weight:700; }
+.cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.card { border:1px solid #E5E7EB; border-radius:8px; padding:12px; background:#F9FAFB; }
+.card-title { font-weight:700; margin-bottom:8px; }
+
+@media (max-width: 900px) {
+  .grid, .cards { grid-template-columns:1fr; }
+}
