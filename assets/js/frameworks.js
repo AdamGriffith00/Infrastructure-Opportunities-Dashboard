@@ -59,8 +59,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const lastRef = $("fw-lastref");
   const modalEl = $("fw-modal");
 
-  // keep modal closed on load
+  // keep modal closed on load (belt & braces)
+if (modalEl) {
   modalEl.hidden = true;
+  modalEl.setAttribute("aria-hidden", "true");
+  modalEl.style.display = "none";   // extra guard in case of weird CSS
+}
+function closeWizard() {
+  if (!modalEl) return;
+  modalEl.hidden = true;
+  modalEl.setAttribute("aria-hidden", "true");
+  modalEl.style.display = "none";
+}
+function openWizardShell() {
+  if (!modalEl) return;
+  modalEl.hidden = false;
+  modalEl.removeAttribute("aria-hidden");
+  modalEl.style.display = "block";
+}
 
   // ---------- Star helpers ----------
   const STAR_KEY = "fw_starred";
