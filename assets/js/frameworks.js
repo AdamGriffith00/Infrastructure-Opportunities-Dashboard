@@ -1,4 +1,4 @@
-// Frameworks (Compact List) + Detail Drawer + Stepper Wizard + Export
+// Frameworks (Compact List) + Yellow Star + Starred Count + Drawer + Stepper Wizard
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("frameworks-root");
   if (!root) return;
@@ -11,7 +11,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <option>All</option><option>Aviation</option><option>Utilities</option>
         <option>Maritime & Ports</option><option>Highways</option><option>Rail</option>
       </select>
+
       <label class="fw-check"><input type="checkbox" id="fw-starred-only"/> Show starred only</label>
+      <span class="fw-star-count" id="fw-star-count">⭐ 0</span>
+
       <span class="fw-time">Last refreshed: <span id="fw-lastref">—</span></span>
     </div>
 
@@ -75,8 +78,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const search = $("fw-search");
   const sectorSel = $("fw-sector");
   const starredOnly = $("fw-starred-only");
+  const starCount = $("fw-star-count");
   const errorBox = $("fw-error");
   const lastRef = $("fw-lastref");
+
+  // ---------- Stars ----------
+  const STAR_KEY = "fw_starred";
+  function getStarMap(){ try { return JSON.parse(localStorage.getItem(STAR_KEY) || "{}"); } catch { return {}; } }
+  function setStarMap(map){ localStorage.setItem(STAR_KEY, JSON.stringify(map)); }
+  function isStarred(id){ return !!getStarMap()[id]; }
+  function updateStarBadge(allRows){
+    const map = getStarMap();
+    const ids = new Set((allRows || []).map(r=>r.id));
+    let count = 0;
+    for (const k of Object.keys(map)){ if (ids.has(k)) count++; }
+    starCount.textContent = `⭐ ${count}`;
+  }
 
   // ---------- Drawer ----------
   const drawerEl = $("fw-drawer");
@@ -211,8 +228,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ]},
     { id:"compliance", title:"Compliance & Logistics", fields:[
       { id:"local_commit", type:"boolean", label:"Can meet locality/social value commitments?" },
-      { id:"governance", type:"boolean", label:"Governance readiness (NEC, reporting, assurance)?" },
-      { id:"bid_setup", type:"select", label:"Submission logistics", options:["Ready","Needs setup"] }
+      { id:"governance",   type:"boolean", label:"Governance readiness (NEC, reporting, assurance)?" },
+      { id:"bid_setup",    type:"select",  label:"Submission logistics", options:["Ready","Needs setup"] }
     ]}
   ];
 
@@ -352,11 +369,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
 
-  // ---------- Stars (optional — for future) ----------
-  const STAR_KEY = "fw_starred";
-  function getStarMap(){ try { return JSON.parse(localStorage.getItem(STAR_KEY) || "{}"); } catch { return {}; } }
-  function isStarred(id){ return !!getStarMap()[id]; }
-
   // ---------- Data load ----------
   async function load() {
     const params = new URLSearchParams();
@@ -368,9 +380,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!r.ok) throw new Error(`frameworks returned ${r.status}`);
       const rows = await r.json();
       lastRef.textContent = new Date().toLocaleString();
+      updateStarBadge(rows);
       renderTable(rows);
     } catch (e) {
       renderTable([]);
+      updateStarBadge([]);
       errorBox.textContent = `Error loading frameworks: ${e.message}`;
       errorBox.style.display = "block";
     }
@@ -383,7 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function fmtDate(d){ return d ? new Date((d.length>10?d:d+"T00:00:00Z")).toLocaleDateString() : "—"; }
 
-  // ---------- Compact table renderer ----------
+  // ---------- Compact table renderer (with yellow star) ----------
   function renderTable(rows){
     const filtered = starredOnly.checked ? rows.filter((r)=>isStarred(r.id)) : rows;
     tbody.innerHTML = "";
@@ -391,11 +405,16 @@ document.addEventListener("DOMContentLoaded", () => {
       tbody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:16px">No frameworks found</td></tr>`;
       return;
     }
+
+    const starMap = getStarMap();
+
     filtered.forEach((r)=>{
       const tr = document.createElement("tr");
+      const starred = !!starMap[r.id];
       tr.innerHTML = `
         <td>
-          <div class="fw-name"><a href="#" data-open="${r.id}">${r.name}</a></div>
+          <button class="fw-star ${starred ? "active" : ""}" aria-label="Star" title="Star" data-star="${r.id}">★</button>
+          <span class="fw-name"><a href="#" data-open="${r.id}">${r.name}</a></span>
           <div class="muted">${r.client || ""} · ${r.sector || ""} · ${r.region || ""} · ${moneyText(r.value)}</div>
           ${r.source_url ? `<a class="muted" href="${r.source_url}" target="_blank" rel="noreferrer">Source</a>` : ""}
         </td>
@@ -421,6 +440,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = btn.getAttribute("data-analyse");
         const fr = filtered.find(x=>x.id===id) || {};
         openWizard(fr);
+      });
+    });
+    tbody.querySelectorAll("button[data-star]").forEach((btn)=>{
+      btn.addEventListener("click",()=>{
+        const id = btn.getAttribute("data-star");
+        const map = getStarMap();
+        if (map[id]) delete map[id]; else map[id] = true;
+        setStarMap(map);
+        load(); // re-render + refresh badge
       });
     });
   }
