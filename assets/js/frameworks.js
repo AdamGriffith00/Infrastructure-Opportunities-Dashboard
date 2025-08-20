@@ -1,5 +1,5 @@
 // Frameworks table + Bid Analyser wizard + DOCX export
-// Includes: ⭐ starring (localStorage), "Show starred only", click name to Analyse
+// Features: ⭐ starring (localStorage), "Show starred only", click name to Analyse
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("frameworks-root");
   if (!root) return;
@@ -57,6 +57,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const starredOnly = $("fw-starred-only");
   const errorBox = $("fw-error");
   const lastRef = $("fw-lastref");
+  const modalEl = $("fw-modal");
+
+  // Keep modal closed on load (guard against any stray openings)
+  modalEl.hidden = true;
 
   // ---------- Star helpers ----------
   const STAR_KEY = "fw_starred";
@@ -174,10 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     tbody.querySelectorAll("button[data-analyse]").forEach((btn) => btn.addEventListener("click", () => open(btn)));
     tbody.querySelectorAll(".fw-analyse-link").forEach((a) =>
-      a.addEventListener("click", (e) => {
-        e.preventDefault();
-        open(a);
-      })
+      a.addEventListener("click", (e) => { e.preventDefault(); open(a); })
     );
   }
 
@@ -217,24 +218,24 @@ document.addEventListener("DOMContentLoaded", () => {
   function openWizard(fr) {
     __currentFramework = fr;
 
-    const modal = $("fw-modal");
-    const wizTitle = $("wiz-title");
-    const wizKicker = $("wiz-kicker");
-    const wizSteps = $("wiz-steps");
-    const wizResults = $("wiz-results");
-    const wizBack = $("wiz-back");
-    const wizNext = $("wiz-next");
-    const wizGen = $("wiz-generate");
-    const wizProg = $("wiz-progress");
-
+    // reset wizard state every time the modal opens
     let answers = {};
     let stepIdx = 0;
+
+    const wizTitle   = $("wiz-title");
+    const wizKicker  = $("wiz-kicker");
+    const wizSteps   = $("wiz-steps");
+    const wizResults = $("wiz-results");
+    const wizBack    = $("wiz-back");
+    const wizNext    = $("wiz-next");
+    const wizGen     = $("wiz-generate");
+    const wizProg    = $("wiz-progress");
 
     wizTitle.textContent = fr.name;
     wizKicker.textContent = `Bid Analyser · ${fr.sector}`;
     wizResults.hidden = true;
     wizSteps.innerHTML = "";
-    modal.hidden = false;
+    modalEl.hidden = false;
 
     function renderStep() {
       wizResults.hidden = true;
@@ -243,60 +244,53 @@ document.addEventListener("DOMContentLoaded", () => {
       wizProg.textContent = `${stepIdx + 1} / ${steps.length}`;
       wizSteps.innerHTML =
         `<h4>${s.title}</h4><div class="grid">` +
-        s.fields
-          .map((f) => {
-            const val = answers[f.id] ?? "";
-            if (f.type === "counter") {
-              return `<div><label class="lab">${f.label}</label>
-                <div class="counter">
-                  <button class="btn-secondary" data-minus="${f.id}">−</button>
-                  <span class="count" id="count-${f.id}">${val || 0}</span>
-                  <button class="btn-secondary" data-plus="${f.id}">+</button>
-                </div>
-              </div>`;
-            }
-            if (f.type === "boolean") {
-              return `<div><label class="lab">${f.label}</label>
-                <select class="fw-input" data-id="${f.id}">
-                  <option value="">Select…</option>
-                  <option ${val === true ? "selected" : ""}>Yes</option>
-                  <option ${val === false ? "selected" : ""}>No</option>
-                </select>
-              </div>`;
-            }
-            if (f.type === "checkbox") {
-              return `<div><label class="lab">${f.label}</label>
-                <div class="chips">${(f.options || [])
-                  .map(
-                    (o) => `<label class="chip-opt">
-                      <input type="checkbox" data-check="${f.id}" value="${o}" ${(Array.isArray(val) && val.includes(o)) ? "checked" : ""}/> ${o}
-                    </label>`
-                  )
-                  .join("")}</div></div>`;
-            }
-            if (f.type === "select") {
-              return `<div><label class="lab">${f.label}</label>
-                <select class="fw-input" data-id="${f.id}">
-                  <option value="">Select…</option>
-                  ${(f.options || []).map((o) => `<option ${val === o ? "selected" : ""}>${o}</option>`).join("")}
-                </select>
-              </div>`;
-            }
+        s.fields.map((f) => {
+          const val = answers[f.id] ?? "";
+          if (f.type === "counter") {
             return `<div><label class="lab">${f.label}</label>
-              <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder || ""}">${val || ""}</textarea></div>`;
-          })
-          .join("") +
-        `</div>`;
+              <div class="counter">
+                <button class="btn-secondary" data-minus="${f.id}">−</button>
+                <span class="count" id="count-${f.id}">${val || 0}</span>
+                <button class="btn-secondary" data-plus="${f.id}">+</button>
+              </div>
+            </div>`;
+          }
+          if (f.type === "boolean") {
+            return `<div><label class="lab">${f.label}</label>
+              <select class="fw-input" data-id="${f.id}">
+                <option value="">Select…</option>
+                <option ${val === true ? "selected" : ""}>Yes</option>
+                <option ${val === false ? "selected" : ""}>No</option>
+              </select>
+            </div>`;
+          }
+          if (f.type === "checkbox") {
+            return `<div><label class="lab">${f.label}</label>
+              <div class="chips">${(f.options || [])
+                .map((o) => `<label class="chip-opt">
+                  <input type="checkbox" data-check="${f.id}" value="${o}" ${(Array.isArray(val) && val.includes(o)) ? "checked" : ""}/> ${o}
+                </label>`).join("")}</div></div>`;
+          }
+          if (f.type === "select") {
+            return `<div><label class="lab">${f.label}</label>
+              <select class="fw-input" data-id="${f.id}">
+                <option value="">Select…</option>
+                ${(f.options || []).map((o) => `<option ${val === o ? "selected" : ""}>${o}</option>`).join("")}
+              </select>
+            </div>`;
+          }
+          return `<div><label class="lab">${f.label}</label>
+            <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder || ""}">${val || ""}</textarea></div>`;
+        }).join("") + `</div>`;
 
-      // counters & inputs
+      // counter & input handlers
       wizSteps.querySelectorAll("[data-minus]").forEach((b) => {
         b.addEventListener("click", () => {
           const id = b.getAttribute("data-minus");
           const span = document.getElementById(`count-${id}`);
           const curr = +(span.textContent || 0);
           const next = Math.max(0, curr - 1);
-          span.textContent = next;
-          answers[id] = next;
+          span.textContent = next; answers[id] = next;
         });
       });
       wizSteps.querySelectorAll("[data-plus]").forEach((b) => {
@@ -305,15 +299,14 @@ document.addEventListener("DOMContentLoaded", () => {
           const span = document.getElementById(`count-${id}`);
           const curr = +(span.textContent || 0);
           const next = curr + 1;
-          span.textContent = next;
-          answers[id] = next;
+          span.textContent = next; answers[id] = next;
         });
       });
       wizSteps.querySelectorAll("[data-id]").forEach((el) => {
         el.addEventListener("change", () => {
           const id = el.getAttribute("data-id");
           let v = el.value;
-          if (el.tagName === "SELECT" && (v === "Yes" || v === "No")) v = v === "Yes";
+          if (el.tagName === "SELECT" && (v === "Yes" || v === "No")) v = (v === "Yes");
           answers[id] = v;
         });
       });
@@ -327,13 +320,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       wizBack.hidden = stepIdx === 0;
       wizNext.hidden = stepIdx === steps.length - 1;
-      wizGen.hidden = !wizNext.hidden;
+      wizGen.hidden  = !wizNext.hidden;
     }
 
-    wizBack.onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
-    wizNext.onclick = () => { if (stepIdx < steps.length - 1) { stepIdx++; renderStep(); } };
-    wizGen.onclick = async () => {
-      wizGen.disabled = true; wizGen.textContent = "Generating…";
+    // footer actions
+    $("wiz-back").onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
+    $("wiz-next").onclick = () => { if (stepIdx < steps.length - 1) { stepIdx++; renderStep(); } };
+    $("wiz-generate").onclick = async () => {
+      $("wiz-generate").disabled = true; $("wiz-generate").textContent = "Generating…";
       const r = await fetch("/.netlify/functions/bid-analyser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -341,13 +335,16 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const data = await r.json();
       renderResults(data);
-      wizBack.hidden = true;
-      wizGen.hidden = true;
+      $("wiz-back").hidden = true;
+      $("wiz-generate").hidden = true;
     };
+
+    // render first step only when opening
+    renderStep();
 
     function renderResults(data) {
       __lastResult = data;
-      wizProg.textContent = "Assessment ready";
+      $("wiz-progress").textContent = "Assessment ready";
       wizSteps.hidden = true;
       const wr = $("wiz-results");
       wr.hidden = false;
@@ -369,14 +366,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const exp = document.getElementById("wiz-export");
       if (exp) exp.onclick = () => exportDocx();
     }
-
-    $("wiz-close").onclick = () => { $("fw-modal").hidden = true; };
-
-    // first step
-    renderStep();
   }
 
-  // ---------- Export helper (inside scope so it sees current state) ----------
+  // Close modal controls (backdrop + X + Esc)
+  modalEl.addEventListener("click", (e) => { if (e.target.id === "fw-modal") modalEl.hidden = true; });
+  $("wiz-close").onclick = () => { modalEl.hidden = true; };
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") modalEl.hidden = true; });
+
+  // ---------- Export helper ----------
   async function exportDocx() {
     const fr = __currentFramework || {};
     const r = await fetch("/.netlify/functions/export-docx", {
