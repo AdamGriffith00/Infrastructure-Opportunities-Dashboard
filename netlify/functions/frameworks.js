@@ -1,5 +1,6 @@
-const path = require("path");
-const fs = require("fs");
+// ESM version compatible with "type": "module"
+import fs from "node:fs";
+import path from "node:path";
 
 function daysUntil(iso) {
   const d = new Date(iso + "T00:00:00Z").getTime();
@@ -7,12 +8,14 @@ function daysUntil(iso) {
   return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   try {
     const q = event.queryStringParameters?.q?.toLowerCase() || "";
     const sector = event.queryStringParameters?.sector;
+
     const file = path.join(process.cwd(), "data", "frameworks.json");
-    const json = JSON.parse(fs.readFileSync(file, "utf8"));
+    const raw = fs.readFileSync(file, "utf8");
+    const json = JSON.parse(raw);
 
     let rows = json;
     if (sector && sector !== "All") rows = rows.filter(r => r.sector === sector);
