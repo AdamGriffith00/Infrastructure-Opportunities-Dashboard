@@ -1,0 +1,28 @@
+[
+  {
+    "id": "spats3",
+    "name": "SPaTS3 – Specialist Professional & Technical Services",
+    "client": "National Highways",
+    "sector": "Highways",
+    "region": "England · National",
+    "value": { "amount": 495000000, "currency": "GBP", "is_estimate": false },
+    "position": { "role": "Partner", "rationale": "Independent commercial & programme assurance for multi-lot call-offs." },
+    "expected_award_date": "2031-06-30",
+    "key_dates": [{ "name": "Supplier Day", "date": "2025-10-15", "link": "" }],
+    "incumbents": ["Multiple primes"],
+    "competition_watch": ["Tier 1 designers & advisors"],
+    "key_people": [{ "name": "Procurement Lead", "title": "Director of Procurement", "org": "National Highways", "contact_url": "" }],
+    "recruitment": [
+      { "title":"Senior Project Manager – Highways","skills":["Programme","NEC"],"target":1,"status":"open" },
+      { "title":"Project Controls Lead","skills":["Schedule","Risk","Reporting"],"target":1,"status":"open" }
+    ],
+    "bid_analysis": [
+      "Lead cost certainty via robust estimating, benchmarking and change control.",
+      "Programme assurance across multi-lot portfolios with clear governance.",
+      "Show highways renewals case studies with measurable time/cost outcomes.",
+      "Core services: Cost Management, Project Management, Project Controls, Programme Advisory."
+    ],
+    "source_url": "",
+    "last_verified": "2025-08-01"
+  }
+]
