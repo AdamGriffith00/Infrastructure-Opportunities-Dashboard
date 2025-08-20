@@ -73,7 +73,7 @@ function closeWizard() {
 }
 function openWizardShell() {
   if (!modalEl) return;
-  modalEl.hidden = false;
+  openWizardShell();
   modalEl.removeAttribute("aria-hidden");
   modalEl.style.display = "block";
 }
