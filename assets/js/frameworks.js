@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderStep(); // first step when modal opens (sets controls)
 
-    // --- Export helper (now inside scope so it sees current state) ---
+        // --- Export helper (inside scope so it sees current state) ---
     async function exportDocx(){
       const fr = __currentFramework || {};
       const r = await fetch("/.netlify/functions/export-docx", {
@@ -363,7 +363,9 @@ document.addEventListener("DOMContentLoaded", () => {
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({
           framework: {
-            name: fr.name, sector: fr.sector, client: fr.client,
+            name: fr.name,
+            sector: fr.sector,
+            client: fr.client,
             expected_award_date: fr.expected_award_date
           },
           result: __lastResult
@@ -375,9 +377,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const a = document.createElement("a");
       a.href = url;
       a.download = `${(fr.name||"Bid_Assessment").replace(/[^\w]+/g, "_")}_Bid_Assessment.docx`;
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     }
 
-  });// DOMContentLoaded end
-
-});
+  }); // <-- THIS is the only closing brace/paren you need
