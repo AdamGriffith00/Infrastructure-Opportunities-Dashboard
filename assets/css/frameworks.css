@@ -30,6 +30,11 @@
 .fw-input:focus{ border-color:var(--charcoal); box-shadow:0 0 0 3px rgba(60,60,60,.1); }
 .fw-time{ margin-left:auto; color:var(--muted); font-size:.9rem; }
 .fw-check{ display:flex; align-items:center; gap:.45rem; color:var(--ink); font-size:.95rem; }
+.fw-star-count{
+  display:inline-flex; align-items:center; gap:.35rem;
+  border:1px solid var(--line); border-radius:999px; padding:.35rem .6rem;
+  background:#fff; font-weight:700; color:#111;
+}
 
 /* ---------- Compact Table ---------- */
 .fw-table-wrap{
@@ -68,6 +73,20 @@
 .btn:disabled{ opacity:.6; cursor:not-allowed; }
 .btn-secondary{ background:#fff; border-color:var(--line); color:#111; }
 .btn-secondary:hover{ background:#f9fafb; }
+
+/* ---------- Stars ---------- */
+.fw-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #d1d5db; /* default gray */
+  vertical-align: middle;
+  margin-right: 6px;
+  transition: color .2s;
+}
+.fw-star:hover { color: #999; }
+.fw-star.active { color: var(--gleeds-yellow); }
 
 /* ---------- Modal (Wizard) ---------- */
 .fw-modal{
