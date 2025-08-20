@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const lastRef = $("fw-lastref");
   const modalEl = $("fw-modal");
 
-  // Keep modal closed on load (guard against any stray openings)
+  // keep modal closed on load
   modalEl.hidden = true;
 
   // ---------- Star helpers ----------
@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // ---------- Wizard ----------
+  // ---------- Wizard config ----------
   const steps = [
     { id: "capability", title: "Capability & Capacity", fields: [
       { id: "qs_count",     type: "counter", label: "Cost Managers (QS) with sector experience" },
@@ -215,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let __lastResult = null;
   let __currentFramework = null;
 
+  // ---------- UPDATED openWizard ----------
   function openWizard(fr) {
     __currentFramework = fr;
 
@@ -231,17 +232,47 @@ document.addEventListener("DOMContentLoaded", () => {
     const wizGen     = $("wiz-generate");
     const wizProg    = $("wiz-progress");
 
-    wizTitle.textContent = fr.name;
-    wizKicker.textContent = `Bid Analyser · ${fr.sector}`;
+    wizTitle.textContent = fr.name || "Selected framework";
+    wizKicker.textContent = `Bid Analyser · ${fr.sector || "Infrastructure"}`;
     wizResults.hidden = true;
+    wizSteps.hidden = false;
     wizSteps.innerHTML = "";
     modalEl.hidden = false;
 
+    // minimal fallback if steps missing
+    if (!Array.isArray(steps) || steps.length === 0) {
+      wizSteps.innerHTML = `<h4>Capability & Capacity</h4>
+        <div class="grid">
+          <div><label class="lab">Cost Managers (QS) with sector experience</label>
+            <div class="counter">
+              <button class="btn-secondary" data-minus="qs_count">−</button>
+              <span class="count" id="count-qs_count">0</span>
+              <button class="btn-secondary" data-plus="qs_count">+</button>
+            </div>
+          </div>
+        </div>`;
+      wizBack.hidden = true; wizNext.hidden = true; wizGen.hidden = false;
+      wizProg.textContent = "1 / 1";
+      wizSteps.querySelector("[data-minus]").addEventListener("click", ()=>{
+        const span = document.getElementById("count-qs_count");
+        span.textContent = Math.max(0, (+span.textContent||0) - 1);
+        answers.qs_count = +span.textContent;
+      });
+      wizSteps.querySelector("[data-plus]").addEventListener("click", ()=>{
+        const span = document.getElementById("count-qs_count");
+        span.textContent = (+span.textContent||0) + 1;
+        answers.qs_count = +span.textContent;
+      });
+    }
+
     function renderStep() {
+      const s = steps[stepIdx];
+      if (!s) return;
+
       wizResults.hidden = true;
       wizSteps.hidden = false;
-      const s = steps[stepIdx];
       wizProg.textContent = `${stepIdx + 1} / ${steps.length}`;
+
       wizSteps.innerHTML =
         `<h4>${s.title}</h4><div class="grid">` +
         s.fields.map((f) => {
@@ -269,7 +300,8 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="chips">${(f.options || [])
                 .map((o) => `<label class="chip-opt">
                   <input type="checkbox" data-check="${f.id}" value="${o}" ${(Array.isArray(val) && val.includes(o)) ? "checked" : ""}/> ${o}
-                </label>`).join("")}</div></div>`;
+                </label>`).join("")}
+              </div></div>`;
           }
           if (f.type === "select") {
             return `<div><label class="lab">${f.label}</label>
@@ -283,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder || ""}">${val || ""}</textarea></div>`;
         }).join("") + `</div>`;
 
-      // counter & input handlers
+      // wire inputs
       wizSteps.querySelectorAll("[data-minus]").forEach((b) => {
         b.addEventListener("click", () => {
           const id = b.getAttribute("data-minus");
@@ -318,35 +350,28 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      wizBack.hidden = stepIdx === 0;
-      wizNext.hidden = stepIdx === steps.length - 1;
+      wizBack.hidden = (stepIdx === 0);
+      wizNext.hidden = (stepIdx === steps.length - 1);
       wizGen.hidden  = !wizNext.hidden;
     }
 
     // footer actions
-    $("wiz-back").onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
-    $("wiz-next").onclick = () => { if (stepIdx < steps.length - 1) { stepIdx++; renderStep(); } };
-    $("wiz-generate").onclick = async () => {
-      $("wiz-generate").disabled = true; $("wiz-generate").textContent = "Generating…";
+    wizBack.onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
+    wizNext.onclick = () => { if (stepIdx < steps.length - 1) { stepIdx++; renderStep(); } };
+    wizGen.onclick  = async () => {
+      wizGen.disabled = true; wizGen.textContent = "Generating…";
       const r = await fetch("/.netlify/functions/bid-analyser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ frameworkId: fr.id, sector: fr.sector, answers })
       });
       const data = await r.json();
-      renderResults(data);
-      $("wiz-back").hidden = true;
-      $("wiz-generate").hidden = true;
-    };
-
-    // render first step only when opening
-    renderStep();
-
-    function renderResults(data) {
       __lastResult = data;
-      $("wiz-progress").textContent = "Assessment ready";
       wizSteps.hidden = true;
-      const wr = $("wiz-results");
+      wizBack.hidden = true;
+      wizGen.hidden = true;
+      wizProg.textContent = "Assessment ready";
+      const wr = document.getElementById("wiz-results");
       wr.hidden = false;
       wr.innerHTML = `
         <div class="scoreband ${data.readinessScore >= 75 ? "good" : data.readinessScore >= 55 ? "ok" : "bad"}">
@@ -354,10 +379,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>${data.summary}</div>
         </div>
         <div class="cards">
-          <div class="card"><div class="card-title">Gap Analysis</div><ul class="plain">${data.gaps.map((g) => `<li>${g}</li>`).join("")}</ul></div>
-          <div class="card"><div class="card-title">Suggested Recruitment</div><ul class="plain">${data.recruitment.map((r) => `<li><strong>${r.title}</strong> — ${r.skills.join(", ")}</li>`).join("")}</ul></div>
-          <div class="card"><div class="card-title">Win Strategy (Gleeds strengths)</div><ul class="plain">${data.winStrategy.map((w) => `<li>${w}</li>`).join("")}</ul></div>
-          <div class="card"><div class="card-title">Comprehensive Checklist</div><ol>${data.checklist.map((c) => `<li>${c}</li>`).join("")}</ol></div>
+          <div class="card"><div class="card-title">Gap Analysis</div><ul class="plain">${data.gaps.map((g)=>`<li>${g}</li>`).join("")}</ul></div>
+          <div class="card"><div class="card-title">Suggested Recruitment</div><ul class="plain">${data.recruitment.map((r)=>`<li><strong>${r.title}</strong> — ${r.skills.join(", ")}</li>`).join("")}</ul></div>
+          <div class="card"><div class="card-title">Win Strategy (Gleeds strengths)</div><ul class="plain">${data.winStrategy.map((w)=>`<li>${w}</li>`).join("")}</ul></div>
+          <div class="card"><div class="card-title">Comprehensive Checklist</div><ol>${data.checklist.map((c)=>`<li>${c}</li>`).join("")}</ol></div>
         </div>
         <div style="margin-top:12px; display:flex; gap:8px;">
           <button id="wiz-export" class="btn-secondary">Export (.docx)</button>
@@ -365,7 +390,10 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       const exp = document.getElementById("wiz-export");
       if (exp) exp.onclick = () => exportDocx();
-    }
+    };
+
+    // ✅ first render happens only when you open
+    renderStep();
   }
 
   // Close modal controls (backdrop + X + Esc)
