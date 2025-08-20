@@ -1,3 +1,5 @@
+// Frameworks table + Bid Analyser wizard + DOCX export
+// Now with: ⭐ starring (localStorage) + "Show starred only" toggle
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("frameworks-root");
   if (!root) return;
@@ -9,12 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
         <option>All</option><option>Aviation</option><option>Utilities</option>
         <option>Maritime & Ports</option><option>Highways</option><option>Rail</option>
       </select>
+      <label class="fw-check">
+        <input type="checkbox" id="fw-starred-only"/> Show starred only
+      </label>
       <span class="fw-time">Last refreshed: ${new Date().toLocaleString()}</span>
     </div>
     <div class="fw-table-wrap">
       <table class="fw-table">
         <thead>
           <tr>
+            <th style="width:36px"></th>
             <th>Framework</th><th>Position</th><th>Expected Award Date</th><th>Key Dates</th>
             <th>Incumbents/Competition</th><th>Key People</th><th>Recruitment</th><th>Actions</th>
           </tr>
@@ -46,6 +52,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const tbody = $("fw-tbody");
   const search = $("fw-search");
   const sectorSel = $("fw-sector");
+  const starredOnly = $("fw-starred-only");
+
+  // --- Star helpers (persist by framework id) ---
+  const STAR_KEY = "fw_starred";
+  function getStarMap(){
+    try { return JSON.parse(localStorage.getItem(STAR_KEY)||"{}"); } catch{ return {}; }
+  }
+  function setStar(id, val){
+    const m = getStarMap(); m[id] = !!val; localStorage.setItem(STAR_KEY, JSON.stringify(m));
+  }
+  function isStarred(id){
+    const m = getStarMap(); return !!m[id];
+  }
 
   async function load() {
     const params = new URLSearchParams();
@@ -68,20 +87,31 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTable(rows){
+    // filter by starred if toggle is on
+    const filtered = starredOnly.checked ? rows.filter(r => isStarred(r.id)) : rows;
+
     tbody.innerHTML = "";
-    if (!rows.length){
-      tbody.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:16px">No frameworks found</td></tr>`;
+    if (!filtered.length){
+      tbody.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center;padding:16px">No frameworks found</td></tr>`;
       return;
     }
-    rows.forEach(r=>{
+
+    filtered.forEach(r=>{
       const keyDates = (r.key_dates||[]).slice(0,3).map(d=>`<li><strong>${d.name}</strong>: ${fmtDate(d.date)} ${d.link?`<a href="${d.link}" target="_blank" rel="noreferrer">link</a>`:""}</li>`).join("");
       const people = (r.key_people||[]).slice(0,2).map(p=>`<li><strong>${p.name}</strong> — ${p.title}, ${p.org} ${p.contact_url?`<a href="${p.contact_url}" target="_blank">contact</a>`:""}</li>`).join("");
       const reqs = (r.recruitment||[]).slice(0,3).map(n=>`<li>${n.title} (${n.target}) — ${n.status}</li>`).join("");
 
       const row = document.createElement("tr");
       row.innerHTML = `
+        <td class="star-cell">
+          <button class="star-btn" aria-label="Star framework" data-star="${r.id}" title="Star">
+            ${isStarred(r.id) ? "★" : "☆"}
+          </button>
+        </td>
         <td>
-          <div class="fw-name">${r.name}</div>
+          <div class="fw-name">
+            <a href="#" class="fw-analyse-link" data-analyse="${r.id}" data-name="${r.name}" data-sector="${r.sector}" data-client="${r.client}" data-award="${r.expected_award_date||""}">${r.name}</a>
+          </div>
           <div class="muted">${r.client} · ${r.sector} · ${r.region} · ${moneyText(r.value)}</div>
           ${r.source_url?`<a class="muted" href="${r.source_url}" target="_blank">Source</a>`:""}
         </td>
@@ -97,25 +127,44 @@ document.addEventListener("DOMContentLoaded", () => {
         </td>
         <td><ul class="plain">${people}</ul></td>
         <td><ul class="plain">${reqs}</ul></td>
-        <td><button class="btn" data-analyse="${r.id}" data-name="${r.name}" data-sector="${r.sector}" data-client="${r.client}" data-award="${r.expected_award_date||""}">Analyse</button></td>
+        <td>
+          <button class="btn" data-analyse="${r.id}" data-name="${r.name}" data-sector="${r.sector}" data-client="${r.client}" data-award="${r.expected_award_date||""}">Analyse</button>
+        </td>
       `;
       tbody.appendChild(row);
     });
 
-    tbody.querySelectorAll("button[data-analyse]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        openWizard({
-          id: btn.dataset.analyse,
-          name: btn.dataset.name,
-          sector: btn.dataset.sector,
-          client: btn.dataset.client,
-          expected_award_date: btn.dataset.award
-        });
+    // hook star buttons
+    tbody.querySelectorAll("button[data-star]").forEach(btn=>{
+      btn.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        const id = btn.dataset.star;
+        const now = !isStarred(id);
+        setStar(id, now);
+        btn.textContent = now ? "★" : "☆";
+        if (starredOnly.checked) load(); // refresh list if filtering
       });
+    });
+
+    // hook analyse buttons and title links
+    const open = (el)=>{
+      openWizard({
+        id: el.dataset.analyse,
+        name: el.dataset.name,
+        sector: el.dataset.sector,
+        client: el.dataset.client,
+        expected_award_date: el.dataset.award
+      });
+    };
+    tbody.querySelectorAll("button[data-analyse]").forEach(btn=>{
+      btn.addEventListener("click", ()=>open(btn));
+    });
+    tbody.querySelectorAll(".fw-analyse-link").forEach(a=>{
+      a.addEventListener("click", (e)=>{ e.preventDefault(); open(a); });
     });
   }
 
-  // Wizard config (simplified shared across sectors)
+  // Wizard config (shared across sectors)
   const steps = [
     { id:"capability", title:"Capability & Capacity", fields:[
       { id:"qs_count",      type:"counter", label:"Cost Managers (QS) with sector experience" },
@@ -151,15 +200,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function openWizard(fr){
     __currentFramework = fr;
 
-    const modal = $("fw-modal");
-    const wizTitle = $("wiz-title");
-    const wizKicker = $("wiz-kicker");
-    const wizSteps = $("wiz-steps");
-    const wizResults = $("wiz-results");
-    const wizBack = $("wiz-back");
-    const wizNext = $("wiz-next");
-    const wizGen = $("wiz-generate");
-    const wizProg = $("wiz-progress");
+    const modal = document.getElementById("fw-modal");
+    const wizTitle = document.getElementById("wiz-title");
+    const wizKicker = document.getElementById("wiz-kicker");
+    const wizSteps = document.getElementById("wiz-steps");
+    const wizResults = document.getElementById("wiz-results");
+    const wizBack = document.getElementById("wiz-back");
+    const wizNext = document.getElementById("wiz-next");
+    const wizGen = document.getElementById("wiz-generate");
+    const wizProg = document.getElementById("wiz-progress");
     let answers = {};
     let stepIdx = 0;
 
@@ -252,8 +301,8 @@ document.addEventListener("DOMContentLoaded", () => {
       __lastResult = data;
       wizProg.textContent = "Assessment ready";
       wizSteps.hidden = true;
-      $("wiz-results").hidden = false;
-      $("wiz-results").innerHTML = `
+      document.getElementById("wiz-results").hidden = false;
+      document.getElementById("wiz-results").innerHTML = `
         <div class="scoreband ${data.readinessScore>=75?"good":data.readinessScore>=55?"ok":"bad"}">
           <div class="score">${data.readinessScore}%</div>
           <div>${data.summary}</div>
@@ -272,26 +321,125 @@ document.addEventListener("DOMContentLoaded", () => {
       if (exp) exp.onclick = () => exportDocx();
     }
 
-    $("wiz-close").onclick = ()=> { modal.hidden = true; };
-    $("wiz-back").onclick = ()=> { if(stepIdx>0){ stepIdx--; renderStep(); $("wiz-next").hidden=false; $("wiz-generate").hidden=true; } };
-    $("wiz-next").onclick = ()=> { if(stepIdx < steps.length-1){ stepIdx++; renderStep(); } if(stepIdx===steps.length-1){ $("wiz-next").hidden=true; $("wiz-generate").hidden=false; } };
-    $("wiz-generate").onclick = async ()=>{
-      $("wiz-generate").disabled = true; $("wiz-generate").textContent = "Generating…";
-      const r = await fetch("/.netlify/functions/bid-analyser", {
-        method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ frameworkId: fr.id, sector: fr.sector, answers })
-      });
-      const data = await r.json();
-      renderResults(data);
-      $("wiz-back").hidden = true;
-      $("wiz-generate").hidden = true;
-    };
+    document.getElementById("wiz-close").onclick = ()=> { document.getElementById("fw-modal").hidden = true; };
+    document.getElementById("wiz-back").onclick = ()=> { /* handled in renderStep */ };
+    document.getElementById("wiz-next").onclick = ()=> { /* set in openWizard below */ };
+    document.getElementById("wiz-generate").onclick = ()=> { /* set in openWizard below */ };
 
-    $("wiz-back").hidden = (stepIdx===0);
-    $("wiz-next").hidden = false;
-    $("wiz-generate").hidden = true;
-    renderStep();
-  }
+    function wireFooter(stepIdxRef, answersRef){
+      const wizBack = document.getElementById("wiz-back");
+      const wizNext = document.getElementById("wiz-next");
+      const wizGen  = document.getElementById("wiz-generate");
+
+      wizBack.onclick = ()=> { if(stepIdxRef.i>0){ stepIdxRef.i--; renderStep(); wizNext.hidden=false; wizGen.hidden=true; } };
+      wizNext.onclick = ()=> { if(stepIdxRef.i<steps.length-1){ stepIdxRef.i++; renderStep(); } if(stepIdxRef.i===steps.length-1){ wizNext.hidden=true; wizGen.hidden=false; } };
+      wizGen.onclick  = async ()=>{
+        wizGen.disabled = true; wizGen.textContent = "Generating…";
+        const r = await fetch("/.netlify/functions/bid-analyser", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ frameworkId: __currentFramework.id, sector: __currentFramework.sector, answers: answersRef.obj })
+        });
+        const data = await r.json();
+        renderResults(data);
+        wizBack.hidden = true; wizGen.hidden = true;
+      };
+    }
+
+    // initialise step and footer controls
+    const stepIdxRef = { i: 0 }; const answersRef = { obj: {} };
+    function renderStep(){
+      const modal = document.getElementById("fw-modal");
+      const wizSteps = document.getElementById("wiz-steps");
+      const wizResults = document.getElementById("wiz-results");
+      const wizProg = document.getElementById("wiz-progress");
+
+      wizResults.hidden = true;
+      wizSteps.hidden = false;
+      const s = steps[stepIdxRef.i];
+      wizProg.textContent = `${stepIdxRef.i+1} / ${steps.length}`;
+      wizSteps.innerHTML = `<h4>${s.title}</h4><div class="grid">` + s.fields.map(f=>{
+        const val = answersRef.obj[f.id] ?? "";
+        if(f.type==="counter"){
+          return `<div><label class="lab">${f.label}</label>
+            <div class="counter">
+              <button class="btn-secondary" data-minus="${f.id}">−</button>
+              <span class="count" id="count-${f.id}">${val||0}</span>
+              <button class="btn-secondary" data-plus="${f.id}">+</button>
+            </div>
+          </div>`;
+        }
+        if(f.type==="boolean"){
+          return `<div><label class="lab">${f.label}</label>
+            <select class="fw-input" data-id="${f.id}">
+              <option value="">Select…</option>
+              <option ${val===true?"selected":""}>Yes</option>
+              <option ${val===false?"selected":""}>No</option>
+            </select>
+          </div>`;
+        }
+        if(f.type==="checkbox"){
+          return `<div><label class="lab">${f.label}</label>
+            <div class="chips">${(f.options||[]).map(o=>`<label class="chip-opt">
+              <input type="checkbox" data-check="${f.id}" value="${o}" ${(Array.isArray(val)&&val.includes(o))?"checked":""}/> ${o}
+            </label>`).join("")}</div></div>`;
+        }
+        if(f.type==="select"){
+          return `<div><label class="lab">${f.label}</label>
+            <select class="fw-input" data-id="${f.id}">
+              <option value="">Select…</option>
+              ${(f.options||[]).map(o=>`<option ${val===o?"selected":""}>${o}</option>`).join("")}
+            </select>
+          </div>`;
+        }
+        return `<div><label class="lab">${f.label}</label>
+          <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder||""}">${val||""}</textarea></div>`;
+      }).join("") + `</div>`;
+
+      // hook counters & inputs
+      wizSteps.querySelectorAll("[data-minus]").forEach(b=>{
+        b.addEventListener("click", ()=>{
+          const id = b.getAttribute("data-minus");
+          const span = document.getElementById(`count-${id}`);
+          const curr = +(span.textContent||0);
+          const next = Math.max(0, curr-1);
+          span.textContent = next; answersRef.obj[id] = next;
+        });
+      });
+      wizSteps.querySelectorAll("[data-plus]").forEach(b=>{
+        b.addEventListener("click", ()=>{
+          const id = b.getAttribute("data-plus");
+          const span = document.getElementById(`count-${id}`);
+          const curr = +(span.textContent||0);
+          const next = curr+1;
+          span.textContent = next; answersRef.obj[id] = next;
+        });
+      });
+      wizSteps.querySelectorAll("[data-id]").forEach(el=>{
+        el.addEventListener("change", ()=>{
+          const id = el.getAttribute("data-id");
+          let v = el.value;
+          if (el.tagName==="SELECT" && (v==="Yes" || v==="No")) v = (v==="Yes");
+          answersRef.obj[id] = v;
+        });
+      });
+      wizSteps.querySelectorAll("[data-check]").forEach(ch=>{
+        ch.addEventListener("change", ()=>{
+          const id = ch.getAttribute("data-check");
+          const checked = Array.from(wizSteps.querySelectorAll(`input[data-check="${id}"]:checked`)).map(x=>x.value);
+          answersRef.obj[id] = checked;
+        });
+      });
+    }
+
+    // kick off first render of wizard UI when opened
+    (function initFooter(){ wireFooter(stepIdxRef, answersRef); })();
+
+    // Load data & wire filters
+    sectorSel.addEventListener("change", load);
+    search.addEventListener("input", load);
+    starredOnly.addEventListener("change", load);
+    load();
+  });
 
   async function exportDocx(){
     const fr = __currentFramework || {};
@@ -314,8 +462,4 @@ document.addEventListener("DOMContentLoaded", () => {
     a.download = `${(fr.name||"Bid_Assessment").replace(/[^\w]+/g, "_")}_Bid_Assessment.docx`;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
-
-  $("fw-sector").addEventListener("change", load);
-  $("fw-search").addEventListener("input", load);
-  load();
-});
+})();
