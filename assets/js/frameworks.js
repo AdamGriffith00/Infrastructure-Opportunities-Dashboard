@@ -1,5 +1,5 @@
 // Frameworks table + Bid Analyser wizard + DOCX export
-// Features: ⭐ starring (localStorage), "Show starred only", click name to Analyse
+// Features: ⭐ starring (localStorage), "Show starred only", click title/Analyse to open wizard
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("frameworks-root");
   if (!root) return;
@@ -12,9 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <option>All</option><option>Aviation</option><option>Utilities</option>
         <option>Maritime & Ports</option><option>Highways</option><option>Rail</option>
       </select>
-      <label class="fw-check">
-        <input type="checkbox" id="fw-starred-only"/> Show starred only
-      </label>
+      <label class="fw-check"><input type="checkbox" id="fw-starred-only"/> Show starred only</label>
       <span class="fw-time">Last refreshed: <span id="fw-lastref">—</span></span>
     </div>
     <div id="fw-error" class="muted" style="margin:6px 0 12px;color:#b00020;display:none"></div>
@@ -30,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <tbody id="fw-tbody"></tbody>
       </table>
     </div>
+
     <div id="fw-modal" class="fw-modal" hidden>
       <div class="fw-modal-card">
         <div class="fw-modal-head">
@@ -59,24 +58,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const lastRef = $("fw-lastref");
   const modalEl = $("fw-modal");
 
-  // keep modal closed on load (belt & braces)
-if (modalEl) {
-  modalEl.hidden = true;
-  modalEl.setAttribute("aria-hidden", "true");
-  modalEl.style.display = "none";   // extra guard in case of weird CSS
-}
-function closeWizard() {
-  if (!modalEl) return;
-  modalEl.hidden = true;
-  modalEl.setAttribute("aria-hidden", "true");
-  modalEl.style.display = "none";
-}
-function openWizardShell() {
-  if (!modalEl) return;
-  openWizardShell();
-  modalEl.removeAttribute("aria-hidden");
-  modalEl.style.display = "block";
-}
+  // ---------- Modal visibility guards ----------
+  // Keep modal closed on load (triple guard) and provide open/close helpers
+  if (modalEl) {
+    modalEl.hidden = true;
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.style.display = "none";
+  }
+  function closeWizard() {
+    if (!modalEl) return;
+    modalEl.hidden = true;
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.style.display = "none";
+  }
+  function openWizardShell() {
+    if (!modalEl) return;
+    modalEl.hidden = false;
+    modalEl.removeAttribute("aria-hidden");
+    modalEl.style.display = "block";
+  }
 
   // ---------- Star helpers ----------
   const STAR_KEY = "fw_starred";
@@ -231,7 +231,7 @@ function openWizardShell() {
   let __lastResult = null;
   let __currentFramework = null;
 
-  // ---------- UPDATED openWizard ----------
+  // ---------- openWizard (opens shell only here) ----------
   function openWizard(fr) {
     __currentFramework = fr;
 
@@ -248,42 +248,19 @@ function openWizardShell() {
     const wizGen     = $("wiz-generate");
     const wizProg    = $("wiz-progress");
 
+    // open the shell
+    openWizardShell();
+
     wizTitle.textContent = fr.name || "Selected framework";
     wizKicker.textContent = `Bid Analyser · ${fr.sector || "Infrastructure"}`;
     wizResults.hidden = true;
     wizSteps.hidden = false;
     wizSteps.innerHTML = "";
-    modalEl.hidden = false;
 
-    // minimal fallback if steps missing
-    if (!Array.isArray(steps) || steps.length === 0) {
-      wizSteps.innerHTML = `<h4>Capability & Capacity</h4>
-        <div class="grid">
-          <div><label class="lab">Cost Managers (QS) with sector experience</label>
-            <div class="counter">
-              <button class="btn-secondary" data-minus="qs_count">−</button>
-              <span class="count" id="count-qs_count">0</span>
-              <button class="btn-secondary" data-plus="qs_count">+</button>
-            </div>
-          </div>
-        </div>`;
-      wizBack.hidden = true; wizNext.hidden = true; wizGen.hidden = false;
-      wizProg.textContent = "1 / 1";
-      wizSteps.querySelector("[data-minus]").addEventListener("click", ()=>{
-        const span = document.getElementById("count-qs_count");
-        span.textContent = Math.max(0, (+span.textContent||0) - 1);
-        answers.qs_count = +span.textContent;
-      });
-      wizSteps.querySelector("[data-plus]").addEventListener("click", ()=>{
-        const span = document.getElementById("count-qs_count");
-        span.textContent = (+span.textContent||0) + 1;
-        answers.qs_count = +span.textContent;
-      });
-    }
-
+    // Render a step
     function renderStep() {
       const s = steps[stepIdx];
-      if (!s) return;
+      if (!s) return; // guard
 
       wizResults.hidden = true;
       wizSteps.hidden = false;
@@ -331,7 +308,7 @@ function openWizardShell() {
             <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder || ""}">${val || ""}</textarea></div>`;
         }).join("") + `</div>`;
 
-      // wire inputs
+      // Wire inputs
       wizSteps.querySelectorAll("[data-minus]").forEach((b) => {
         b.addEventListener("click", () => {
           const id = b.getAttribute("data-minus");
@@ -371,7 +348,7 @@ function openWizardShell() {
       wizGen.hidden  = !wizNext.hidden;
     }
 
-    // footer actions
+    // Footer actions
     wizBack.onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
     wizNext.onclick = () => { if (stepIdx < steps.length - 1) { stepIdx++; renderStep(); } };
     wizGen.onclick  = async () => {
@@ -387,7 +364,7 @@ function openWizardShell() {
       wizBack.hidden = true;
       wizGen.hidden = true;
       wizProg.textContent = "Assessment ready";
-      const wr = document.getElementById("wiz-results");
+      const wr = $("wiz-results");
       wr.hidden = false;
       wr.innerHTML = `
         <div class="scoreband ${data.readinessScore >= 75 ? "good" : data.readinessScore >= 55 ? "ok" : "bad"}">
@@ -408,14 +385,14 @@ function openWizardShell() {
       if (exp) exp.onclick = () => exportDocx();
     };
 
-    // ✅ first render happens only when you open
+    // First render (only when opening)
     renderStep();
   }
 
-  // Close modal controls (backdrop + X + Esc)
-  modalEl.addEventListener("click", (e) => { if (e.target.id === "fw-modal") modalEl.hidden = true; });
-  $("wiz-close").onclick = () => { modalEl.hidden = true; };
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") modalEl.hidden = true; });
+  // ---------- Close modal (backdrop + X + Esc) ----------
+  modalEl.addEventListener("click", (e) => { if (e.target.id === "fw-modal") closeWizard(); });
+  $("wiz-close").onclick = () => closeWizard();
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeWizard(); });
 
   // ---------- Export helper ----------
   async function exportDocx() {
@@ -424,10 +401,7 @@ function openWizardShell() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        framework: {
-          name: fr.name, sector: fr.sector, client: fr.client,
-          expected_award_date: fr.expected_award_date
-        },
+        framework: { name: fr.name, sector: fr.sector, client: fr.client, expected_award_date: fr.expected_award_date },
         result: __lastResult
       })
     });
