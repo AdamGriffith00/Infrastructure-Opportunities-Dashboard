@@ -1,5 +1,5 @@
 // Frameworks table + Bid Analyser wizard + DOCX export
-// Now with: ⭐ starring (localStorage) + "Show starred only" toggle
+// Includes: ⭐ starring (localStorage), "Show starred only" toggle, click name to Analyse
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("frameworks-root");
   if (!root) return;
@@ -14,8 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
       <label class="fw-check">
         <input type="checkbox" id="fw-starred-only"/> Show starred only
       </label>
-      <span class="fw-time">Last refreshed: ${new Date().toLocaleString()}</span>
+      <span class="fw-time">Last refreshed: <span id="fw-lastref">—</span></span>
     </div>
+    <div id="fw-error" class="muted" style="margin:6px 0 12px;color:#b00020;display:none"></div>
     <div class="fw-table-wrap">
       <table class="fw-table">
         <thead>
@@ -53,6 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const search = $("fw-search");
   const sectorSel = $("fw-sector");
   const starredOnly = $("fw-starred-only");
+  const errorBox = $("fw-error");
+  const lastRef = $("fw-lastref");
 
   // --- Star helpers (persist by framework id) ---
   const STAR_KEY = "fw_starred";
@@ -70,14 +73,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams();
     if (sectorSel.value && sectorSel.value !== "All") params.set("sector", sectorSel.value);
     if (search.value) params.set("q", search.value);
-    const r = await fetch(`/.netlify/functions/frameworks?${params.toString()}`);
-    const rows = await r.json();
-    renderTable(rows);
+    errorBox.style.display = "none"; errorBox.textContent = "";
+    try {
+      const r = await fetch(`/.netlify/functions/frameworks?${params.toString()}`);
+      if (!r.ok) throw new Error(`frameworks returned ${r.status}`);
+      const rows = await r.json();
+      lastRef.textContent = new Date().toLocaleString();
+      renderTable(rows);
+    } catch (e) {
+      renderTable([]); // clear table
+      errorBox.textContent = `Error loading frameworks: ${e.message}`;
+      errorBox.style.display = "block";
+    }
   }
 
   function moneyText(v){
     if(!v) return "—";
-    if(v.amount) return `£${v.amount.toLocaleString()}${v.is_estimate?" (est.)":""}`;
+    if(v.amount) return `£${Number(v.amount).toLocaleString()}${v.is_estimate?" (est.)":""}`;
     return v.note || "—";
   }
   function fmtDate(d){ return d ? new Date(d+"T00:00:00Z").toLocaleDateString() : "—"; }
@@ -87,7 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTable(rows){
-    // filter by starred if toggle is on
     const filtered = starredOnly.checked ? rows.filter(r => isStarred(r.id)) : rows;
 
     tbody.innerHTML = "";
@@ -295,14 +306,33 @@ document.addEventListener("DOMContentLoaded", () => {
           answers[id] = checked;
         });
       });
+
+      wizBack.hidden = (stepIdx===0);
+      wizNext.hidden = stepIdx === steps.length-1;
+      wizGen.hidden = !wizNext.hidden;
     }
+
+    wizBack.onclick = ()=> { if(stepIdx>0){ stepIdx--; renderStep(); } };
+    wizNext.onclick = ()=> { if(stepIdx < steps.length-1){ stepIdx++; renderStep(); } };
+    wizGen.onclick = async ()=>{
+      wizGen.disabled = true; wizGen.textContent = "Generating…";
+      const r = await fetch("/.netlify/functions/bid-analyser", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ frameworkId: fr.id, sector: fr.sector, answers })
+      });
+      const data = await r.json();
+      renderResults(data);
+      wizBack.hidden = true;
+      wizGen.hidden = true;
+    };
 
     function renderResults(data){
       __lastResult = data;
       wizProg.textContent = "Assessment ready";
       wizSteps.hidden = true;
-      document.getElementById("wiz-results").hidden = false;
-      document.getElementById("wiz-results").innerHTML = `
+      const wizResults = document.getElementById("wiz-results");
+      wizResults.hidden = false;
+      wizResults.innerHTML = `
         <div class="scoreband ${data.readinessScore>=75?"good":data.readinessScore>=55?"ok":"bad"}">
           <div class="score">${data.readinessScore}%</div>
           <div>${data.summary}</div>
@@ -322,144 +352,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.getElementById("wiz-close").onclick = ()=> { document.getElementById("fw-modal").hidden = true; };
-    document.getElementById("wiz-back").onclick = ()=> { /* handled in renderStep */ };
-    document.getElementById("wiz-next").onclick = ()=> { /* set in openWizard below */ };
-    document.getElementById("wiz-generate").onclick = ()=> { /* set in openWizard below */ };
 
-    function wireFooter(stepIdxRef, answersRef){
-      const wizBack = document.getElementById("wiz-back");
-      const wizNext = document.getElementById("wiz-next");
-      const wizGen  = document.getElementById("wiz-generate");
+    renderStep(); // first step when modal opens (sets controls)
 
-      wizBack.onclick = ()=> { if(stepIdxRef.i>0){ stepIdxRef.i--; renderStep(); wizNext.hidden=false; wizGen.hidden=true; } };
-      wizNext.onclick = ()=> { if(stepIdxRef.i<steps.length-1){ stepIdxRef.i++; renderStep(); } if(stepIdxRef.i===steps.length-1){ wizNext.hidden=true; wizGen.hidden=false; } };
-      wizGen.onclick  = async ()=>{
-        wizGen.disabled = true; wizGen.textContent = "Generating…";
-        const r = await fetch("/.netlify/functions/bid-analyser", {
-          method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ frameworkId: __currentFramework.id, sector: __currentFramework.sector, answers: answersRef.obj })
-        });
-        const data = await r.json();
-        renderResults(data);
-        wizBack.hidden = true; wizGen.hidden = true;
-      };
+    // --- Export helper (now inside scope so it sees current state) ---
+    async function exportDocx(){
+      const fr = __currentFramework || {};
+      const r = await fetch("/.netlify/functions/export-docx", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          framework: {
+            name: fr.name, sector: fr.sector, client: fr.client,
+            expected_award_date: fr.expected_award_date
+          },
+          result: __lastResult
+        })
+      });
+      if (!r.ok) { alert("Export failed."); return; }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(fr.name||"Bid_Assessment").replace(/[^\w]+/g, "_")}_Bid_Assessment.docx`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    // initialise step and footer controls
-    const stepIdxRef = { i: 0 }; const answersRef = { obj: {} };
-    function renderStep(){
-      const modal = document.getElementById("fw-modal");
-      const wizSteps = document.getElementById("wiz-steps");
-      const wizResults = document.getElementById("wiz-results");
-      const wizProg = document.getElementById("wiz-progress");
+  });// DOMContentLoaded end
 
-      wizResults.hidden = true;
-      wizSteps.hidden = false;
-      const s = steps[stepIdxRef.i];
-      wizProg.textContent = `${stepIdxRef.i+1} / ${steps.length}`;
-      wizSteps.innerHTML = `<h4>${s.title}</h4><div class="grid">` + s.fields.map(f=>{
-        const val = answersRef.obj[f.id] ?? "";
-        if(f.type==="counter"){
-          return `<div><label class="lab">${f.label}</label>
-            <div class="counter">
-              <button class="btn-secondary" data-minus="${f.id}">−</button>
-              <span class="count" id="count-${f.id}">${val||0}</span>
-              <button class="btn-secondary" data-plus="${f.id}">+</button>
-            </div>
-          </div>`;
-        }
-        if(f.type==="boolean"){
-          return `<div><label class="lab">${f.label}</label>
-            <select class="fw-input" data-id="${f.id}">
-              <option value="">Select…</option>
-              <option ${val===true?"selected":""}>Yes</option>
-              <option ${val===false?"selected":""}>No</option>
-            </select>
-          </div>`;
-        }
-        if(f.type==="checkbox"){
-          return `<div><label class="lab">${f.label}</label>
-            <div class="chips">${(f.options||[]).map(o=>`<label class="chip-opt">
-              <input type="checkbox" data-check="${f.id}" value="${o}" ${(Array.isArray(val)&&val.includes(o))?"checked":""}/> ${o}
-            </label>`).join("")}</div></div>`;
-        }
-        if(f.type==="select"){
-          return `<div><label class="lab">${f.label}</label>
-            <select class="fw-input" data-id="${f.id}">
-              <option value="">Select…</option>
-              ${(f.options||[]).map(o=>`<option ${val===o?"selected":""}>${o}</option>`).join("")}
-            </select>
-          </div>`;
-        }
-        return `<div><label class="lab">${f.label}</label>
-          <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder||""}">${val||""}</textarea></div>`;
-      }).join("") + `</div>`;
-
-      // hook counters & inputs
-      wizSteps.querySelectorAll("[data-minus]").forEach(b=>{
-        b.addEventListener("click", ()=>{
-          const id = b.getAttribute("data-minus");
-          const span = document.getElementById(`count-${id}`);
-          const curr = +(span.textContent||0);
-          const next = Math.max(0, curr-1);
-          span.textContent = next; answersRef.obj[id] = next;
-        });
-      });
-      wizSteps.querySelectorAll("[data-plus]").forEach(b=>{
-        b.addEventListener("click", ()=>{
-          const id = b.getAttribute("data-plus");
-          const span = document.getElementById(`count-${id}`);
-          const curr = +(span.textContent||0);
-          const next = curr+1;
-          span.textContent = next; answersRef.obj[id] = next;
-        });
-      });
-      wizSteps.querySelectorAll("[data-id]").forEach(el=>{
-        el.addEventListener("change", ()=>{
-          const id = el.getAttribute("data-id");
-          let v = el.value;
-          if (el.tagName==="SELECT" && (v==="Yes" || v==="No")) v = (v==="Yes");
-          answersRef.obj[id] = v;
-        });
-      });
-      wizSteps.querySelectorAll("[data-check]").forEach(ch=>{
-        ch.addEventListener("change", ()=>{
-          const id = ch.getAttribute("data-check");
-          const checked = Array.from(wizSteps.querySelectorAll(`input[data-check="${id}"]:checked`)).map(x=>x.value);
-          answersRef.obj[id] = checked;
-        });
-      });
-    }
-
-    // kick off first render of wizard UI when opened
-    (function initFooter(){ wireFooter(stepIdxRef, answersRef); })();
-
-    // Load data & wire filters
-    sectorSel.addEventListener("change", load);
-    search.addEventListener("input", load);
-    starredOnly.addEventListener("change", load);
-    load();
-  });
-
-  async function exportDocx(){
-    const fr = __currentFramework || {};
-    const r = await fetch("/.netlify/functions/export-docx", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        framework: {
-          name: fr.name, sector: fr.sector, client: fr.client,
-          expected_award_date: fr.expected_award_date
-        },
-        result: __lastResult
-      })
-    });
-    if (!r.ok) { alert("Export failed."); return; }
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(fr.name||"Bid_Assessment").replace(/[^\w]+/g, "_")}_Bid_Assessment.docx`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  }
-})();
+});
