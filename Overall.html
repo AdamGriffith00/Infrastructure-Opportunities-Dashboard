@@ -13,19 +13,27 @@
     }
     /* Tabs */
     .tab-container {
-      display: flex; flex-wrap: wrap;
-      background: rgb(247,196,0); /* Gleeds yellow */
+      display: flex;
+      flex-wrap: nowrap;               /* keep on one line */
+      overflow-x: auto;                 /* allow scroll on small screens */
+      -webkit-overflow-scrolling: touch;
+      background: rgb(247,196,0);       /* Gleeds yellow */
     }
     .tab {
-      flex: 1 1 50%; text-align: center; padding: 1em;
-      cursor: pointer; background: rgb(247,196,0); color: #fff;
-      border-bottom: 2px solid transparent; transition: background .25s;
+      flex: 0 0 calc(100% / 6);         /* exactly 6 equal columns */
+      text-align: center;
+      padding: 1em;
+      cursor: pointer;
+      background: rgb(247,196,0);
+      color: #fff;
+      border-bottom: 2px solid transparent;
+      transition: background .25s;
       user-select: none;
+      white-space: nowrap;              /* keep labels on one line */
     }
     .tab:hover, .tab.active { background: rgb(60,60,60); } /* charcoal */
     .tab-content { display: none; padding: 1em; background: #fff; }
     .tab-content.active { display: block; }
-    @media (min-width: 768px){ .tab { flex: 1 1 20%; } }
 
     /* Iframes for other tabs */
     iframe { width: 100%; height: 90vh; border: none; background: #fff; }
@@ -79,13 +87,13 @@
 <body>
   <!-- Top tabs -->
   <div class="tab-container">
-  <div class="tab active" data-tab="budget-summary">2025/26 Budget Summary</div>
-  <div class="tab" data-tab="regions">Regions - 2025/26 Projects</div>
-  <div class="tab" data-tab="ten-year-budget">10 Year Budget Summary</div>
-  <div class="tab" data-tab="frameworks">Frameworks</div>  <!-- moved here -->
-  <div class="tab" data-tab="gleeds-pipeline">Gleeds Pipeline</div>
-  <div class="tab" data-tab="live">Live Opportunities</div>
-</div>
+    <div class="tab active" data-tab="budget-summary">2025/26 Budget Summary</div>
+    <div class="tab" data-tab="regions">Regions - 2025/26 Projects</div>
+    <div class="tab" data-tab="ten-year-budget">10 Year Budget Summary</div>
+    <div class="tab" data-tab="frameworks">Frameworks</div>
+    <div class="tab" data-tab="gleeds-pipeline">Gleeds Pipeline</div>
+    <div class="tab" data-tab="live">Live Opportunities</div>
+  </div>
   
   <!-- Tab bodies -->
   <div class="tab-content active" id="budget-summary">
@@ -139,7 +147,7 @@
     </div>
   </div>
 
-  <!-- NEW: FRAMEWORKS TAB CONTENT -->
+  <!-- FRAMEWORKS TAB CONTENT -->
   <div class="tab-content" id="frameworks">
     <div class="live-wrap">
       <div class="live-header">
@@ -167,7 +175,7 @@
             loadLive();
           }
         }
-        // Frameworks tab doesn't need lazy-init here; its JS checks for #frameworks-root before running.
+        // Frameworks tab doesn't need lazy-init; its JS checks for #frameworks-root before running.
       });
     });
 
@@ -338,7 +346,7 @@
     }
   </script>
 
-  <!-- NEW: Frameworks assets (table + analyser + export) -->
+  <!-- Frameworks assets (table + analyser + export) -->
   <link rel="stylesheet" href="assets/css/frameworks.css">
   <script src="assets/js/frameworks.js" defer></script>
 </body>
