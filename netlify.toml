@@ -2,6 +2,14 @@
   publish = "."
   functions = "netlify/functions"
 
-# Optional: schedule a background refresh once each morning (09:05 UK time ~ 09:05 UTC winter)
+# Step 5 — cache + background refresh
+# The "latest" function is our on-demand endpoint for fetching tenders.
+[[redirects]]
+  from = "/api/latest"
+  to = "/.netlify/functions/latest"
+  status = 200
+  force = true
+
+# Background function runs every morning at 09:05 UTC
 [functions.update-tenders-background]
   schedule = "5 9 * * *"
