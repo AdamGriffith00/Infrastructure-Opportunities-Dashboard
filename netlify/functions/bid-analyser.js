@@ -1,3 +1,4 @@
+// ESM version
 const packs = {
   "Highways": {
     weights: { capability:0.4, relationships:0.25, differentiators:0.2, compliance:0.15 },
@@ -102,7 +103,7 @@ function buildChecklist(a){
   return list;
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
   const { frameworkId, sector, answers } = JSON.parse(event.body || "{}");
   const pack = packs[sector];
