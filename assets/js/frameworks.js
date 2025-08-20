@@ -1,5 +1,9 @@
-// Frameworks table + Bid Analyser wizard + DOCX export
-// Features: ⭐ starring (localStorage), "Show starred only", click title/Analyse to open wizard
+// Frameworks table + Detail Drawer + Bid Analyser (Stepper) + DOCX export
+// Features: Search, sector filter, starring (localStorage), "Show starred only"
+// Data: loads from /.netlify/functions/frameworks
+// Wizard: posts to /.netlify/functions/bid-analyser
+// Export: posts to /.netlify/functions/export-docx
+
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("frameworks-root");
   if (!root) return;
@@ -12,29 +16,56 @@ document.addEventListener("DOMContentLoaded", () => {
         <option>All</option><option>Aviation</option><option>Utilities</option>
         <option>Maritime & Ports</option><option>Highways</option><option>Rail</option>
       </select>
-      <label class="fw-check"><input type="checkbox" id="fw-starred-only"/> Show starred only</label>
+      <label class="fw-check">
+        <input type="checkbox" id="fw-starred-only"/> Show starred only
+      </label>
       <span class="fw-time">Last refreshed: <span id="fw-lastref">—</span></span>
     </div>
     <div id="fw-error" class="muted" style="margin:6px 0 12px;color:#b00020;display:none"></div>
+
     <div class="fw-table-wrap">
       <table class="fw-table">
         <thead>
           <tr>
             <th style="width:36px"></th>
-            <th>Framework</th><th>Position</th><th>Expected Award Date</th><th>Key Dates</th>
-            <th>Incumbents/Competition</th><th>Key People</th><th>Recruitment</th><th>Actions</th>
+            <th>Framework</th>
+            <th>Position</th>
+            <th>Expected Award Date</th>
+            <th>Key Dates</th>
+            <th>Incumbents/Competition</th>
+            <th>Key People</th>
+            <th>Recruitment</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="fw-tbody"></tbody>
       </table>
     </div>
 
-    <div id="fw-modal" class="fw-modal" hidden>
+    <!-- Drawer (detail) -->
+    <div id="fw-drawer" class="fw-drawer" hidden>
+      <div class="fw-drawer-backdrop"></div>
+      <aside class="fw-drawer-panel">
+        <div class="fw-modal-head">
+          <div>
+            <div class="fw-kicker">Framework Detail</div>
+            <h3 id="dw-title"></h3>
+            <div class="muted" id="dw-sub"></div>
+          </div>
+          <button id="dw-close" class="btn-secondary">Close</button>
+        </div>
+        <div id="dw-body" style="padding:14px 16px; overflow:auto"></div>
+      </aside>
+    </div>
+
+    <!-- Wizard modal -->
+    <div id="fw-modal" class="fw-modal" aria-hidden="true" hidden>
       <div class="fw-modal-card">
         <div class="fw-modal-head">
-          <div><div class="fw-kicker" id="wiz-kicker"></div><h3 id="wiz-title"></h3></div>
+          <div><div class="fw-kicker" id="wiz-kicker">Bid Analyser</div><h3 id="wiz-title"></h3></div>
           <button id="wiz-close" class="btn-secondary">Close</button>
         </div>
+        <div class="stepper-wrap"><div id="wiz-stepper" class="stepper"></div></div>
         <div id="wiz-steps"></div>
         <div id="wiz-results" hidden></div>
         <div class="fw-modal-foot">
@@ -49,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   `;
 
+  // ---------- El refs ----------
   const $ = (id) => document.getElementById(id);
   const tbody = $("fw-tbody");
   const search = $("fw-search");
@@ -56,39 +88,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const starredOnly = $("fw-starred-only");
   const errorBox = $("fw-error");
   const lastRef = $("fw-lastref");
-  const modalEl = $("fw-modal");
 
-  // ---------- Modal visibility guards ----------
-  // Keep modal closed on load (triple guard) and provide open/close helpers
+  const modalEl = $("fw-modal");
+  const wizTitle   = $("wiz-title");
+  const wizKicker  = $("wiz-kicker");
+  const wizSteps   = $("wiz-steps");
+  const wizResults = $("wiz-results");
+  const wizBack    = $("wiz-back");
+  const wizNext    = $("wiz-next");
+  const wizGen     = $("wiz-generate");
+  const wizProg    = $("wiz-progress");
+  const wizStepper = $("wiz-stepper");
+
+  const drawerEl = $("fw-drawer");
+  const dwClose  = $("dw-close");
+  const dwTitle  = $("dw-title");
+  const dwSub    = $("dw-sub");
+  const dwBody   = $("dw-body");
+
+  // keep modal closed on load
   if (modalEl) {
     modalEl.hidden = true;
-    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.setAttribute("aria-hidden","true");
     modalEl.style.display = "none";
   }
   function closeWizard() {
-    if (!modalEl) return;
     modalEl.hidden = true;
-    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.setAttribute("aria-hidden","true");
     modalEl.style.display = "none";
+    modalEl.classList.remove("open");
   }
   function openWizardShell() {
-    if (!modalEl) return;
     modalEl.hidden = false;
     modalEl.removeAttribute("aria-hidden");
-    modalEl.style.display = "block";
+    modalEl.style.display = "flex";
+    modalEl.classList.add("open");
   }
 
-  // ---------- Star helpers ----------
+  // ---------- Stars ----------
   const STAR_KEY = "fw_starred";
-  function getStarMap() { try { return JSON.parse(localStorage.getItem(STAR_KEY) || "{}"); } catch { return {}; } }
-  function setStar(id, val) { const m = getStarMap(); m[id] = !!val; localStorage.setItem(STAR_KEY, JSON.stringify(m)); }
-  function isStarred(id) { return !!getStarMap()[id]; }
+  const getStarMap = () => { try { return JSON.parse(localStorage.getItem(STAR_KEY) || "{}"); } catch { return {}; } };
+  const setStar = (id, val) => { const m = getStarMap(); m[id] = !!val; localStorage.setItem(STAR_KEY, JSON.stringify(m)); };
+  const isStarred = (id) => !!getStarMap()[id];
 
   // ---------- Data load ----------
   async function load() {
     const params = new URLSearchParams();
     if (sectorSel.value && sectorSel.value !== "All") params.set("sector", sectorSel.value);
     if (search.value) params.set("q", search.value);
+
     errorBox.style.display = "none"; errorBox.textContent = "";
     try {
       const r = await fetch(`/.netlify/functions/frameworks?${params.toString()}`);
@@ -104,16 +152,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- Render helpers ----------
-  function moneyText(v) {
+  const moneyText = (v) => {
     if (!v) return "—";
     if (v.amount) return `£${Number(v.amount).toLocaleString()}${v.is_estimate ? " (est.)" : ""}`;
     return v.note || "—";
-  }
-  function fmtDate(d) { return d ? new Date(d + "T00:00:00Z").toLocaleDateString() : "—"; }
-  function roleBadge(role) {
+  };
+  const fmtDate = (d) => d ? new Date((d.length===10? d : d.slice(0,10)) + "T00:00:00Z").toLocaleDateString() : "—";
+  const roleBadge = (role) => {
     const bg = role === "Prime" ? "#DCFCE7" : role === "Partner" ? "#E0EAFF" : "#F3F4F6";
     return `<span class="chip" style="background:${bg}">${role}</span>`;
-  }
+  };
 
   function renderTable(rows) {
     const filtered = starredOnly.checked ? rows.filter((r) => isStarred(r.id)) : rows;
@@ -126,15 +174,15 @@ document.addEventListener("DOMContentLoaded", () => {
     filtered.forEach((r) => {
       const keyDates = (r.key_dates || [])
         .slice(0, 3)
-        .map((d) => `<li><strong>${d.name}</strong>: ${fmtDate(d.date)} ${d.link ? `<a href="${d.link}" target="_blank" rel="noreferrer">link</a>` : ""}</li>`)
+        .map((d) => `<li><strong>${d.name || d.label}</strong>: ${fmtDate(d.date)} ${d.link ? `<a href="${d.link}" target="_blank" rel="noreferrer">link</a>` : ""}</li>`)
         .join("");
       const people = (r.key_people || [])
         .slice(0, 2)
-        .map((p) => `<li><strong>${p.name}</strong> — ${p.title}, ${p.org} ${p.contact_url ? `<a href="${p.contact_url}" target="_blank">contact</a>` : ""}</li>`)
+        .map((p) => `<li><strong>${p.name}</strong> — ${p.title || ""}${p.org ? `, ${p.org}` : ""} ${p.contact_url ? `<a href="${p.contact_url}" target="_blank">contact</a>` : ""}</li>`)
         .join("");
       const reqs = (r.recruitment || [])
         .slice(0, 3)
-        .map((n) => `<li>${n.title} (${n.target}) — ${n.status}</li>`)
+        .map((n) => `<li>${n.title} (${n.target || 1}) — ${n.status || "TBC"}</li>`)
         .join("");
 
       const row = document.createElement("tr");
@@ -146,14 +194,14 @@ document.addEventListener("DOMContentLoaded", () => {
         </td>
         <td>
           <div class="fw-name">
-            <a href="#" class="fw-analyse-link" data-analyse="${r.id}" data-name="${r.name}" data-sector="${r.sector}" data-client="${r.client}" data-award="${r.expected_award_date || ""}">${r.name}</a>
+            <a href="#" class="fw-open-link" data-open="${r.id}">${r.name}</a>
           </div>
-          <div class="muted">${r.client} · ${r.sector} · ${r.region} · ${moneyText(r.value)}</div>
+          <div class="muted">${r.client || ""} · ${r.sector || ""} · ${r.region || ""} · ${moneyText(r.value)}</div>
           ${r.source_url ? `<a class="muted" href="${r.source_url}" target="_blank">Source</a>` : ""}
         </td>
         <td>${roleBadge(r.position?.role || "Monitor")}<div class="muted" style="margin-top:6px">${r.position?.rationale || ""}</div></td>
         <td>
-          <div class="fw-bold">${fmtDate(r.expected_award_date)}</div>
+          <div class="fw-bold">${fmtDate(r.expected_award_date || r.expected_award)}</div>
           ${r.countdown_days != null ? `<div class="chip">${r.countdown_days >= 0 ? `${r.countdown_days} days` : "past due"}</div>` : ""}
         </td>
         <td><ul class="plain">${keyDates}</ul></td>
@@ -164,10 +212,12 @@ document.addEventListener("DOMContentLoaded", () => {
         <td><ul class="plain">${people}</ul></td>
         <td><ul class="plain">${reqs}</ul></td>
         <td>
-          <button class="btn" data-analyse="${r.id}" data-name="${r.name}" data-sector="${r.sector}" data-client="${r.client}" data-award="${r.expected_award_date || ""}">Analyse</button>
+          <button class="btn" data-analyse="${r.id}">Analyse</button>
         </td>
       `;
       tbody.appendChild(row);
+      // attach the full record to the element for quick lookup
+      row.dataset.rowJson = JSON.stringify(r);
     });
 
     // stars
@@ -182,23 +232,124 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // open analyser (button or title)
-    const open = (el) => {
-      openWizard({
-        id: el.dataset.analyse,
-        name: el.dataset.name,
-        sector: el.dataset.sector,
-        client: el.dataset.client,
-        expected_award_date: el.dataset.award,
+    // open drawer (framework name click)
+    tbody.querySelectorAll(".fw-open-link").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const tr = a.closest("tr");
+        const fr = JSON.parse(tr.dataset.rowJson || "{}");
+        openDrawer(fr);
       });
-    };
-    tbody.querySelectorAll("button[data-analyse]").forEach((btn) => btn.addEventListener("click", () => open(btn)));
-    tbody.querySelectorAll(".fw-analyse-link").forEach((a) =>
-      a.addEventListener("click", (e) => { e.preventDefault(); open(a); })
-    );
+    });
+
+    // open analyser (button)
+    tbody.querySelectorAll("button[data-analyse]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tr = btn.closest("tr");
+        const fr = JSON.parse(tr.dataset.rowJson || "{}");
+        openWizard(fr);
+      });
+    });
   }
 
-  // ---------- Wizard config ----------
+  // ---------- Drawer ----------
+  function openDrawer(fr){
+    dwTitle.textContent = fr.name || "Framework";
+    dwSub.textContent = `${fr.client || "Client"} · ${fr.sector || ""} · ${fr.region || ""} · Budget: ${moneyText(fr.value)}`;
+    dwBody.innerHTML = `
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">
+        <div class="card">
+          <div class="card-title">Gleeds Positioning</div>
+          <div class="card-body">
+            <div class="muted">Role: <strong>${fr.position?.role || "Monitor"}</strong> — ${fr.position?.rationale || ""}</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Why partner?</div>
+          <div class="card-body">
+            <ul class="plain">
+              <li>Amplify track record using Tier-1 delivery credentials.</li>
+              <li>Retain ownership of cost, controls and governance workstreams.</li>
+              <li>De-risk resourcing through shared bench and surge teams.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:10px;">
+        <div class="card">
+          <div class="card-title">Key dates</div>
+          <div class="card-body">
+            <div class="timeline">
+              ${(fr.key_dates||[]).map(d=>`
+                <div class="titem">
+                  <div class="tlabel">${d.name || d.label}</div>
+                  <div class="muted">${fmtDate(d.date)} ${d.link?`· <a href="${d.link}" target="_blank" rel="noreferrer">link</a>`:""}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Incumbents & competition</div>
+          <div class="card-body">
+            <div class="pills">${(fr.incumbents||[]).map(n=>`<span class="pill">${n}</span>`).join("")}</div>
+            ${fr.competition_watch?.length ? `<div class="muted" style="margin-top:8px"><strong>Watch:</strong> ${fr.competition_watch.join(", ")}</div>` : ""}
+            ${fr.competition_notes ? `<div class="muted" style="margin-top:6px">${fr.competition_notes}</div>` : ""}
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Recruitment needs</div>
+        <div class="card-body">
+          <div class="recruit-grid">
+            ${(fr.recruitment||[]).map(r=>`
+              <div class="recruit">
+                <div class="r-head"><div class="r-title">${r.title}</div><span class="r-badge">${r.priority || "High"}</span></div>
+                <div class="r-body">
+                  <div class="r-meta"><span>Target: ${r.target || 1}</span><span>Status: ${r.status || "TBC"}</span></div>
+                  ${Array.isArray(r.skills) && r.skills.length ? `<div class="muted">Skills: ${r.skills.join(", ")}</div>` : ""}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:10px;">
+        <div class="card">
+          <div class="card-title">Key people (client & network)</div>
+          <div class="card-body">
+            <ul class="plain" style="margin-left:1rem">
+              ${(fr.key_people||[]).map(p=>`
+                <li><strong>${p.name}</strong>${p.title?` — ${p.title}`:""}${p.org?`, ${p.org}`:""} ${p.contact_url?`· <a href="${p.contact_url}" target="_blank" rel="noreferrer">profile</a>`:""}</li>
+              `).join("")}
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Bid insights (Gleeds strengths)</div>
+          <div class="card-body">
+            <ul class="plain" style="margin-left:1rem">
+              ${(fr.bidInsights || fr.bid_insights || [
+                "Lead with cost certainty narrative; back with KPI trend charts.",
+                "Show programme advisory case studies in operational environments.",
+                "Use partner delivery credentials to strengthen interface management."
+              ]).map(x=>`<li>${x}</li>`).join("")}
+            </ul>
+          </div>
+        </div>
+      </div>
+    `;
+    drawerEl.hidden = false;
+    drawerEl.classList.add("open");
+  }
+  dwClose.onclick = () => { drawerEl.hidden = true; drawerEl.classList.remove("open"); };
+  drawerEl.addEventListener("click", (e)=>{ if (e.target.classList.contains("fw-drawer-backdrop")) { drawerEl.hidden = true; drawerEl.classList.remove("open"); }});
+  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape") { if (!modalEl.hidden) closeWizard(); if (!drawerEl.hidden){ drawerEl.hidden=true; drawerEl.classList.remove("open"); } }});
+
+  // ---------- Wizard (Stepper) ----------
   const steps = [
     { id: "capability", title: "Capability & Capacity", fields: [
       { id: "qs_count",     type: "counter", label: "Cost Managers (QS) with sector experience" },
@@ -209,12 +360,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ]},
     { id: "relationships", title: "Client & Partners", fields: [
       { id: "client_rel",   type: "boolean", label: "Existing relationship with client/framework team?" },
-      { id: "incumbent_rel",type: "boolean", label: "Existing relationships with incumbents/target partners?" },
+      { id: "incumbent_rel",type: "boolean", label: "Relationships with incumbents/target partners?" },
       { id: "warm_intros",  type: "text",    label: "Warm intros / key people you can access", placeholder: "Names / roles" }
     ]},
     { id: "diff_risks", title: "Differentiators & Risks", fields: [
-      { id: "diffs",        type: "checkbox",label: "Differentiators you can evidence", options: ["Cost certainty","Programme assurance","Interface management","Operational environment delivery","Change control","Portfolio reporting"] },
-      { id: "risks",        type: "text",    label: "Top risks you foresee", placeholder: "Resourcing, timeframes, compliance…" }
+      { id: "diffs",        type: "text",    label: "Differentiators you can evidence (cost certainty, programme assurance, etc.)" },
+      { id: "risks",        type: "text",    label: "Top risks you foresee (resourcing, timeframes, compliance…)" }
     ]},
     { id: "resourcing", title: "Resourcing & Approach", fields: [
       { id: "approach",     type: "select",  label: "Intended approach", options: ["Prime","Partner","Monitor"] },
@@ -231,7 +382,19 @@ document.addEventListener("DOMContentLoaded", () => {
   let __lastResult = null;
   let __currentFramework = null;
 
-  // ---------- openWizard (opens shell only here) ----------
+  function renderStepper(idx){
+    wizStepper.innerHTML = "";
+    steps.forEach((s,i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "step" + (i<idx ? " is-complete" : i===idx ? " is-active" : "");
+      wrap.innerHTML = `<div class="dot">${i+1}</div><div class="label">${s.title}</div>`;
+      wizStepper.appendChild(wrap);
+      if (i < steps.length-1){
+        const bar = document.createElement("div"); bar.className = "bar"; wizStepper.appendChild(bar);
+      }
+    });
+  }
+
   function openWizard(fr) {
     __currentFramework = fr;
 
@@ -239,16 +402,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let answers = {};
     let stepIdx = 0;
 
-    const wizTitle   = $("wiz-title");
-    const wizKicker  = $("wiz-kicker");
-    const wizSteps   = $("wiz-steps");
-    const wizResults = $("wiz-results");
-    const wizBack    = $("wiz-back");
-    const wizNext    = $("wiz-next");
-    const wizGen     = $("wiz-generate");
-    const wizProg    = $("wiz-progress");
-
-    // open the shell
     openWizardShell();
 
     wizTitle.textContent = fr.name || "Selected framework";
@@ -257,17 +410,13 @@ document.addEventListener("DOMContentLoaded", () => {
     wizSteps.hidden = false;
     wizSteps.innerHTML = "";
 
-    // Render a step
     function renderStep() {
       const s = steps[stepIdx];
-      if (!s) return; // guard
-
-      wizResults.hidden = true;
-      wizSteps.hidden = false;
       wizProg.textContent = `${stepIdx + 1} / ${steps.length}`;
+      renderStepper(stepIdx);
 
       wizSteps.innerHTML =
-        `<h4>${s.title}</h4><div class="grid">` +
+        `<h4 style="margin:12px 18px 0;font-size:1rem">${s.title}</h4><div class="grid" style="padding:12px 18px">` +
         s.fields.map((f) => {
           const val = answers[f.id] ?? "";
           if (f.type === "counter") {
@@ -308,7 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <textarea class="fw-input" rows="3" data-id="${f.id}" placeholder="${f.placeholder || ""}">${val || ""}</textarea></div>`;
         }).join("") + `</div>`;
 
-      // Wire inputs
+      // wire inputs
       wizSteps.querySelectorAll("[data-minus]").forEach((b) => {
         b.addEventListener("click", () => {
           const id = b.getAttribute("data-minus");
@@ -348,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
       wizGen.hidden  = !wizNext.hidden;
     }
 
-    // Footer actions
+    // footer actions
     wizBack.onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
     wizNext.onclick = () => { if (stepIdx < steps.length - 1) { stepIdx++; renderStep(); } };
     wizGen.onclick  = async () => {
@@ -364,6 +513,8 @@ document.addEventListener("DOMContentLoaded", () => {
       wizBack.hidden = true;
       wizGen.hidden = true;
       wizProg.textContent = "Assessment ready";
+      renderStepper(steps.length - 1);
+
       const wr = $("wiz-results");
       wr.hidden = false;
       wr.innerHTML = `
@@ -372,10 +523,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>${data.summary}</div>
         </div>
         <div class="cards">
-          <div class="card"><div class="card-title">Gap Analysis</div><ul class="plain">${data.gaps.map((g)=>`<li>${g}</li>`).join("")}</ul></div>
-          <div class="card"><div class="card-title">Suggested Recruitment</div><ul class="plain">${data.recruitment.map((r)=>`<li><strong>${r.title}</strong> — ${r.skills.join(", ")}</li>`).join("")}</ul></div>
-          <div class="card"><div class="card-title">Win Strategy (Gleeds strengths)</div><ul class="plain">${data.winStrategy.map((w)=>`<li>${w}</li>`).join("")}</ul></div>
-          <div class="card"><div class="card-title">Comprehensive Checklist</div><ol>${data.checklist.map((c)=>`<li>${c}</li>`).join("")}</ol></div>
+          <div class="card"><div class="card-title">Gap Analysis</div><ul class="plain">${(data.gaps||[]).map((g)=>`<li>${g}</li>`).join("")}</ul></div>
+          <div class="card"><div class="card-title">Suggested Recruitment</div><ul class="plain">${(data.recruitment||[]).map((r)=>`<li><strong>${r.title}</strong>${Array.isArray(r.skills)&&r.skills.length?` — ${r.skills.join(", ")}`:""}</li>`).join("")}</ul></div>
+          <div class="card"><div class="card-title">Win Strategy (Gleeds strengths)</div><ul class="plain">${(data.winStrategy||[]).map((w)=>`<li>${w}</li>`).join("")}</ul></div>
+          <div class="card"><div class="card-title">Comprehensive Checklist</div><ol>${(data.checklist||[]).map((c)=>`<li>${c}</li>`).join("")}</ol></div>
         </div>
         <div style="margin-top:12px; display:flex; gap:8px;">
           <button id="wiz-export" class="btn-secondary">Export (.docx)</button>
@@ -385,11 +536,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (exp) exp.onclick = () => exportDocx();
     };
 
-    // First render (only when opening)
+    // open and render first step
     renderStep();
   }
 
-  // ---------- Close modal (backdrop + X + Esc) ----------
+  // Close modal (backdrop + button + Esc)
   modalEl.addEventListener("click", (e) => { if (e.target.id === "fw-modal") closeWizard(); });
   $("wiz-close").onclick = () => closeWizard();
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeWizard(); });
@@ -401,7 +552,10 @@ document.addEventListener("DOMContentLoaded", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        framework: { name: fr.name, sector: fr.sector, client: fr.client, expected_award_date: fr.expected_award_date },
+        framework: {
+          name: fr.name, sector: fr.sector, client: fr.client,
+          expected_award_date: fr.expected_award_date || fr.expected_award
+        },
         result: __lastResult
       })
     });
