@@ -86,13 +86,14 @@ ul.plain{ list-style:disc; margin:.25rem 0 0 1rem; padding:0; }
 }
 .btn-secondary:hover{ background:#f9fafb; }
 
-/* ---------- Modal ---------- */
+/* ---------- Modal (Wizard) ---------- */
 .fw-modal{
   position:fixed; inset:0; background:rgba(0,0,0,.35);
-  display:none; /* toggled in JS */ align-items:center; justify-content:center;
+  display:none; align-items:center; justify-content:center;
   padding:24px; z-index:1000;
 }
 .fw-modal[aria-hidden="true"]{ display:none !important; }
+.fw-modal.open{ display:flex; }
 
 .fw-modal-card{
   width:min(920px, 94vw); background:var(--card); border-radius:20px;
@@ -119,9 +120,7 @@ ul.plain{ list-style:disc; margin:.25rem 0 0 1rem; padding:0; }
 .lab{ display:block; font-size:.92rem; font-weight:700; margin:2px 0 6px; color:#111; }
 textarea.fw-input{ width:100%; min-height:88px; resize:vertical; border-radius:10px; }
 
-.counter{ display:flex; align-items:center; gap:.5rem; }
-.counter .count{ display:inline-block; min-width:28px; text-align:center; font-weight:700; }
-
+/* ---------- Wizard footer ---------- */
 .fw-modal-foot{
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 18px; border-top:1px solid var(--line); background:#fafafa;
@@ -144,6 +143,45 @@ textarea.fw-input{ width:100%; min-height:88px; resize:vertical; border-radius:1
 .card .card-title{ font-weight:800; padding:10px 12px; border-bottom:1px solid var(--line); }
 .card ul, .card ol{ margin:10px 18px 14px; }
 
-/* ---------- Small embellishments ---------- */
-.fw-table .muted a{ color:inherit; text-decoration:underline; }
-.fw-table .muted a:hover{ color:#0b63ce; }
+/* ---------- Drawer (Framework detail) ---------- */
+.fw-drawer{position:fixed; inset:0; display:none; z-index:1000;}
+.fw-drawer.open{display:block;}
+.fw-drawer-backdrop{position:absolute; inset:0; background:rgba(0,0,0,.35);}
+.fw-drawer-panel{
+  position:absolute; top:0; right:0; height:100%; width:min(560px, 96vw);
+  background:#fff; border-left:1px solid var(--line); box-shadow:var(--shadow);
+  display:flex; flex-direction:column; transform:translateX(100%); animation:slideIn .22s ease-out forwards;
+}
+@keyframes slideIn{ to{ transform:translateX(0) } }
+
+/* ---------- Drawer content bits ---------- */
+.timeline{position:relative; padding-left:16px;}
+.timeline::before{content:""; position:absolute; left:6px; top:2px; bottom:2px; width:2px; background:#e5e7eb;}
+.titem{position:relative; margin:8px 0 10px;}
+.titem::before{
+  content:""; position:absolute; left:-2px; top:3px; width:10px; height:10px; border-radius:999px;
+  background:var(--gleeds-yellow); border:2px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.06);
+}
+.tlabel{font-weight:700;}
+.pills{display:flex; flex-wrap:wrap; gap:6px;}
+.pill{background:#f3f4f6; border:1px solid #e5e7eb; border-radius:999px; padding:.25rem .55rem; font-weight:700; font-size:.85rem;}
+
+.recruit-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+@media (max-width:800px){ .recruit-grid{ grid-template-columns:1fr; } }
+.recruit{border:1px solid var(--line); border-left:6px solid var(--charcoal); border-radius:12px; background:#fff;}
+.recruit .r-head{display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--line);}
+.recruit .r-title{font-weight:800;}
+.recruit .r-badge{background:#fff3cd; border:1px solid #ffe08a; color:#7a5b00; padding:.15rem .45rem; border-radius:999px; font-weight:700; font-size:.8rem;}
+.recruit .r-body{padding:10px 12px; color:#444;}
+.recruit .r-meta{display:flex; gap:10px; color:#666; font-size:.9rem;}
+
+/* ---------- Wizard Stepper ---------- */
+.stepper-wrap{padding:10px 18px 0 18px; background:#fafafa; border-top:1px solid var(--line);}
+.stepper{display:flex; align-items:center; gap:10px;}
+.stepper .step{display:flex; align-items:center; gap:8px;}
+.stepper .dot{width:28px; height:28px; border-radius:999px; border:2px solid #d1d5db; display:flex; align-items:center; justify-content:center; font-weight:800; color:#6b7280; background:#fff;}
+.stepper .label{font-size:.85rem; color:#6b7280; font-weight:700;}
+.stepper .bar{flex:1; height:4px; background:#e5e7eb; border-radius:999px;}
+.stepper .step.is-active .dot{border-color:var(--charcoal); color:#111;}
+.stepper .step.is-complete .dot{background:var(--charcoal); color:#fff; border-color:var(--charcoal);}
+.stepper .step.is-complete + .bar{background:#3c3c3c;}
