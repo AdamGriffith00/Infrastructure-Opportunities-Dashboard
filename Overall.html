@@ -84,6 +84,8 @@
     <div class="tab" data-tab="ten-year-budget">10 Year Budget Summary</div>
     <div class="tab" data-tab="gleeds-pipeline">Gleeds Pipeline</div>
     <div class="tab" data-tab="live">Live Opportunities</div>
+    <!-- NEW: Frameworks tab button -->
+    <div class="tab" data-tab="frameworks">Frameworks</div>
   </div>
 
   <!-- Tab bodies -->
@@ -95,7 +97,7 @@
     <iframe src="uk-map.html" title="Regions"></iframe>
   </div>
   
-<div class="tab-content" id="ten-year-budget">
+  <div class="tab-content" id="ten-year-budget">
     <iframe src="uk-interactive-map-10-year.html" title="Regions"></iframe>
   </div>
 
@@ -138,6 +140,18 @@
     </div>
   </div>
 
+  <!-- NEW: FRAMEWORKS TAB CONTENT -->
+  <div class="tab-content" id="frameworks">
+    <div class="live-wrap">
+      <div class="live-header">
+        <h2 class="live-title">Frameworks</h2>
+        <div class="last-updated">Last refreshed: <span id="fw-last-refreshed">—</span></div>
+      </div>
+      <!-- The Frameworks table + Bid Analyser wizard will render here -->
+      <div id="frameworks-root"></div>
+    </div>
+  </div>
+
   <script>
     /* ---------- Tab wiring ---------- */
     const tabs = document.querySelectorAll('.tab');
@@ -154,6 +168,7 @@
             loadLive();
           }
         }
+        // Frameworks tab doesn't need lazy-init here; its JS checks for #frameworks-root before running.
       });
     });
 
@@ -323,5 +338,9 @@
       return it;
     }
   </script>
+
+  <!-- NEW: Frameworks assets (table + analyser + export) -->
+  <link rel="stylesheet" href="assets/css/frameworks.css">
+  <script src="assets/js/frameworks.js" defer></script>
 </body>
 </html>
