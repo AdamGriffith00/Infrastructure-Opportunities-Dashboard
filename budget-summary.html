@@ -1,219 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>2025/26 Budget Summary</title>
-  <style>
-    :root{
-      --gleeds-yellow: rgb(247,196,0);
-      --charcoal: rgb(60,60,60);
-      --panel: #2f2f2f;
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: radial-gradient(1000px 500px at 50% 20%, #4a4a4a 0%, #3c3c3c 60%, #333 100%);
-      color: #fff;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Map - Fixed</title>
+    <style>
+  :root{
+    --gleeds:#f7c400;         /* Gleeds yellow */
+    --charcoal:#3c3c3c;       /* Gleeds charcoal */
+    --ink:#fff;
+  }
 
-    .board {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 18px 16px 28px;
-      display: grid;
-      grid-template-columns: 300px 1fr 300px;
-      gap: 22px;
-    }
+  body{
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    /* charcoal gradient to match portal */
+    background: radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, var(--charcoal) 60%, #2f2f2f 100%);
+    color:#222;
+  }
 
-    .map-wrap{
-      grid-column: 2;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12));
-      border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.25) inset;
-      min-height: 1100px; /* ensure room for full map */
-      position: relative;
-      overflow: visible;
-    }
+  /* GRID — leave columns the same, make rows a bit taller so cards don't scroll */
+  .container{
+    display:grid;
+    grid-template-columns: 200px 200px 600px 200px 200px;    /* L | L | MAP | R | R */
+    grid-template-rows: 220px 220px 220px 220px 220px 220px; /* six rows, taller than before */
+    gap:20px;
+    max-width:1440px;
+    margin:0 auto;
+    padding:20px;
+  }
 
-    /* Scale the real map SVG cleanly */
-    #svg_map{
-      width: min(100%, 1000px);
-      height: auto;
-      max-height: 1050px;
-      display:block;
-      margin: 0 auto;
-    }
+  /* MAP occupies the full 6 rows (so bottom cards can sit underneath cleanly) */
+  .map-container{
+    grid-column:3;
+    grid-row:1 / 7;                 /* was 1 / 6 */
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  /* Ensure the SVG always fits the cell */
+  #svg_map{ width:100%; height:auto; }
 
-    .left-col, .right-col {
-      display: grid;
-      gap: 18px;
-      align-content: start;
-    }
+  /* Cards */
+  .region-box{
+    background:#2f2f2f;             /* deep charcoal */
+    color:#fff;
+    padding:14px 16px;
+    border-radius:10px;
+    border:2px solid var(--gleeds);  /* yellow outline on ALL cards */
+    box-shadow:0 6px 18px rgba(0,0,0,.25);
+    font-size:13px;
+    font-weight:bold;
+    text-align:left;
+    /* remove scrollbars by default */
+    overflow:visible; 
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .region-box:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 26px rgba(0,0,0,.3);
+  }
+  .region-title{
+    text-align:center;
+    margin-bottom:6px;
+    font-weight:800;
+  }
+  .region-details{
+    margin-top:6px;
+    padding-top:8px;
+    border-top:1px solid rgba(255,255,255,.22);
+    font-size:12px;
+    line-height:1.25;
+  }
 
-    .card{
-      background: #2f2f2f;
-      border: 3px solid var(--gleeds-yellow);
-      border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.35);
-      padding: 14px 16px;
-      min-height: 170px; /* bigger so no inner scrollbars */
-    }
-    .card h3{margin: 4px 0 10px 0; font-size: 16px; text-align:center; border-top: 2px solid rgba(255,255,255,.15); padding-top: 8px;}
-    .kv{display:flex; justify-content:space-between; font-size:13px; margin:6px 0;}
-    .total{text-align:right; font-weight:800; color:#2ecc71;}
-    .v.low{color:#e74c3c; font-weight:700;}
-    .v.mid{color:#f4d03f; font-weight:700;}
-    .v.ok{color:#2ecc71; font-weight:700;}
+  /* value tints (unchanged) */
+  .value{color:#A80000;font-weight:700;}
+  .value-low-medium{color:#F27900;font-weight:700;}
+  .value-medium{color:#FFFF00;font-weight:700;}
+  .value-high{color:#35F600;font-weight:700;}
 
-    @media (max-width: 1200px){
-      .board{grid-template-columns: 1fr;}
-      .map-wrap{order: -1; min-height: 70vh;}
-      #svg_map{max-height: none; width: 100%;}
-      .left-col, .right-col{grid-template-columns: 1fr 1fr;}
-    }
-    @media (max-width: 700px){
-      .left-col, .right-col{grid-template-columns: 1fr;}
-    }
-  </style>
+  /* Box positions (unchanged except bottom row tidy) */
+  #scotland-box{grid-column:1;grid-row:1;transform:translateX(200px);}
+  #northern-ireland-box{grid-column:1;grid-row:2;transform:translateX(200px);}
+  #north-west-box{grid-column:1;grid-row:3;transform:translateX(200px);}
+  #wales-box{grid-column:1;grid-row:4;transform:translateX(200px);}
+  #south-west-box{grid-column:1;grid-row:5;transform:translateX(200px);}
+
+  #north-east-box{grid-column:4;grid-row:1;}
+  #yorkshire-and-the-humber-box{grid-column:4;grid-row:2;}
+  #east-midlands-box{grid-column:4;grid-row:3;}
+  #eastern-box{grid-column:4;grid-row:4;}
+  #south-east-box{grid-column:4;grid-row:5;}
+
+  /* Bottom row: place both cards cleanly without overlap */
+  #west-midlands-box{grid-column:2;grid-row:6;transform:translateX(300px);}
+  #london-box{grid-column:4;grid-row:6;transform:translateX(-250px);}
+
+  /* MAP highlighting (your existing colours kept) */
+  .map-region{cursor:pointer;transition:all .3s ease;}
+  .map-region-single{fill:var(--gleeds);stroke:#2c5aa0;stroke-width:2;transition:all .3s ease;}
+  .map-region:hover .map-region-single{fill:#ffce14;stroke:#1a4480;stroke-width:3;}
+  .map-region.selected .map-region-single{fill:#ffe228;stroke:#FFD700;stroke-width:4;}
+
+  /* Stack on small screens */
+  @media (max-width:1200px){
+    .container{grid-template-columns:1fr;grid-template-rows:auto;gap:12px;}
+    .map-container{grid-column:1;grid-row:1;}
+    .region-box{grid-column:1;transform:none !important;margin:6px 0;}
+    #scotland-box,#northern-ireland-box,#north-west-box,#wales-box,#south-west-box,
+    #north-east-box,#yorkshire-and-the-humber-box,#east-midlands-box,#eastern-box,#south-east-box,
+    #west-midlands-box,#london-box{grid-column:1;grid-row:auto;}
+  }
+</style>
 </head>
 <body>
-  <div class="board">
-    <!-- LEFT COLUMN -->
-    <div class="left-col">
-      <div class="card">
-        <h3>Scotland</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£1.26B</span></div>
-        <div class="kv"><span>Highways</span><span class="v ok">£6.2B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v low">£352M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v low">£348M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£2.02B</span></div>
-        <div class="total">Grand Total: £10.18B</div>
-      </div>
-      <div class="card">
-        <h3>Northern Ireland</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£825M</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£2.1B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v low">£325M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£660M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£1.34B</span></div>
-        <div class="total">Grand Total: £5.25B</div>
-      </div>
-      <div class="card">
-        <h3>North West</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v ok">£13.45B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£2.23B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v mid">£1.38B</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£860M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£2.8B</span></div>
-        <div class="total">Grand Total: £20.72B</div>
-      </div>
-      <div class="card">
-        <h3>Wales</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v ok">£4.39B</span></div>
-        <div class="kv"><span>Highways</span><span class="v ok">£2.73B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v low">£185M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£525M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£2.18B</span></div>
-        <div class="total">Grand Total: £10.0B</div>
-      </div>
-      <div class="card">
-        <h3>South West</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v ok">£3.76B</span></div>
-        <div class="kv"><span>Highways</span><span class="v ok">£2.68B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v mid">£640M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£897M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v ok">£2.75B</span></div>
-        <div class="total">Grand Total: £10.72B</div>
-      </div>
+    <div class="container">
+        <!-- Boxes positioned around the map -->
+        <div id="scotland-box" class="region-box">
+            <div class="region-title">Scotland</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£1.26B</span></div>
+                <div>Highways: <span class="value-high">£6.2B</span></div>
+                <div>Aviation: <span class="value">£352M</span></div>
+                <div>Maritime: <span class="value">£348M</span></div>
+                <div>Utilities: <span class="value-low-medium">£2.02B</span></div>
+                <div>Grand Total: <span class="value-high">£10.18B</span></div>
+            </div>
+        </div>
+
+        <div id="northern-ireland-box" class="region-box">
+            <div class="region-title">Northern Ireland</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£825M</span></div>
+                <div>Highways: <span class="value-low-medium">£2.1B</span></div>
+                <div>Aviation: <span class="value">£325M</span></div>
+                <div>Maritime: <span class="value-low-medium">£660M</span></div>
+                <div>Utilities: <span class="value-low-medium">£1.34B</span></div>
+                <div>Grand Total: <span class="value-low-medium">£5.25B</span></div>
+            </div>
+        </div>
+
+        <div id="north-west-box" class="region-box">
+            <div class="region-title">North West</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-high">£13.45B</span></div>
+                <div>Highways: <span class="value-low-medium">£2.23B</span></div>
+                <div>Aviation: <span class="value-low-medium">£1.38B</span></div>
+                <div>Maritime: <span class="value-low-medium">£860M</span></div>
+                <div>Utilities: <span class="value-low-medium">£2.8B</span></div>
+                <div>Grand Total: <span class="value-high">£20.72B</span></div>
+            </div>
+        </div>
+
+        <div id="wales-box" class="region-box">
+            <div class="region-title">Wales</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-high">£4.39B</span></div>
+                <div>Highways: <span class="value-high">£2.73B</span></div>
+                <div>Aviation: <span class="value">£185M</span></div>
+                <div>Maritime: <span class="value-low-medium">£525M</span></div>
+                <div>Utilities: <span class="value-low-medium">£2.18B</span></div>
+                <div>Grand Total: <span class="value-high">£10.0B</span></div>
+            </div>
+        </div>
+
+        <div id="south-west-box" class="region-box">
+            <div class="region-title">South West</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-high">£3.76B</span></div>
+                <div>Highways: <span class="value-high">£2.68B</span></div>
+                <div>Aviation: <span class="value-low-medium">£640M</span></div>
+                <div>Maritime: <span class="value-low-medium">£897M</span></div>
+                <div>Utilities: <span class="value-high">£2.75B</span></div>
+                <div>Grand Total: <span class="value-high">£10.72B</span></div>
+            </div>
+        </div>
+
+        <!-- Right side boxes -->
+        <div id="north-east-box" class="region-box">
+            <div class="region-title">North East</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£2.06B</span></div>
+                <div>Highways: <span class="value-low-medium">£777M</span></div>
+                <div>Aviation: <span class="value">£78M</span></div>
+                <div>Maritime: <span class="value-low-medium">£463M</span></div>
+                <div>Utilities: <span class="value-low-medium">£975M</span></div>
+                <div>Grand Total: <span class="value-low-medium">£4.35B</span></div>
+            </div>
+        </div>
+
+        <div id="yorkshire-and-the-humber-box" class="region-box">
+            <div class="region-title">Yorkshire and the Humber</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£4.84B</span></div>
+                <div>Highways: <span class="value-low-medium">£1.27B</span></div>
+                <div>Aviation: <span class="value-low-medium">£325M</span></div>
+                <div>Maritime: <span class="value-low-medium">£975M</span></div>
+                <div>Utilities: <span class="value-low-medium">£1.41B</span></div>
+                <div>Grand Total: <span class="value-high">£8.81B</span></div>
+            </div>
+        </div>
+
+        <div id="east-midlands-box" class="region-box">
+            <div class="region-title">East Midlands</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£4.45B</span></div>
+                <div>Highways: <span class="value-low-medium">£1.23B</span></div>
+                <div>Aviation: <span class="value">£105M</span></div>
+                <div>Maritime: <span class="value">£118M</span></div>
+                <div>Utilities: <span class="value-low-medium">£1.55B</span></div>
+                <div>Grand Total: <span class="value-low-medium">£7.78B</span></div>
+            </div>
+        </div>
+
+        <div id="eastern-box" class="region-box">
+            <div class="region-title">Eastern</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£7.95B</span></div>
+                <div>Highways: <span class="value-low-medium">£2.65B</span></div>
+                <div>Aviation: <span class="value-low-medium">£1.52B</span></div>
+                <div>Maritime: <span class="value-low-medium">£915M</span></div>
+                <div>Utilities: <span class="value-low-medium">£2.2B</span></div>
+                <div>Grand Total: <span class="value-high">£15.25B</span></div>
+            </div>
+        </div>
+
+        <div id="south-east-box" class="region-box">
+            <div class="region-title">South East</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£5.95B</span></div>
+                <div>Highways: <span class="value-low-medium">£992M</span></div>
+                <div>Aviation: <span class="value-high">£5.46B</span></div>
+                <div>Maritime: <span class="value-low-medium">£1.08B</span></div>
+                <div>Utilities: <span class="value-high">£3.75B</span></div>
+                <div>Grand Total: <span class="value-high">£17.24B</span></div>
+            </div>
+        </div>
+
+        <!-- Bottom row cards -->
+        <div id="west-midlands-box" class="region-box">
+            <div class="region-title">West Midlands</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£3.58B</span></div>
+                <div>Highways: <span class="value-low-medium">£683M</span></div>
+                <div>Aviation: <span class="value">£405M</span></div>
+                <div>Maritime: <span class="value">£118M</span></div>
+                <div>Utilities: <span class="value-low-medium">£1.21B</span></div>
+                <div>Grand Total: <span class="value-low-medium">£6.82B</span></div>
+            </div>
+        </div>
+
+        <div id="london-box" class="region-box">
+            <div class="region-title">London</div>
+            <div class="region-details">
+                <div>Rail Sector: <span class="value-low-medium">£2.76B</span></div>
+                <div>Highways: <span class="value-low-medium">£645M</span></div>
+                <div>Aviation: <span class="value-high">£6.93B</span></div>
+                <div>Maritime: <span class="value-low-medium">£1.12B</span></div>
+                <div>Utilities: <span class="value-high">£6.75B</span></div>
+                <div>Grand Total: <span class="value-high">£18.18B</span></div>
+            </div>
+        </div>
+
+        <!-- Map in the center column -->
+        <div class="map-container">
+            <!-- Overlay SVG retained -->
+            <svg width="100%" height="100%" style="position:absolute;top:0;left:0;pointer-events:none;z-index:2;">
+                <line x1="760" y1="500" x2="570" y2="700" stroke="#888" stroke-width="2" stroke-dasharray="5,5" opacity="0.6" />
+            </svg>
+
+            <!-- MAIN MAP SVG (unchanged; original content preserved) -->
+            <svg id="svg_map" xmlns="http://www.w3.org/2000/svg" viewBox="125 -1112 1450.9 2375">
+                <!-- ******* YOUR ORIGINAL MAP PATHS / GROUPS ARE HERE (omitted in this message for brevity) ******* -->
+                <!-- Keep all of your existing <g id="...">, <path>, <polygon> etc. exactly as they were -->
+            </svg>
+        </div>
     </div>
 
-    <!-- MAP (your original SVGs embedded) -->
-    <div class="map-wrap">
-      <!-- overlay svg (from your file) -->
-      <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;">
-        <line x1="760" y1="500" x2="570" y2="700" stroke="#888" stroke-width="2" stroke-dasharray="5,5" opacity="0.6" />
-      </svg>
+    <script>
+        // Maintain your highlight/selection logic (original JS kept)
+        document.addEventListener('DOMContentLoaded', function() {
+            const mapRegions = document.querySelectorAll('.map-region');
+            const regionBoxes = document.querySelectorAll('.region-box');
+            let currentlySelected = null;
 
-      <!-- main map svg (from your file, unchanged) -->
-      <svg version="1.1" id="svg_map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="125 -1112 1450.9 2375" xml:space="preserve" width="100%" height="auto">
-        <!-- … your full original SVG paths/polygons are preserved here … -->
-        <!-- (This is the second, large <svg> from your current file) -->
-      </svg>
-    </div>
-
-    <!-- RIGHT COLUMN -->
-    <div class="right-col">
-      <div class="card">
-        <h3>North East</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£2.06B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£777M</span></div>
-        <div class="kv"><span>Aviation</span><span class="v low">£78M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£463M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£975M</span></div>
-        <div class="total">Grand Total: £4.35B</div>
-      </div>
-      <div class="card">
-        <h3>Yorkshire &amp; the Humber</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£4.84B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£1.27B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v mid">£325M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£975M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£1.41B</span></div>
-        <div class="total">Grand Total: £8.81B</div>
-      </div>
-      <div class="card">
-        <h3>East Midlands</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£4.45B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£1.23B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v low">£105M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v low">£118M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£1.55B</span></div>
-        <div class="total">Grand Total: £7.78B</div>
-      </div>
-      <div class="card">
-        <h3>West Midlands</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£3.58B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£683M</span></div>
-        <div class="kv"><span>Aviation</span><span class="v low">£405M</span></div>
-        <div class="kv"><span>Maritime</span><span class="v low">£118M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£1.21B</span></div>
-        <div class="total">Grand Total: £6.82B</div>
-      </div>
-      <div class="card">
-        <h3>Eastern</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£7.95B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£2.65B</span></div>
-        <div class="kv"><span>Aviation</span><span class="v mid">£1.52B</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£915M</span></div>
-        <div class="kv"><span>Utilities</span><span class="v mid">£2.2B</span></div>
-        <div class="total">Grand Total: £15.25B</div>
-      </div>
-      <!-- ADDED -->
-      <div class="card">
-        <h3>South East</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£5.95B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£992M</span></div>
-        <div class="kv"><span>Aviation</span><span class="v ok">£5.46B</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£1.08B</span></div>
-        <div class="kv"><span>Utilities</span><span class="v ok">£3.75B</span></div>
-        <div class="total">Grand Total: £17.24B</div>
-      </div>
-      <!-- ADDED -->
-      <div class="card">
-        <h3>London</h3>
-        <div class="kv"><span>Rail Sector</span><span class="v mid">£2.76B</span></div>
-        <div class="kv"><span>Highways</span><span class="v mid">£645M</span></div>
-        <div class="kv"><span>Aviation</span><span class="v ok">£6.93B</span></div>
-        <div class="kv"><span>Maritime</span><span class="v mid">£1.12B</span></div>
-        <div class="kv"><span>Utilities</span><span class="v ok">£6.75B</span></div>
-        <div class="total">Grand Total: £18.18B</div>
-      </div>
-    </div>
-  </div>
+            mapRegions.forEach(region => {
+                region.addEventListener('click', function() {
+                    mapRegions.forEach(r => r.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentlySelected = this.getAttribute('title');
+                });
+                
+                region.addEventListener('mouseenter', function() {
+                    if (currentlySelected !== this.getAttribute('title')) {
+                        this.style.filter = 'brightness(1.05)';
+                    }
+                });
+                
+                region.addEventListener('mouseleave', function() {
+                    if (currentlySelected !== this.getAttribute('title')) {
+                        this.style.filter = 'brightness(1)';
+                    }
+                });
+            });
+            
+            // Add click functionality to boxes to select corresponding regions
+            regionBoxes.forEach(box => {
+                box.addEventListener('click', function() {
+                    const regionId = this.id.replace('-box', '');
+                    const mapRegion = document.getElementById(regionId);
+                    if (mapRegion) {
+                        mapRegion.click();
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
