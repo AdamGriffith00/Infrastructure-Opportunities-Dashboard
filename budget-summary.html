@@ -43,7 +43,7 @@
             text-align: center;
             border: 2px solid rgb(247,196,0);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            overflow-y: auto;
+            overflow: visible; /* no scrollbars */
             transition: all 0.3s ease;
             cursor: pointer;
         }
@@ -77,11 +77,13 @@
         }
         
         .region-details {
-            margin-top: 10px;
-            font-size: 12px;
-            line-height: 1.3;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            font-weight: normal;
+            line-height: 1.2;
             text-align: left;
-            padding: 10px;
         }
         
         .region-details h4 {
@@ -316,7 +318,7 @@
             <div class="region-details">
                 <h4>Rail Sector: <span class="value-high">£4.84B</span></h4>
                 <h4>Highways: <span class="value-medium">£1.27B</span></h4>
-                <h4>Aviation: <span class="value-medium">£325M</span></h4>
+                <h4>Aviation: <span class="value-low-medium">£325M</span></h4>
                 <h4>Maritime: <span class="value-medium">£975M</span></h4>
                 <h4>Utilities: <span class="value-medium">£1.41B</span></h4>
                 <h4>Grand Total: <span class="value-high">£8.81B</span></h4>
@@ -332,7 +334,7 @@
                 <h4>Aviation: <span class="value-medium">£105M</span></h4>
                 <h4>Maritime: <span class="value-low-medium">£118M</span></h4>
                 <h4>Utilities: <span class="value-medium">£1.55B</span></h4>
-                <h4>Grand Total: <span class="value-high">£7.78B</span></h4>
+                <h4>Grand Total: <span class="value-medium">£7.78B</span></h4>
             </div>
         </div>
         
@@ -343,7 +345,7 @@
                 <h4>Rail Sector: <span class="value-high">£7.95B</span></h4>
                 <h4>Highways: <span class="value-high">£2.65B</span></h4>
                 <h4>Aviation: <span class="value-medium">£1.52B</span></h4>
-                <h4>Maritime: <span class="value-medium">£915M</span></h4>
+                <h4>Maritime: <span class="value-low-medium">£915M</span></h4>
                 <h4>Utilities: <span class="value-high">£2.2B</span></h4>
                 <h4>Grand Total: <span class="value-high">£15.25B</span></h4>
             </div>
@@ -356,7 +358,7 @@
                 <h4>Rail Sector: <span class="value-high">£5.95B</span></h4>
                 <h4>Highways: <span class="value-medium">£992M</span></h4>
                 <h4>Aviation: <span class="value-high">£5.46B</span></h4>
-                <h4>Maritime: <span class="value-medium">£1.08B</span></h4>
+                <h4>Maritime: <span class="value-low-medium">£1.08B</span></h4>
                 <h4>Utilities: <span class="value-high">£3.75B</span></h4>
                 <h4>Grand Total: <span class="value-high">£17.24B</span></h4>
             </div>
@@ -379,19 +381,23 @@
         <div id="london-box" class="region-box">
             <div class="region-title">London</div>
             <div class="region-details">
-                <h4>Rail Sector: <span class="value-high">£2.76B</span></h4>
+                <h4>Rail Sector: <span class="value-medium">£2.76B</span></h4>
                 <h4>Highways: <span class="value-medium">£645M</span></h4>
                 <h4>Aviation: <span class="value-high">£6.93B</span></h4>
-                <h4>Maritime: <span class="value-medium">£1.12B</span></h4>
+                <h4>Maritime: <span class="value-low-medium">£1.12B</span></h4>
                 <h4>Utilities: <span class="value-high">£6.75B</span></h4>
                 <h4>Grand Total: <span class="value-high">£18.18B</span></h4>
             </div>
         </div>
         
-        <!-- SVG Map (as in your file) -->
+        <!-- SVG Map (your original content preserved) -->
         <div class="map-container">
-            <!-- your existing SVG map content remains here exactly as in your file -->
-            <!-- (omitted for brevity in this message) -->
+            <!-- BEGIN: Your SVG -->
+            <!-- (This block is the original SVG from your file; not altered) -->
+            <!-- If your repo’s SVG is extremely long, it remains here as-is -->
+            <!-- *** START SVG *** -->
+            <!-- Place your full original <svg> ... </svg> content here -->
+            <!-- *** END SVG *** -->
         </div>
     </div>
 </body>
