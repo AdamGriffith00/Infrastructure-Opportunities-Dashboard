@@ -61,21 +61,22 @@
     .panel{ display:none; }
     .panel.active{ display:block; }
 
-    /* Center the child map and give it a card shell */
+    /* Map frame wrapper – transparent, fills available height (set by JS) */
     .frame-wrapper{
       display:flex; align-items:center; justify-content:center;
       width:100%;
-      height:calc(100vh - 140px); /* topbar + tabs allowance */
-      background:var(--card);
-      border-radius:12px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
+      /* height is set dynamically via JS now */
+      background:transparent;         /* remove white card */
+      border-radius:0;                /* remove rounded card look */
+      box-shadow:none;                /* remove inner card shadow */
+      overflow:visible;
     }
     .frame{
-      width:95%;
-      height:95%;
+      width:100%;
+      height:100%;
       border:0;
       display:block;
+      background:transparent;
     }
 
     /* Service Lines subtabs */
@@ -97,7 +98,7 @@
     }
 
     @media (max-width:720px){
-      .frame-wrapper{ height:calc(100vh - 170px); }
+      /* Height is JS-driven; no hard-coded calc here anymore */
     }
   </style>
 </head>
@@ -168,6 +169,19 @@
   </div>
 
   <script>
+    // Size all map frames to fill the viewport under the topbar + tabs.
+    function sizeFrames() {
+      const topbar = document.querySelector('.topbar');
+      const tabs   = document.querySelector('.tabs');
+      const topH   = (topbar?.offsetHeight || 0) + (tabs?.offsetHeight || 0);
+      const margin = 20; // breathing room inside .viewport
+      const target = Math.max(480, window.innerHeight - topH - margin); // never below 480px
+
+      document.querySelectorAll('.frame-wrapper').forEach(el => {
+        el.style.height = target + 'px';
+      });
+    }
+
     // Tabs
     document.querySelectorAll('.tab').forEach(tab=>{
       tab.addEventListener('click', ()=>{
@@ -176,8 +190,10 @@
         tab.classList.add('active');
         document.getElementById(tab.dataset.target).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        sizeFrames();
       });
     });
+
     // Service subtabs
     document.querySelectorAll('.subtab').forEach(st=>{
       st.addEventListener('click', ()=>{
@@ -186,8 +202,14 @@
         st.classList.add('active');
         document.getElementById(st.dataset.sub).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        sizeFrames();
       });
     });
+
+    // Initial and on-resize sizing
+    window.addEventListener('resize', sizeFrames);
+    window.addEventListener('load', sizeFrames);
+    document.addEventListener('DOMContentLoaded', sizeFrames);
   </script>
 </body>
 </html>
