@@ -5,129 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UK Map - Fixed</title>
     <style>
-  :root{
-    --gleeds:#f7c400;         /* Gleeds yellow */
-    --charcoal:#3c3c3c;       /* Gleeds charcoal */
-    --ink:#fff;
+  :root {
+    --gleeds: #f7c400;
+    --charcoal: #2e2e2e;
+    --card-bg: #3c3c3c;
+    --ink: #fff;
+    --shadow: 0 4px 12px rgba(0,0,0,.4);
+    --rail: #28a745;   /* Green */
+    --highways: #ff9800; /* Orange */
+    --aviation: #e53935; /* Red */
+    --maritime: #c2185b; /* Pink/Red */
+    --utilities: #1e88e5; /* Blue */
+    --grandtotal: #00c853; /* Bright Green */
   }
 
-  body{
-    font-family: Arial, sans-serif;
+  body {
     margin: 0;
-    padding: 0;                       /* remove body padding -> no gap above map */
-    min-height: 100vh;
-    background: radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, var(--charcoal) 60%, #2f2f2f 100%);
-    color:#fff;
+    font-family: Arial, sans-serif;
+    background: var(--charcoal);
+    color: var(--ink);
   }
 
-  /* Tighter outer frame, no extra space around grid */
-  .container{
-    display:grid;
-    grid-template-columns: 240px 240px minmax(880px, 1000px) 240px 240px; /* map wider */
-    grid-template-rows: 260px 260px 260px 260px 260px 260px;              /* taller rows */
-    gap:22px;
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 16px 18px 22px;   /* small breathing room around everything */
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 300px 600px 300px 1fr;
+    grid-template-rows: repeat(6, auto);
+    gap: 12px;
+    padding: 20px;
+    min-height: 100vh;
     box-sizing: border-box;
   }
 
-  /* MAP fills center column, scales to fit neatly */
-.map-container{
-  grid-column:3;
-  grid-row:1 / 7;
-  position:relative;
-  z-index:1;
-  display:flex;
-  align-items:center;       /* center vertically */
-  justify-content:center;   /* center horizontally */
-  background:transparent;
-  margin:0; padding:0;
-}
-
-#svg_map{
-  max-width:100%;
-  max-height:100%;
-  width:auto;
-  height:auto;
-  display:block;
-}
-  /* Cards – larger text and spacing */
-  .region-box{
-    background:#2f2f2f;
-    color:#fff;
-    padding:16px 18px;
-    border-radius:12px;
-    border:3px solid var(--gleeds);      /* stronger yellow outline */
-    box-shadow:0 8px 22px rgba(0,0,0,.28);
-    font-size:14px;                      /* bigger */
-    font-weight:700;
-    text-align:left;
-    overflow:visible;
-    transition:transform .18s ease, box-shadow .18s ease;
-  }
-  .region-box:hover{
-    transform:translateY(-2px);
-    box-shadow:0 12px 28px rgba(0,0,0,.34);
-  }
-  .region-title{
-    text-align:center;
-    margin-bottom:8px;
-    font-weight:800;
-    font-size:15px;
-  }
-  .region-details{
-    margin-top:6px;
-    padding-top:10px;
-    border-top:1px solid rgba(255,255,255,.22);
-    font-size:13px;                      /* numbers still sharp */
-    line-height:1.35;
+  /* MAP fills center column, scales nicely */
+  .map-container {
+    grid-column: 3;
+    grid-row: 1 / 7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
   }
 
-  /* value tints */
-  .value{color:#A80000;font-weight:800;}
-  .value-low-medium{color:#F27900;font-weight:800;}
-  .value-medium{color:#FFFF00;font-weight:800;}
-  .value-high{color:#35F600;font-weight:800;}
+  #svg_map {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+  }
 
-  /* Box positions – same logic; minor nudges preserved */
-  #scotland-box{grid-column:1;grid-row:1;transform:translateX(200px);}
-  #northern-ireland-box{grid-column:1;grid-row:2;transform:translateX(200px);}
-  #north-west-box{grid-column:1;grid-row:3;transform:translateX(200px);}
-  #wales-box{grid-column:1;grid-row:4;transform:translateX(200px);}
-  #south-west-box{grid-column:1;grid-row:5;transform:translateX(200px);}
+  /* REGION BOXES */
+  .region-box {
+    background: var(--card-bg);
+    color: var(--ink);
+    border: 2px solid var(--gleeds);
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    line-height: 1.4;
+  }
 
-  #north-east-box{grid-column:4;grid-row:1;}
-  #yorkshire-and-the-humber-box{grid-column:4;grid-row:2;}
-  #east-midlands-box{grid-column:4;grid-row:3;}
-  #eastern-box{grid-column:4;grid-row:4;}
-  #south-east-box{grid-column:4;grid-row:5;}
+  .region-title {
+    font-weight: bold;
+    font-size: 15px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #666;
+    padding-bottom: 4px;
+  }
 
-  /* Bottom row: tidy alignment left/right */
-  #west-midlands-box{grid-column:2;grid-row:6;transform:translateX(320px);}
-  #london-box{grid-column:4;grid-row:6;transform:translateX(-260px);}
+  .region-box span {
+    display: block;
+  }
 
-  /* Map highlight (kept) */
-  .map-region{cursor:pointer;transition:all .3s ease;}
-  .map-region-single{fill:var(--gleeds);stroke:#2c5aa0;stroke-width:2;transition:all .3s ease;}
-  .map-region:hover .map-region-single{fill:#ffce14;stroke:#1a4480;stroke-width:3;}
-  .map-region.selected .map-region-single{fill:#ffe228;stroke:#FFD700;stroke-width:4;}
+  .rail { color: var(--rail); font-weight: bold; }
+  .highways { color: var(--highways); font-weight: bold; }
+  .aviation { color: var(--aviation); font-weight: bold; }
+  .maritime { color: var(--maritime); font-weight: bold; }
+  .utilities { color: var(--utilities); font-weight: bold; }
+  .grandtotal { color: var(--grandtotal); font-weight: bold; }
 
-  /* Responsive stack */
-  @media (max-width:1400px){
-    .container{
+  /* GRID PLACEMENT OF REGIONS */
+  .scotland { grid-column: 2; grid-row: 1; }
+  .northern-ireland { grid-column: 2; grid-row: 2; }
+  .north-west { grid-column: 2; grid-row: 3; }
+  .wales { grid-column: 2; grid-row: 4; }
+  .south-west { grid-column: 2; grid-row: 5; }
+  .north-east { grid-column: 4; grid-row: 1; }
+  .yorkshire { grid-column: 4; grid-row: 2; }
+  .east-midlands { grid-column: 4; grid-row: 3; }
+  .eastern { grid-column: 4; grid-row: 4; }
+  .south-east { grid-column: 4; grid-row: 5; }
+  .west-midlands { grid-column: 3; grid-row: 6; justify-self: end; }
+  .london { grid-column: 3; grid-row: 6; justify-self: start; }
+
+  @media(max-width:1200px) {
+    .container {
       grid-template-columns: 1fr;
       grid-template-rows: auto;
-      gap:14px;
-      padding:12px;
-      max-width: 100%;
     }
-    .map-container{grid-column:1;grid-row:1;}
-    .region-box{grid-column:1;transform:none !important;margin:6px 0;}
-    #scotland-box,#northern-ireland-box,#north-west-box,#wales-box,#south-west-box,
-    #north-east-box,#yorkshire-and-the-humber-box,#east-midlands-box,#eastern-box,#south-east-box,
-    #west-midlands-box,#london-box{grid-column:1;grid-row:auto;}
-    #svg_map{width:100%;height:auto;} /* on mobile, scale by width */
+    .map-container { grid-column: 1; grid-row: auto; order: -1; }
+    .region-box { font-size: 13px; }
   }
 </style>
 </head>
