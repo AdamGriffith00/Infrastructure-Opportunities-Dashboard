@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budgets – Infrastructure Growth Portal</title>
+  <style>
+    :root{ --gleeds-yellow: rgb(247,196,0); --charcoal:#3c3c3c; --line:#e5e5e5; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f3f3;color:#222;}
+    /* Topbar with Back */
+    .topbar{background:var(--gleeds-yellow);color:#fff;position:sticky;top:0;z-index:10;}
+    .topbar .wrap{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between;}
+    .brand{font-weight:900}
+    .back { display:inline-flex; align-items:center; gap:8px; background:#fff; color:#111; text-decoration:none;
+            border:1px solid #e5e5e5; border-radius:8px; padding:8px 10px; font-weight:800; }
+    .back:hover { background:#f9fafb; }
+    .wrap-main{max-width:1200px;margin:0 auto;padding:16px;}
+    /* Tabs */
+    .tabs{display:flex;flex-wrap:wrap;background:var(--gleeds-yellow);}
+    .tab{flex:1 1 25%; text-align:center; padding:14px 10px; cursor:pointer; color:#fff; font-weight:800; user-select:none;}
+    .tab:hover, .tab.active{background:var(--charcoal);}
+    .panel{display:none;padding:12px 0;}
+    .panel.active{display:block;}
+    iframe{width:100%;height:88vh;border:0;background:#fff;}
+    /* Service sub-tabs */
+    .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+    .subtab{flex:1 1 220px; text-align:center; padding:10px; background:#fff; border:1px solid var(--line); border-radius:10px; cursor:pointer; font-weight:800;}
+    .subtab.active{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+    .subpanel{display:none;}
+    .subpanel.active{display:block;}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="back" href="index.html" aria-label="Back to Home">← Back to Home</a>
+      <span class="brand">Budgets</span>
+      <span></span>
+    </div>
+  </header>
+
+  <main class="wrap-main">
+    <!-- Main tabs -->
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-target="overall">2025/26 Budget Summary</div>
+      <div class="tab" data-target="regions">Regions – 2025/26 Projects</div>
+      <div class="tab" data-target="tenyear">10 Year Budget Summary</div>
+      <div class="tab" data-target="services">Service Lines</div>
+    </div>
+
+    <!-- Panels -->
+    <section id="overall" class="panel active">
+      <iframe src="budget-summary.html" title="Budget Summary"></iframe>
+    </section>
+
+    <section id="regions" class="panel">
+      <iframe src="uk-map.html" title="Regions – 2025/26 Projects"></iframe>
+    </section>
+
+    <section id="tenyear" class="panel">
+      <iframe src="uk-interactive-map-10-year.html" title="10 Year Budget Summary"></iframe>
+    </section>
+
+    <section id="services" class="panel">
+      <div class="subtabs">
+        <div class="subtab active" data-sub="cm">Cost Management</div>
+        <div class="subtab" data-sub="pm">Project Management</div>
+        <div class="subtab" data-sub="pc">Project Controls</div>
+        <div class="subtab" data-sub="pa">Programme Advisory</div>
+      </div>
+
+      <div id="cm" class="subpanel active">
+        <!-- Using your existing filenames from repo root -->
+        <iframe src="Cost-Management.html" title="Cost Management"></iframe>
+      </div>
+      <div id="pm" class="subpanel">
+        <iframe src="Project-Management.html" title="Project Management"></iframe>
+      </div>
+      <div id="pc" class="subpanel">
+        <iframe src="Project-Controls.html" title="Project Controls"></iframe>
+      </div>
+      <div id="pa" class="subpanel">
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:18px;">
+          Programme Advisory map coming soon…
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Top-level tabs
+    document.querySelectorAll('.tab').forEach(tab=>{
+      tab.addEventListener('click', ()=>{
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+    // Service sub-tabs
+    document.querySelectorAll('.subtab').forEach(st=>{
+      st.addEventListener('click', ()=>{
+        document.querySelectorAll('.subtab').forEach(s=>s.classList.remove('active'));
+        document.querySelectorAll('.subpanel').forEach(sp=>sp.classList.remove('active'));
+        st.classList.add('active');
+        document.getElementById(st.dataset.sub).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
