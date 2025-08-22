@@ -5,88 +5,163 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Budgets – Infrastructure Growth Portal</title>
   <style>
-    :root{ --gleeds-yellow: rgb(247,196,0); --charcoal:#3c3c3c; --line:#e5e5e5; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f3f3;color:#222;}
-    /* Topbar with Back */
-    .topbar{background:var(--gleeds-yellow);color:#fff;position:sticky;top:0;z-index:10;}
-    .topbar .wrap{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between;}
-    .brand{font-weight:900}
-    .back { display:inline-flex; align-items:center; gap:8px; background:#fff; color:#111; text-decoration:none;
-            border:1px solid #e5e5e5; border-radius:8px; padding:8px 10px; font-weight:800; }
-    .back:hover { background:#f9fafb; }
-    .wrap-main{max-width:1200px;margin:0 auto;padding:16px;}
-    /* Tabs */
-    .tabs{display:flex;flex-wrap:wrap;background:var(--gleeds-yellow);}
-    .tab{flex:1 1 25%; text-align:center; padding:14px 10px; cursor:pointer; color:#fff; font-weight:800; user-select:none;}
-    .tab:hover, .tab.active{background:var(--charcoal);}
-    .panel{display:none;padding:12px 0;}
-    .panel.active{display:block;}
-    iframe{width:100%;height:88vh;border:0;background:#fff;}
-    /* Service sub-tabs */
-    .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
-    .subtab{flex:1 1 220px; text-align:center; padding:10px; background:#fff; border:1px solid var(--line); border-radius:10px; cursor:pointer; font-weight:800;}
-    .subtab.active{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
-    .subpanel{display:none;}
-    .subpanel.active{display:block;}
+    :root{
+      --gleeds:#f7c400;
+      --charcoal:#3c3c3c;
+      --line:#e5e5e5;
+      --ink:#fff;
+    }
+    *{box-sizing:border-box;margin:0}
+
+    /* Page background to match home */
+    body{
+      min-height:100vh;
+      background: radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, #3c3c3c 60%, #333 100%);
+      color:#222;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Top bar with back button */
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      background:var(--gleeds);
+      box-shadow:0 2px 8px rgba(0,0,0,.15);
+    }
+    .topbar-inner{
+      max-width:1400px; margin:0 auto; padding:10px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .back{
+      display:inline-flex; align-items:center; gap:8px;
+      background:#fff; color:#111; text-decoration:none;
+      border:1px solid #e5e5e5; border-radius:8px; padding:8px 12px;
+      font-weight:800;
+    }
+    .brand{ color:#fff; font-weight:900; }
+
+    /* Full-width tabs bar */
+    .tabs{
+      background:var(--gleeds);
+      display:flex; flex-wrap:wrap;
+      border-top:1px solid rgba(255,255,255,.15);
+    }
+    .tab{
+      flex:1 1 25%;
+      min-width:220px;
+      text-align:center;
+      padding:14px 10px;
+      cursor:pointer;
+      color:#fff; font-weight:800; user-select:none;
+      transition:background .15s ease;
+    }
+    .tab:hover, .tab.active{ background:var(--charcoal); }
+
+    /* Viewport area */
+    .viewport{
+      max-width:1400px; margin:0 auto;
+      padding:14px;   /* subtle gutter */
+    }
+
+    /* Panels fill viewport height minus chrome (topbar+tabs) */
+    .panel{ display:none; }
+    .panel.active{ display:block; }
+
+    /* Make iframes fill space and look like cards */
+    .frame{
+      width:100%;
+      height: calc(100vh - 140px); /* adjusts for topbar+tabs; tweak if needed */
+      border:0;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 14px 30px rgba(0,0,0,.18);
+      display:block;
+    }
+
+    /* Sub-tabs for Service Lines */
+    .subtabs-wrap{
+      max-width:1400px; margin:10px auto 8px; padding:0 14px;
+    }
+    .subtabs{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .subtab{
+      flex:1 1 220px; min-width:220px;
+      text-align:center; padding:10px;
+      background:#fff; border:1px solid var(--line); border-radius:10px;
+      cursor:pointer; font-weight:800;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+    }
+    .subtab.active{ background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+    .subpanel{ display:none; }
+    .subpanel.active{ display:block; }
+    .placeholder{
+      background:#fff; border:1px solid #e5e5e5; border-radius:12px; padding:20px; color:#333;
+      box-shadow:0 10px 24px rgba(0,0,0,.12);
+    }
+
+    /* Responsive tweaks */
+    @media (max-width:720px){
+      .frame{ height: calc(100vh - 170px); }
+    }
   </style>
 </head>
 <body>
+  <!-- Sticky top with back -->
   <header class="topbar">
-    <div class="wrap">
+    <div class="topbar-inner">
       <a class="back" href="index.html" aria-label="Back to Home">← Back to Home</a>
       <span class="brand">Budgets</span>
       <span></span>
     </div>
   </header>
 
-  <main class="wrap-main">
-    <!-- Main tabs -->
-    <div class="tabs" id="tabs">
-      <div class="tab active" data-target="overall">2025/26 Budget Summary</div>
-      <div class="tab" data-target="regions">Regions – 2025/26 Projects</div>
-      <div class="tab" data-target="tenyear">10 Year Budget Summary</div>
-      <div class="tab" data-target="services">Service Lines</div>
-    </div>
+  <!-- Full-width tabs -->
+  <nav class="tabs" id="tabs">
+    <div class="tab active" data-target="overall">2025/26 Budget Summary</div>
+    <div class="tab" data-target="regions">Regions – 2025/26 Projects</div>
+    <div class="tab" data-target="tenyear">10 Year Budget Summary</div>
+    <div class="tab" data-target="services">Service Lines</div>
+  </nav>
 
-    <!-- Panels -->
+  <!-- Panels -->
+  <div class="viewport">
     <section id="overall" class="panel active">
-      <iframe src="budget-summary.html" title="Budget Summary"></iframe>
+      <iframe class="frame" src="budget-summary.html" title="Budget Summary"></iframe>
     </section>
 
     <section id="regions" class="panel">
-      <iframe src="uk-map.html" title="Regions – 2025/26 Projects"></iframe>
+      <iframe class="frame" src="uk-map.html" title="Regions – 2025/26 Projects"></iframe>
     </section>
 
     <section id="tenyear" class="panel">
-      <iframe src="uk-interactive-map-10-year.html" title="10 Year Budget Summary"></iframe>
+      <iframe class="frame" src="uk-interactive-map-10-year.html" title="10 Year Budget Summary"></iframe>
     </section>
 
     <section id="services" class="panel">
-      <div class="subtabs">
-        <div class="subtab active" data-sub="cm">Cost Management</div>
-        <div class="subtab" data-sub="pm">Project Management</div>
-        <div class="subtab" data-sub="pc">Project Controls</div>
-        <div class="subtab" data-sub="pa">Programme Advisory</div>
-      </div>
-
-      <div id="cm" class="subpanel active">
-        <!-- Using your existing filenames from repo root -->
-        <iframe src="Cost-Management.html" title="Cost Management"></iframe>
-      </div>
-      <div id="pm" class="subpanel">
-        <iframe src="Project-Management.html" title="Project Management"></iframe>
-      </div>
-      <div id="pc" class="subpanel">
-        <iframe src="Project-Controls.html" title="Project Controls"></iframe>
-      </div>
-      <div id="pa" class="subpanel">
-        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:18px;">
-          Programme Advisory map coming soon…
+      <!-- Service Lines sub-tabs -->
+      <div class="subtabs-wrap">
+        <div class="subtabs" id="serviceTabs">
+          <div class="subtab active" data-sub="cm">Cost Management</div>
+          <div class="subtab" data-sub="pm">Project Management</div>
+          <div class="subtab" data-sub="pc">Project Controls</div>
+          <div class="subtab" data-sub="pa">Programme Advisory</div>
         </div>
       </div>
+
+      <div id="cm" class="subpanel active viewport">
+        <iframe class="frame" src="Cost-Management.html" title="Cost Management"></iframe>
+      </div>
+      <div id="pm" class="subpanel viewport">
+        <iframe class="frame" src="Project-Management.html" title="Project Management"></iframe>
+      </div>
+      <div id="pc" class="subpanel viewport">
+        <iframe class="frame" src="Project-Controls.html" title="Project Controls"></iframe>
+      </div>
+      <div id="pa" class="subpanel viewport">
+        <div class="placeholder">Programme Advisory map coming soon…</div>
+      </div>
     </section>
-  </main>
+  </div>
 
   <script>
     // Top-level tabs
@@ -96,8 +171,11 @@
         document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById(tab.dataset.target).classList.add('active');
+        // scroll to top when switching tabs
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
+
     // Service sub-tabs
     document.querySelectorAll('.subtab').forEach(st=>{
       st.addEventListener('click', ()=>{
@@ -105,6 +183,7 @@
         document.querySelectorAll('.subpanel').forEach(sp=>sp.classList.remove('active'));
         st.classList.add('active');
         document.getElementById(st.dataset.sub).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
   </script>
