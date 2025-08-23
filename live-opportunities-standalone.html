@@ -116,13 +116,39 @@
         const res = await fetch('/.netlify/functions/latest',{cache:'no-store'});
         if(!res.ok) throw new Error(`latest returned ${res.status}`);
         const data = await res.json();
+
         updated.textContent = `Last updated: ${formatDT(data.updatedAt)}`;
         allItems = Array.isArray(data.items) ? data.items.map(normalizeSector) : [];
         buildFilters();
         apply();
       }catch(e){
-        err.textContent = `Error: ${e.message}`;
+        console.error('Live opportunities error:', e);
+        err.textContent = `⚠️ Could not load data (showing demo records)`;
         err.style.display='block';
+
+        // Fallback demo rows so the UI isn't empty during outages
+        const demo = [
+          {
+            title:'Highways Maintenance – Lot 2',
+            organisation:'Department for Transport',
+            region:'Midlands',
+            deadline:new Date(Date.now()+22*86400000).toISOString(),
+            valueLow: 50000000, valueHigh: 80000000,
+            sector:'Highways', source:'Demo', url:'#'
+          },
+          {
+            title:'Airport Expansion Professional Services',
+            organisation:'Heathrow Airport Ltd',
+            region:'London',
+            deadline:new Date(Date.now()+38*86400000).toISOString(),
+            valueLow: 300000000, valueHigh: 500000000,
+            sector:'Aviation', source:'Demo', url:'#'
+          }
+        ].map(normalizeSector);
+
+        allItems = demo;
+        buildFilters();
+        apply();
       }
     }
 
