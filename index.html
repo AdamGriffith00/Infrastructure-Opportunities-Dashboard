@@ -1,190 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Infrastructure Growth Portal</title>
   <style>
     :root{
-      --gleeds: #f7c400;
-      --charcoal: #3c3c3c;
-      --charcoal-2: #2f2f2f;
-      --ink: #ffffff;
-      --primary: #da4f27;   /* action button (your orange) */
-      --muted: #7b7b7b;     /* disabled tiles */
-      --ring: rgba(255,255,255,.12);
-      --shadow: 0 14px 30px rgba(0,0,0,.22), 0 6px 14px rgba(0,0,0,.14);
-      --shadow-soft: 0 10px 24px rgba(0,0,0,.16);
-      --focus: 0 0 0 3px rgba(247,196,0,.35);
-      --radius: 14px;
+      --gleeds:#f7c400;
+      --charcoal:#3c3c3c;
+      --ink:#fff;
+      --primary:#ea4e2b; /* orange button */
+      --muted:#9aa0a6;
+      --card:#fff;
+      --shadow:0 14px 30px rgba(0,0,0,.18);
+      --radius:14px;
     }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    *{box-sizing:border-box;margin:0}
     body{
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", Ubuntu, Cantarell, "Fira Sans", "Droid Sans", sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, #3c3c3c 55%, #303030 100%);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(1100px 560px at 50% 16%, #4a4a4a 0%, #3c3c3c 58%, #333 100%);
+      color:#fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif;
+      padding: 40px 16px;
     }
-
-    .wrap{
-      min-height: 100dvh;
-      display: grid;
-      grid-template-rows: 1fr auto;
-    }
-
-    .hero{
-      display: grid;
-      place-items: center;
-      padding: clamp(20px, 3vw, 40px);
-    }
-
-    .panel{
-      width: min(1100px, 92vw);
-      display: grid;
-      gap: 28px;
-      justify-items: center;
-    }
-
-    /* logo + title */
-    .brand{
-      display: grid;
-      gap: 18px;
-      justify-items: center;
-      text-align: center;
-    }
+    .wrap{max-width:980px;width:100%;text-align:center}
     .logo{
-      height: clamp(56px, 8vw, 82px);
-      filter: drop-shadow(0 4px 14px rgba(0,0,0,.35));
+      font-size:72px; font-weight:800; letter-spacing:1px; margin-bottom:10px;
     }
-    .title{
-      font-weight: 900;
-      letter-spacing: .3px;
-      font-size: clamp(24px, 3.3vw, 40px);
-      color: var(--gleeds);
-      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    .logo .g{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:34px;height:34px;border-radius:50%;background:var(--gleeds);color:#222;
+      font-size:20px;font-weight:900;margin-left:8px;transform:translateY(-6px)
     }
+    .sub{font-size:34px;color:var(--gleeds);font-weight:900;margin-bottom:34px}
+    .grid{
+      display:grid;gap:18px;justify-content:center;
+      grid-template-columns:repeat(3, minmax(240px, 1fr));
+    }
+    @media (max-width:900px){ .grid{grid-template-columns:repeat(2, minmax(240px, 1fr))} }
+    @media (max-width:560px){ .grid{grid-template-columns:1fr} }
 
-    /* rows */
-    .rows{ width: 100%; display: grid; gap: 18px; }
-    .row{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px;
-      justify-content: center;
+    .btn{
+      display:flex;align-items:center;justify-content:center;
+      min-height:86px;border-radius:14px;text-decoration:none;font-weight:800;
+      box-shadow:0 12px 28px rgba(0,0,0,.18); transition:transform .15s ease, box-shadow .15s ease;
+      background:#666; color:#f0f0f0; border:1px solid rgba(255,255,255,.08);
     }
+    .btn:hover{ transform:translateY(-2px); box-shadow:0 16px 34px rgba(0,0,0,.22); }
 
-    /* cards */
-    .card{
-      min-width: 240px;
-      height: 86px;
-      padding: 16px 26px;
-      border-radius: var(--radius);
-      display: grid;
-      place-items: center;
-      text-align: center;
-      color: #fff;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border: 1px solid rgba(255,255,255,.08);
-      box-shadow: var(--shadow-soft);
-      text-decoration: none;
-      font-weight: 800;
-      line-height: 1.2;
-      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
-      user-select: none;
-    }
-    .card:focus{ outline: none; box-shadow: var(--shadow), var(--focus); }
-    .card:hover{ transform: translateY(-2px); box-shadow: var(--shadow); }
+    /* live / primary buttons */
+    .btn.primary{ background:var(--primary); color:#fff; border-color:rgba(255,255,255,.15); }
+    .btn.primary:hover{ filter:brightness(1.02); }
 
-    /* primary (live) actions */
-    .card.primary{
-      background: var(--primary);
-      border-color: rgba(0,0,0,.15);
-    }
-    .card.primary:hover{
-      filter: brightness(1.03);
-    }
-
-    /* disabled / coming soon */
-    .card.disabled{
-      background: #6f6f6f;
-      color: #f0f0f0;
-      cursor: not-allowed;
-      opacity: .92;
-    }
-    .card.disabled:hover{ transform:none; box-shadow: var(--shadow-soft); }
-
-    /* small caption inside disabled cards */
-    .soon{ display:block; font-weight:600; font-size:.86rem; opacity:.85; }
-
-    /* footer */
-    .footer{
-      padding: 18px;
-      color: #ddd;
-      border-top: 1px solid rgba(255,255,255,.08);
-      background: linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,0));
-      display: flex; gap: 12px; align-items: center; justify-content: center;
-      font-size: .92rem;
-    }
-    .dot{ width:6px; height:6px; border-radius:50%; background: var(--ring); display:inline-block; }
-
-    /* responsive tweaks */
-    @media (max-width: 760px){
-      .card{ min-width: calc(50% - 12px); height: 78px; }
-    }
-    @media (max-width: 480px){
-      .card{ min-width: 100%; }
-    }
+    .btn.disabled{ opacity:.55; cursor:not-allowed; }
+    .row{margin-top:14px; display:grid; gap:18px; grid-template-columns:repeat(2, minmax(240px,1fr)); justify-content:center}
+    @media (max-width:560px){ .row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <main class="wrap">
+    <div class="logo">
+      gleeds <span class="g">G</span>
+    </div>
+    <div class="sub">Infrastructure Growth Portal</div>
 
-    <main class="hero">
-      <div class="panel">
+    <div class="grid">
+      <a class="btn primary" href="budgets.html">Budgets</a>
+      <a class="btn primary" href="bidding-portal.html">Bidding Portal</a>
+      <a class="btn primary" href="market-intelligence.html">Market Intelligence</a>
+    </div>
 
-        <!-- Brand -->
-        <div class="brand" aria-label="Gleeds">
-          <!-- Keep your base64 logo so no external request is needed -->
-          <img class="logo" alt="gleeds" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDM1MCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHRleHQgeD0iMjAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IndoaXRlIj5nbGVlZHM8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMjkwIiBjeT0iMzAiIHI9IjIyIiBmaWxsPSIjRjdDNDAwIi8+CiAgPHRleHQgeD0iMjkwIiB5PSIzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSJ3aGl0ZSI+RzwvdGV4dD4KPC9zdmc+" />
-          <div class="title">Infrastructure Growth Portal</div>
-        </div>
-
-        <!-- Action rows -->
-        <div class="rows" aria-label="Primary navigation">
-          <!-- Row 1: three across -->
-          <div class="row">
-            <a class="card primary" href="budgets.html">Budgets</a>
-            <a class="card primary" href="bidding-portal.html">Bidding&nbsp;Portal</a>
-            <a class="card disabled" role="button" aria-disabled="true" tabindex="-1">
-              Client<br/>Engagement
-            </a>
-          </div>
-
-          <!-- Row 2: two centered -->
-          <div class="row">
-            <a class="card disabled" role="button" aria-disabled="true" tabindex="-1">
-              Market<br/>Intelligence
-            </a>
-            <a class="card disabled" role="button" aria-disabled="true" tabindex="-1">
-              International
-            </a>
-          </div>
-        </div>
-
-      </div>
-    </main>
-
-    <footer class="footer" aria-label="Footer">
-      <span>© Gleeds</span>
-      <span class="dot"></span>
-      <span>Infrastructure Growth Portal</span>
-      <span class="dot"></span>
-      <span>v0.1</span>
-    </footer>
-
-  </div>
+    <div class="row">
+      <a class="btn" href="client-engagement.html">Client Engagement</a>
+      <a class="btn" href="international.html">International</a>
+    </div>
+  </main>
 </body>
 </html>
