@@ -1,11 +1,22 @@
 // netlify/functions/update-tenders.mjs
 import { getStore } from '@netlify/blobs';
 
-// Adapters (ensure these files exist)
-import contractsFinder from './adapters/contracts-finder.mjs';
-import findATender     from './adapters/find-a-tender.mjs';
+// ---- ENV → must be set in Netlify Site settings → Environment variables
+const SITE_ID = process.env.BLOBS_SITE_ID;
+const TOKEN   = process.env.BLOBS_TOKEN;
 
-// Relevance rules (same spirit as your original)
+// ---- Tunables
+const CF_PAGES_MAX  = 12;   // how many CF pages (100 each) to walk
+const FTS_BATCH_MAX = 6;    // how many FTS cursor pages (100 each)
+
+const HEADERS = {
+  headers: {
+    'Accept': 'application/json',
+    'User-Agent': 'Infrastructure Dashboard (Netlify Function)'
+  }
+};
+
+// ---- Broad match keyword sets (lowercase) — same intent as before
 const SECTOR_KEYWORDS = [
   'infrastructure','rail','aviation','airport','runway','utilities','water','wastewater','sewer',
   'electric','electricity','energy','power','gas','highways','road','roads','transport','maritime',
@@ -28,12 +39,204 @@ const CLIENT_KEYWORDS = [
   'southampton city council','glasgow city council','edinburgh city council'
 ];
 
-function looksRelevant(it) {
-  const blob = `${it.title || ''} ${it.organisation || ''}`.toLowerCase();
-  const sectorHit  = SECTOR_KEYWORDS.some(k => blob.includes(k));
-  const serviceHit = SERVICE_KEYWORDS.some(k => blob.includes(k));
-  const clientHit  = CLIENT_KEYWORDS.some(k => blob.includes(k));
-  return sectorHit || serviceHit || clientHit;
+export async function handler() {
+  try {
+    if (!SITE_ID || !TOKEN) {
+      return json(500, {
+        ok: false,
+        error:
+          'The environment has not been configured to use Netlify Blobs. ' +
+          'Set BLOBS_SITE_ID and BLOBS_TOKEN in Site settings → Environment variables.',
+      });
+    }
+
+    // Netlify Blobs store (manual token mode)
+    const store = getStore({ name: 'tenders', siteID: SITE_ID, token: TOKEN });
+
+    // Pull data concurrently
+    const [cfItems, ftsItems] = await Promise.all([fetchCF(), fetchFTS()]);
+    const merged = dedupe([...cfItems, ...ftsItems]);
+
+    // Filter: future deadlines only + broad relevance
+    const now = Date.now();
+    const relevant = merged.filter(it => {
+      const dOk = it.deadline && Date.parse(it.deadline) > now;
+      return dOk && looksRelevant(it);
+    });
+
+    // Sort by soonest deadline
+    relevant.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+    // Save → Netlify Blobs
+    const payload = {
+      updatedAt: new Date().toISOString(),
+      count: relevant.length,
+      items: relevant,
+      sources: { cf: cfItems.length, fts: ftsItems.length }
+    };
+
+    await store.set('latest.json', JSON.stringify(payload), {
+      contentType: 'application/json',
+    });
+
+    // Done
+    return json(200, { ok: true, ...payload });
+
+  } catch (err) {
+    console.error('update-tenders error:', err);
+    return json(500, { ok:false, error: err.message ?? String(err) });
+  }
+}
+
+// ------------------------------------------------------------
+// Contracts Finder (use OCDS endpoint to avoid HTML pages)
+async function fetchCF() {
+  const out = [];
+  let page = 1;
+
+  // OCDS Search supports page + pageSize
+  while (page <= CF_PAGES_MAX) {
+    const url =
+      `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search` +
+      `?stages=tender&order=desc&pageSize=100&page=${page}`;
+
+    const res = await fetch(url, HEADERS);
+    const type = res.headers.get('content-type') || '';
+    const text = await res.text();
+
+    // Bail if they gave us HTML (e.g. login page)
+    if (!type.includes('application/json')) {
+      console.log(`CF page ${page} returned non-JSON (${type}); stopping.`);
+      break;
+    }
+
+    let data;
+    try { data = JSON.parse(text); } catch { break; }
+
+    // common shapes (OCDS packages)
+    let records = [];
+    if (Array.isArray(data.releases)) {
+      records = data.releases;
+    } else if (Array.isArray(data.records)) { // rare
+      records = data.records;
+    }
+
+    if (!records.length) break;
+
+    for (const r of records) {
+      const title = r?.tender?.title || r?.title || '';
+      const buyer = findBuyerOCDS(r);
+      const deadline =
+        r?.tender?.tenderPeriod?.endDate ||
+        r?.tender?.enquiryPeriod?.endDate || '';
+      const region =
+        r?.tender?.deliveryLocations?.[0]?.nuts ||
+        r?.tender?.deliveryAddresses?.[0]?.region || '';
+      const id = r?.ocid || r?.id || '';
+      const urlNotice = id
+        ? `https://www.contractsfinder.service.gov.uk/Notice/${encodeURIComponent(id)}`
+        : (r?.url || '');
+
+      out.push({
+        source: 'CF',
+        title,
+        organisation: buyer,
+        region,
+        deadline,
+        url: urlNotice,
+        valueLow: pickValue(r, 'min'),
+        valueHigh: pickValue(r, 'max'),
+        sector: inferSector(title, buyer)
+      });
+    }
+
+    page += 1;
+  }
+
+  return out;
+}
+
+// ------------------------------------------------------------
+// Find a Tender (official API with cursor pagination)
+async function fetchFTS() {
+  const out = [];
+  const updatedTo = new Date().toISOString().slice(0,19); // yyyy-mm-ddTHH:MM:SS
+
+  let cursor = '';
+  for (let i = 0; i < FTS_BATCH_MAX; i++) {
+    const base = `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages`;
+    const qs = new URLSearchParams({
+      stages: 'tender',
+      limit: '100',
+      updatedTo
+    });
+    if (cursor) qs.set('cursor', cursor);
+
+    const url = `${base}?${qs.toString()}`;
+    const res = await fetch(url, HEADERS);
+    const type = res.headers.get('content-type') || '';
+    if (!type.includes('application/json')) {
+      console.log(`FTS batch ${i+1}: non-JSON (${type}) — stopping.`);
+      break;
+    }
+
+    const data = await res.json();
+
+    let releases = [];
+    if (Array.isArray(data.releases)) {
+      releases = data.releases;
+    } else if (Array.isArray(data.packages)) {
+      releases = data.packages.flatMap(p => p.releases || []);
+    }
+
+    for (const r of releases) {
+      const title = r?.tender?.title || r?.title || '';
+      const buyer = findBuyerOCDS(r);
+      const deadline =
+        r?.tender?.tenderPeriod?.endDate ||
+        r?.tender?.enquiryPeriod?.endDate || '';
+      const region =
+        r?.tender?.deliveryLocations?.[0]?.nuts ||
+        r?.tender?.deliveryAddresses?.[0]?.region || '';
+      const id = r?.ocid || r?.id || '';
+      const urlNotice = id
+        ? `https://www.find-tender.service.gov.uk/Notice/${encodeURIComponent(id)}`
+        : (r?.url || '');
+
+      out.push({
+        source: 'FTS',
+        title,
+        organisation: buyer,
+        region,
+        deadline,
+        url: urlNotice,
+        valueLow: pickValue(r, 'min'),
+        valueHigh: pickValue(r, 'max'),
+        sector: inferSector(title, buyer)
+      });
+    }
+
+    // cursor handling
+    const next = data?.links?.next || data?.next || '';
+    if (!next) break;
+    const parsed = typeof next === 'string' ? next : (next.href || '');
+    const nextCursor = (parsed.match(/[?&]cursor=([^&]+)/) || [])[1];
+    if (!nextCursor) break;
+    cursor = decodeURIComponent(nextCursor);
+  }
+
+  return out;
+}
+
+// ------------------------------------------------------------
+// Helpers
+
+function json(statusCode, body) {
+  return {
+    statusCode,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  };
 }
 
 function dedupe(items) {
@@ -46,53 +249,35 @@ function dedupe(items) {
   });
 }
 
-function json(statusCode, body) {
-  return {
-    statusCode,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  };
+function looksRelevant(it) {
+  const blob = `${it.title || ''} ${it.organisation || ''}`.toLowerCase();
+
+  // sector OR service OR client → match
+  const sectorHit  = SECTOR_KEYWORDS.some(k => blob.includes(k));
+  const serviceHit = SERVICE_KEYWORDS.some(k => blob.includes(k));
+  const clientHit  = CLIENT_KEYWORDS.some(k => blob.includes(k));
+
+  return sectorHit || serviceHit || clientHit;
 }
 
-export async function handler() {
-  try {
-    // Automatic site binding to the "tenders" store
-    const store = getStore({ name: 'tenders' });
+function inferSector(title, buyer) {
+  const txt = `${title || ''} ${buyer || ''}`.toLowerCase();
+  if (txt.match(/rail|network rail|hs2/)) return 'Rail';
+  if (txt.match(/airport|aviation|runway|heathrow|gatwick|mag|luton/)) return 'Aviation';
+  if (txt.match(/road|highway|national highways/)) return 'Highways';
+  if (txt.match(/water|sewer|wastewater|utilities|electric|power|gas|scottish water|united utilities|anglian water|thames water/)) return 'Utilities';
+  if (txt.match(/port|harbour|harbor|maritime|dock/)) return 'Maritime';
+  return 'Infrastructure';
+}
 
-    // Fetch from both sources via adapters
-    const [cfItems, ftsItems] = await Promise.all([
-      contractsFinder(),
-      findATender(),
-    ]);
+function findBuyerOCDS(r) {
+  const party = (r?.parties || []).find(p => (p.roles || []).includes('buyer'));
+  return party?.name || r?.buyer?.name || r?.buyerName || '';
+}
 
-    // Merge + dedupe
-    const merged = dedupe([...cfItems, ...ftsItems]);
-
-    // Relevance + future deadlines only
-    const now = Date.now();
-    const relevant = merged.filter(it => {
-      const dOk = it.deadline && Date.parse(it.deadline) > now;
-      return dOk && looksRelevant(it);
-    });
-
-    // Sort earliest deadline first
-    relevant.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-    const payload = {
-      updatedAt: new Date().toISOString(),
-      count: relevant.length,
-      items: relevant,
-      sources: { cf: cfItems.length, fts: ftsItems.length },
-    };
-
-    // Write JSON (version-agnostic)
-    await store.set('latest.json', JSON.stringify(payload), {
-      contentType: 'application/json',
-    });
-
-    return json(200, { ok: true, ...payload });
-  } catch (err) {
-    console.error('update-tenders error:', err);
-    return json(500, { ok: false, error: err.message ?? String(err) });
-  }
+function pickValue(r, which) {
+  const v = r?.tender?.value || {};
+  if (which === 'min') return v.minimum ?? v.amount ?? null;
+  if (which === 'max') return v.maximum ?? v.amount ?? null;
+  return v.amount ?? null;
 }
