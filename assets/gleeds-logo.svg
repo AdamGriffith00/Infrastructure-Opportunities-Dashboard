@@ -1,0 +1,20 @@
+<!-- assets/gleeds-logo.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" role="img" aria-label="gleeds">
+  <!-- Wordmark -->
+  <text x="0" y="78"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="84"
+        font-weight="400"
+        fill="#FFFFFF">gleeds</text>
+
+  <!-- Superscript badge (moved closer to the 's') -->
+  <!-- Adjust the first number (x) to nudge left/right; the second (y) to nudge up/down -->
+  <g transform="translate(286,24)">
+    <circle r="20" fill="#F7C400"/>
+    <text x="-12.5" y="8"
+          font-family="Arial, Helvetica, sans-serif"
+          font-size="28"
+          font-weight="700"
+          fill="#FFFFFF">G</text>
+  </g>
+</svg>
