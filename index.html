@@ -1,149 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Infrastructure Growth Portal</title>
   <style>
-    * {
+    :root{
+      --gleeds: #f7c400;
+      --charcoal: #3c3c3c;
+      --charcoal-2: #2f2f2f;
+      --ink: #ffffff;
+      --primary: #da4f27;   /* action button (your orange) */
+      --muted: #7b7b7b;     /* disabled tiles */
+      --ring: rgba(255,255,255,.12);
+      --shadow: 0 14px 30px rgba(0,0,0,.22), 0 6px 14px rgba(0,0,0,.14);
+      --shadow-soft: 0 10px 24px rgba(0,0,0,.16);
+      --focus: 0 0 0 3px rgba(247,196,0,.35);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", Ubuntu, Cantarell, "Fira Sans", "Droid Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, #3c3c3c 55%, #303030 100%);
     }
 
-    body {
-      background-color: rgb(60, 60, 60);
-      color: rgb(247, 196, 0);
-      font-family: 'Arial', sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+    .wrap{
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: 1fr auto;
     }
 
-    .logo-container {
-      margin-bottom: 2rem;
-      margin-left: 45px;
+    .hero{
+      display: grid;
+      place-items: center;
+      padding: clamp(20px, 3vw, 40px);
     }
 
-    .logo {
-      max-width: 300px;
-      height: auto;
+    .panel{
+      width: min(1100px, 92vw);
+      display: grid;
+      gap: 28px;
+      justify-items: center;
     }
 
-    .title {
-      font-size: 2.5rem;
-      font-weight: bold;
+    /* logo + title */
+    .brand{
+      display: grid;
+      gap: 18px;
+      justify-items: center;
       text-align: center;
-      margin-bottom: 3rem;
-      letter-spacing: 1px;
+    }
+    .logo{
+      height: clamp(56px, 8vw, 82px);
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,.35));
+    }
+    .title{
+      font-weight: 900;
+      letter-spacing: .3px;
+      font-size: clamp(24px, 3.3vw, 40px);
+      color: var(--gleeds);
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
     }
 
-    .navigation-buttons {
+    /* rows */
+    .rows{ width: 100%; display: grid; gap: 18px; }
+    .row{
       display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      max-width: 800px;
-      width: 100%;
-      padding: 0 2rem;
-    }
-
-    .row {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
       flex-wrap: wrap;
-    }
-
-    .nav-button {
-      flex: 1;
-      min-width: 180px;
-      max-width: 220px;
-      height: 80px;
-      background-color: rgb(120, 120, 120);
-      color: white;
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
+      gap: 18px;
       justify-content: center;
+    }
+
+    /* cards */
+    .card{
+      min-width: 240px;
+      height: 86px;
+      padding: 16px 26px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
       text-align: center;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      color: #fff;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow-soft);
+      text-decoration: none;
+      font-weight: 800;
+      line-height: 1.2;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+      user-select: none;
+    }
+    .card:focus{ outline: none; box-shadow: var(--shadow), var(--focus); }
+    .card:hover{ transform: translateY(-2px); box-shadow: var(--shadow); }
+
+    /* primary (live) actions */
+    .card.primary{
+      background: var(--primary);
+      border-color: rgba(0,0,0,.15);
+    }
+    .card.primary:hover{
+      filter: brightness(1.03);
     }
 
-    .nav-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    /* disabled / coming soon */
+    .card.disabled{
+      background: #6f6f6f;
+      color: #f0f0f0;
+      cursor: not-allowed;
+      opacity: .92;
     }
+    .card.disabled:hover{ transform:none; box-shadow: var(--shadow-soft); }
 
-    /* Highlight Budgets + Bidding Portal */
-    .nav-button.budgets {
-      background-color: rgb(218, 79, 39);
-    }
-    .nav-button.budgets:hover {
-      background-color: rgb(180, 60, 25);
-    }
+    /* small caption inside disabled cards */
+    .soon{ display:block; font-weight:600; font-size:.86rem; opacity:.85; }
 
-    .nav-button.bidding {
-      background-color: rgb(218, 79, 39);
+    /* footer */
+    .footer{
+      padding: 18px;
+      color: #ddd;
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,0));
+      display: flex; gap: 12px; align-items: center; justify-content: center;
+      font-size: .92rem;
     }
-    .nav-button.bidding:hover {
-      background-color: rgb(180, 60, 25);
-    }
+    .dot{ width:6px; height:6px; border-radius:50%; background: var(--ring); display:inline-block; }
 
-    @media (max-width: 768px) {
-      .logo {
-        max-width: 250px;
-      }
-      .title {
-        font-size: 2rem;
-        margin-bottom: 2rem;
-      }
-      .row {
-        flex-wrap: wrap;
-      }
-      .nav-button {
-        flex: 1 1 calc(50% - 0.75rem);
-        min-width: 140px;
-      }
+    /* responsive tweaks */
+    @media (max-width: 760px){
+      .card{ min-width: calc(50% - 12px); height: 78px; }
     }
-
-    @media (max-width: 480px) {
-      .logo {
-        max-width: 200px;
-      }
-      .title {
-        font-size: 1.5rem;
-        padding: 0 1rem;
-      }
+    @media (max-width: 480px){
+      .card{ min-width: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDM1MCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHRleHQgeD0iMjAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZpbGw9IndoaXRlIj5nbGVlZHM8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMjkwIiBjeT0iMzAiIHI9IjIyIiBmaWxsPSIjRjdD
-NDAwIi8+CiAgPHRleHQgeD0iMjkwIiB5PSIzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiPkc8L3RleHQ+Cjwvc3ZnPg==" alt="Gleeds Logo" class="logo">
-  </div>
+  <div class="wrap">
 
-  <h1 class="title">Infrastructure Growth Portal</h1>
+    <main class="hero">
+      <div class="panel">
 
-  <div class="navigation-buttons">
-    <div class="row">
-      <a href="budgets.html" class="nav-button budgets">Budgets</a>
-      <a href="bidding-portal.html" class="nav-button bidding">Bidding Portal</a>
-      <a href="#" class="nav-button">Client Engagement</a>
-    </div>
-    <div class="row">
-      <a href="#" class="nav-button">Market Intelligence</a>
-      <a href="#" class="nav-button">International</a>
-    </div>
+        <!-- Brand -->
+        <div class="brand" aria-label="Gleeds">
+          <!-- Keep your base64 logo so no external request is needed -->
+          <img class="logo" alt="gleeds" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDM1MCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHRleHQgeD0iMjAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IndoaXRlIj5nbGVlZHM8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMjkwIiBjeT0iMzAiIHI9IjIyIiBmaWxsPSIjRjdDNDAwIi8+CiAgPHRleHQgeD0iMjkwIiB5PSIzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSJ3aGl0ZSI+RzwvdGV4dD4KPC9zdmc+" />
+          <div class="title">Infrastructure Growth Portal</div>
+        </div>
+
+        <!-- Action rows -->
+        <div class="rows" aria-label="Primary navigation">
+          <!-- Row 1: three across -->
+          <div class="row">
+            <a class="card primary" href="budgets.html">Budgets</a>
+            <a class="card primary" href="bidding-portal.html">Bidding&nbsp;Portal</a>
+            <a class="card disabled" role="button" aria-disabled="true" tabindex="-1">
+              Client<br/>Engagement
+            </a>
+          </div>
+
+          <!-- Row 2: two centered -->
+          <div class="row">
+            <a class="card disabled" role="button" aria-disabled="true" tabindex="-1">
+              Market<br/>Intelligence
+            </a>
+            <a class="card disabled" role="button" aria-disabled="true" tabindex="-1">
+              International
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <footer class="footer" aria-label="Footer">
+      <span>© Gleeds</span>
+      <span class="dot"></span>
+      <span>Infrastructure Growth Portal</span>
+      <span class="dot"></span>
+      <span>v0.1</span>
+    </footer>
+
   </div>
 </body>
 </html>
