@@ -1,15 +1,73 @@
+########################################
+# Netlify configuration for Growth Portal
+########################################
+
 [build]
   publish = "."
+  # If you keep functions in the default folder you can omit this, included for clarity:
   functions = "netlify/functions"
 
-# Step 5 — cache + background refresh
-# The "latest" function is our on-demand endpoint for fetching tenders.
+########################################
+# Headers
+########################################
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    # Remove if you don't want basic auth on home
+    Basic-Auth = "myuser mypassword"
+
+########################################
+# Scheduled Functions
+########################################
+
+# Your existing background refresh (keep your schedule)
+[functions."update-tenders-background"]
+  schedule = "5 9 * * *"
+
+# Optional: archive latest.json nightly for time-series (add the function file if you enable)
+[functions."mi-archive"]
+  schedule = "5 1 * * *"
+
+########################################
+# Redirects (API aliases)
+########################################
+
+# Existing: serve latest blob via function
 [[redirects]]
   from = "/api/latest"
-  to = "/.netlify/functions/latest"
+  to   = "/.netlify/functions/latest"
   status = 200
   force = true
 
-# Background function runs every morning at 09:05 UTC
-[functions.update-tenders-background]
-  schedule = "5 9 * * *"
+# Handy aliases for your update functions (optional)
+[[redirects]]
+  from = "/api/update-tenders"
+  to   = "/.netlify/functions/update-tenders"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/update-tenders-background"
+  to   = "/.netlify/functions/update-tenders-background"
+  status = 200
+  force = true
+
+# Market Intelligence endpoints
+[[redirects]]
+  from = "/api/mi-forecast"
+  to   = "/.netlify/functions/mi-forecast"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/mi-signals"
+  to   = "/.netlify/functions/mi-signals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/mi-frameworks-rebid"
+  to   = "/.netlify/functions/mi-frameworks-rebid"
+  status = 200
+  force = true
