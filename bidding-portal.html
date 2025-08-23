@@ -13,17 +13,41 @@
     body{
       min-height:100vh;
       background: radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, #3c3c3c 60%, #2f2f2f 100%);
-      font-family: Arial, Helvetica, sans-serif; color:#fff;
+      font-family: Arial, Helvetica, sans-serif;
+      color:#fff;
     }
+
     /* Sticky top with back */
-    .topbar{position:sticky; top:0; z-index:20; background:var(--gleeds); box-shadow:0 2px 8px rgba(0,0,0,.15)}
-    .topbar-inner{max-width:1400px; margin:0 auto; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px}
-    .back{display:inline-flex; align-items:center; gap:8px; background:#fff; color:#111; text-decoration:none; border:1px solid #e5e5e5; border-radius:8px; padding:8px 12px; font-weight:800}
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      background:var(--gleeds);
+      box-shadow:0 2px 8px rgba(0,0,0,.15);
+    }
+    .topbar-inner{
+      max-width:1400px; margin:0 auto; padding:10px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .back{
+      display:inline-flex; align-items:center; gap:8px;
+      background:#fff; color:#111; text-decoration:none;
+      border:1px solid #e5e5e5; border-radius:8px; padding:8px 12px;
+      font-weight:800;
+    }
     .brand{ color:#fff; font-weight:900; }
 
     /* Full-width tab bar */
-    .tabs{background:var(--gleeds); display:flex; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,.15)}
-    .tab{flex:1 1 220px; min-width:220px; text-align:center; padding:14px 10px; cursor:pointer; color:#fff; font-weight:800; user-select:none; transition:background .15s ease}
+    .tabs{
+      background:var(--gleeds);
+      display:flex; flex-wrap:wrap;
+      border-top:1px solid rgba(255,255,255,.15);
+    }
+    .tab{
+      flex:1 1 220px; min-width:220px;
+      text-align:center;
+      padding:14px 10px;
+      cursor:pointer; color:#fff; font-weight:800; user-select:none;
+      transition:background .15s ease;
+    }
     .tab:hover,.tab.active{ background:var(--charcoal); }
 
     /* Frame area */
@@ -32,8 +56,7 @@
     .panel.active{ display:block; }
 
     .frame-wrapper{
-      width:100%;
-      height:calc(100vh - 140px); /* sticky header + tabs allowance */
+      width:100%; height:calc(100vh - 140px); /* header + tabs allowance */
       background:#1f1f1f;
       border-radius:12px; box-shadow:var(--shadow); overflow:hidden;
     }
@@ -43,14 +66,19 @@
       .frame-wrapper{ height:calc(100vh - 170px); }
     }
 
-    /* Placeholder panel */
+    /* Placeholder */
     .blank{
-      background:#1f1f1f; border:1px solid #383838; border-radius:12px; padding:20px;
-      box-shadow:var(--shadow); color:#ddd;
+      background:#1f1f1f;
+      border:1px solid #383838;
+      border-radius:12px;
+      padding:20px;
+      box-shadow:var(--shadow);
+      color:#ddd;
     }
   </style>
 </head>
 <body>
+  <!-- Sticky header -->
   <header class="topbar">
     <div class="topbar-inner">
       <a class="back" href="index.html" aria-label="Back to Home">← Back to Home</a>
@@ -59,6 +87,7 @@
     </div>
   </header>
 
+  <!-- Tabs -->
   <nav class="tabs" id="tabs">
     <div class="tab active" data-target="frameworks">Frameworks</div>
     <div class="tab" data-target="live">Live Opportunities</div>
@@ -66,22 +95,21 @@
   </nav>
 
   <div class="viewport">
-    <!-- FRAMEWORKS -->
+    <!-- Frameworks -->
     <section id="frameworks" class="panel active">
       <div class="frame-wrapper">
-        <!-- Uses your existing frameworks.css/js via the standalone shim -->
         <iframe class="frame" src="frameworks-standalone.html" title="Frameworks"></iframe>
       </div>
     </section>
 
-    <!-- LIVE OPPORTUNITIES -->
+    <!-- Live Opportunities -->
     <section id="live" class="panel">
       <div class="frame-wrapper">
         <iframe class="frame" src="live-opportunities-standalone.html" title="Live Opportunities"></iframe>
       </div>
     </section>
 
-    <!-- BID ANALYSER (placeholder for now) -->
+    <!-- Bid Analyser -->
     <section id="analyser" class="panel">
       <div class="blank">
         <h2 style="margin-top:0">Bid Analyser (coming soon)</h2>
@@ -103,9 +131,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
-
-    // Optional: auto-resize iframes if you later want the inner docs to report their height.
-    // For now the fixed viewport height keeps it simple/consistent with your Budgets page.
   </script>
 </body>
 </html>
