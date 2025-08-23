@@ -1,106 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Infrastructure Growth Portal</title>
   <style>
-    :root{
-      --charcoal:#3c3c3c;
-      --ink:#fff;
-      --accent:#f7c400;
-      --cta:#e74c3c;
-      --ctaHover:#c0392b;
-      --tile:#6a6a6a;
-      --tileHover:#585858;
-    }
-    *{ box-sizing:border-box; }
-
-    body{
-      margin:0;
-      min-height:100vh;
-      background: radial-gradient(1200px 600px at 50% 20%, #4a4a4a 0%, #3c3c3c 60%, #333 100%);
-      color:var(--ink);
-      font-family: Arial, Helvetica, sans-serif;
-      display:flex; align-items:center; justify-content:center;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #333;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
     }
 
-    .wrap{
-      width:100%; max-width:1100px; padding:40px 20px;
-      display:flex; flex-direction:column; align-items:center; gap:28px;
+    .logo img {
+      width: 280px; /* increased logo size */
+      margin-bottom: 20px;
     }
 
-    /* Logo */
-    .logo{
-      display:flex; align-items:center; justify-content:center;
-    }
-    .logo img{
-      height:82px; /* adjust to taste */
-      display:block;
+    h1 {
+      font-size: 2rem;
+      color: #f1c40f;
+      margin-bottom: 40px;
     }
 
-    h1{
-      margin:0;
-      font-size:32px;
-      font-weight:900;
-      color:var(--accent);
-      letter-spacing:.5px;
-      text-align:center;
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 800px;
     }
 
-    /* Buttons grid */
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(220px, 1fr));
-      gap:18px 22px;
-      margin-top:10px;
-      width:100%;
-      max-width:900px;
-    }
-    @media (max-width: 820px){
-      .grid{ grid-template-columns: repeat(2, minmax(220px, 1fr)); }
-    }
-    @media (max-width: 520px){
-      .grid{ grid-template-columns: 1fr; }
+    .button {
+      padding: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, background-color 0.3s ease;
     }
 
-    .btn{
-      border:0; border-radius:12px;
-      padding:18px 22px;
-      font-size:18px; font-weight:800;
-      color:#fff; cursor:pointer;
-      box-shadow:0 8px 22px rgba(0,0,0,.25);
-      transition:transform .15s ease, background .15s ease, box-shadow .15s ease;
-      width:100%;
+    .button.red {
+      background-color: #e74c3c;
     }
-    .btn:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.28); }
-    .btn:active{ transform:translateY(1px); }
+    .button.red:hover {
+      background-color: #c0392b;
+      transform: translateY(-3px);
+    }
 
-    .btn-primary{ background:var(--cta); }
-    .btn-primary:hover{ background:var(--ctaHover); }
+    .button.grey {
+      background-color: #777;
+      cursor: not-allowed;
+    }
 
-    .btn-secondary{ background:var(--tile); }
-    .btn-secondary:hover{ background:var(--tileHover); }
-
-    .row{ display:flex; gap:22px; justify-content:center; width:100%; }
-    @media (max-width:700px){ .row{ flex-direction:column; } }
+    .button.grey:hover {
+      background-color: #777;
+      transform: none;
+    }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <div class="logo">
-      <img src="assets/gleeds-logo.svg" alt="gleeds"/>
-    </div>
-    <h1>Infrastructure Growth Portal</h1>
-
-    <div class="grid">
-      <!-- Keep both primary buttons orange (Budgets + Bidding Portal) -->
-      <button class="btn btn-primary" onclick="location.href='budgets.html'">Budgets</button>
-      <button class="btn btn-primary" onclick="location.href='bidding-portal.html'">Bidding Portal</button>
-      <button class="btn btn-secondary" onclick="location.href='client-engagement.html'">Client Engagement</button>
-      <button class="btn btn-secondary" onclick="location.href='market-intelligence.html'">Market Intelligence</button>
-      <button class="btn btn-secondary" onclick="location.href='international.html'">International</button>
-    </div>
-  </main>
+  <div class="logo">
+    <img src="assets/gleeds-logo.svg" alt="Gleeds logo">
+  </div>
+  <h1>Infrastructure Growth Portal</h1>
+  <div class="button-grid">
+    <button class="button red" onclick="location.href='budgets.html'">Budgets</button>
+    <button class="button red" onclick="location.href='bidding-portal.html'">Bidding Portal</button>
+    <button class="button grey">Client Engagement</button>
+    <button class="button grey" onclick="location.href='market-intelligence.html'">Market Intelligence</button>
+    <button class="button grey">Hub</button>
+    <button class="button grey">International</button>
+  </div>
 </body>
 </html>
