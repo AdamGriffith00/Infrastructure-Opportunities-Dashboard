@@ -1,6 +1,9 @@
 // netlify/functions/latest.mjs
 import { getStore } from '@netlify/blobs';
 
+const SITE_ID = process.env.BLOBS_SITE_ID;
+const TOKEN   = process.env.BLOBS_TOKEN;
+
 function json(statusCode, body) {
   return {
     statusCode,
@@ -14,8 +17,16 @@ function json(statusCode, body) {
 
 export async function handler() {
   try {
-    // Automatic site binding (no siteID/token needed)
-    const store = getStore({ name: 'tenders' });
+    if (!SITE_ID || !TOKEN) {
+      return json(500, {
+        ok: false,
+        error:
+          'The environment has not been configured to use Netlify Blobs. ' +
+          'Set BLOBS_SITE_ID and BLOBS_TOKEN in Site settings → Environment variables.',
+      });
+    }
+
+    const store = getStore({ name: 'tenders', siteID: SITE_ID, token: TOKEN });
 
     const raw = await store.get('latest.json'); // string | null
     if (!raw) {
@@ -26,6 +37,7 @@ export async function handler() {
         note: 'No cached tenders yet. Run /.netlify/functions/update-tenders to populate.',
       });
     }
+
     return json(200, JSON.parse(raw));
   } catch (err) {
     console.error('latest error:', err);
