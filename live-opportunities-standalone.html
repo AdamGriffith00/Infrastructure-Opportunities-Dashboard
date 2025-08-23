@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live Opportunities</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#fff;color:#222}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .header{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:.5rem}
+    .title{font-size:1.75rem;font-weight:700;margin:0}
+    .muted{color:#666}
+    .error{color:#b00020;margin:.5rem 0 0;font-weight:600}
+
+    .filter-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin:.5rem 0 1rem}
+    .pill{border:1px solid #ddd;background:#fff;color:#333;padding:.35rem .6rem;border-radius:999px;font-size:.9rem;cursor:pointer}
+    .pill.active{background:#3c3c3c;color:#fff;border-color:#3c3c3c}
+
+    .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e5e5e5;border-radius:8px;background:#fff}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    thead th{position:sticky;top:0;background:#f8f8f8;z-index:1;text-align:left;padding:10px 12px;font-weight:700;border-bottom:1px solid #e5e5e5;white-space:nowrap}
+    tbody td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top}
+    tbody tr:hover{background:#fafafa}
+    a.title-link{color:#0b63ce;text-decoration:none}
+    a.title-link:hover{text-decoration:underline}
+    .right{text-align:right}
+
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;line-height:1.6;background:#eef2f7;color:#333;white-space:nowrap}
+    .badge.aviation{background:#e8f2ff}
+    .badge.utilities{background:#efeaff}
+    .badge.rail{background:#eaf7ee}
+    .badge.highways{background:#fff4e5}
+    .badge.maritime{background:#e9f7fa}
+    .badge.infrastructure{background:#f1f3f5}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h2 class="title">Live Opportunities</h2>
+      <div class="muted" id="lastUpdated">Last updated: —</div>
+    </div>
+    <div id="err" class="error" style="display:none"></div>
+
+    <div class="filter-bar" id="filters"></div>
+
+    <div class="scroll">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Buyer</th>
+            <th>Region</th>
+            <th>Deadline</th>
+            <th>Days left</th>
+            <th class="right">Estimated value</th>
+            <th>Sector</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="muted" id="count" style="margin-top:.5rem"></p>
+  </div>
+
+  <script>
+    const FILTERS = [
+      { key:'all', label:'All' },
+      { key:'aviation', label:'Aviation' },
+      { key:'utilities', label:'Utilities' },
+      { key:'rail', label:'Rail' },
+      { key:'highways', label:'Highways' },
+      { key:'maritime', label:'Maritime' },
+      { key:'infrastructure', label:'Infrastructure' },
+    ];
+    let allItems = []; let activeKey='all';
+
+    const esc = s => String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const cap = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
+    const num = x => { const n=Number(x); return Number.isFinite(n)?n:null; };
+    const gbp = n => { try { return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n); } catch { return `£${Math.round(n).toLocaleString('en-GB')}`; } };
+    const formatDT = iso => { const d=new Date(iso); if(isNaN(d))return '—'; const pad=v=>String(v).padStart(2,'0'); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+    const daysLeft = iso => { const d=new Date(iso); if(isNaN(d))return null; return Math.ceil((d - new Date())/(1000*60*60*24)); };
+
+    const normalizeSector = it => {
+      const raw = (it.sector||'').toString().toLowerCase();
+      let key='';
+      if (/aviation/.test(raw)) key='aviation';
+      else if (/utilit(y|ies)/.test(raw)) key='utilities';
+      else if (/rail/.test(raw)) key='rail';
+      else if (/highway|road/.test(raw)) key='highways';
+      else if (/maritime|port|harbour|harbor/.test(raw)) key='maritime';
+      else if (/infrastructure/.test(raw)) key='infrastructure';
+      if (!key){
+        const hay = `${(it.title||'')} ${(it.organisation||'')}`.toLowerCase();
+        if (/airport|airfield|airside|aviation/.test(hay)) key='aviation';
+        else if (/water|gas|electric|utilities|utility|sewer|wastewater/.test(hay)) key='utilities';
+        else if (/rail|rolling stock|station|track/.test(hay)) key='rail';
+        else if (/highway|roads?\b|junction|carriageway/.test(hay)) key='highways';
+        else if (/port|harbour|harbor|dock|maritime|ferry/.test(hay)) key='maritime';
+        else key='infrastructure';
+      }
+      it._sectorKey = key; return it;
+    };
+
+    async function load(){
+      const err=document.getElementById('err');
+      const updated=document.getElementById('lastUpdated');
+      const tbody=document.querySelector('#tbl tbody');
+      const count=document.getElementById('count');
+      err.style.display='none'; err.textContent=''; tbody.innerHTML=''; count.textContent='';
+
+      try{
+        const res = await fetch('/.netlify/functions/latest',{cache:'no-store'});
+        if(!res.ok) throw new Error(`latest returned ${res.status}`);
+        const data = await res.json();
+        updated.textContent = `Last updated: ${formatDT(data.updatedAt)}`;
+        allItems = Array.isArray(data.items) ? data.items.map(normalizeSector) : [];
+        buildFilters();
+        apply();
+      }catch(e){
+        err.textContent = `Error: ${e.message}`;
+        err.style.display='block';
+      }
+    }
+
+    function buildFilters(){
+      const bar=document.getElementById('filters');
+      const counts={}; allItems.forEach(it => counts[it._sectorKey]=(counts[it._sectorKey]||0)+1);
+      bar.innerHTML = FILTERS.map(f=>{
+        const c = f.key==='all' ? allItems.length : (counts[f.key]||0);
+        return `<span class="pill ${f.key===activeKey?'active':''}" data-k="${f.key}">${f.label} (${c})</span>`;
+      }).join('');
+      bar.querySelectorAll('.pill').forEach(p=>{
+        p.addEventListener('click',()=>{
+          activeKey=p.dataset.k;
+          bar.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active', x===p));
+          apply();
+        });
+      });
+    }
+
+    function apply(){
+      const tbody=document.querySelector('#tbl tbody');
+      const count=document.getElementById('count');
+      const filtered = activeKey==='all' ? allItems : allItems.filter(it => it._sectorKey===activeKey);
+      tbody.innerHTML = filtered.map(renderRow).join('');
+      count.textContent = `${filtered.length} opportunities`;
+    }
+
+    function renderRow(it){
+      const title = esc(it.title || 'Untitled');
+      const buyer = esc(it.organisation || '');
+      const region = esc(it.region || '');
+      const url = it.url ? esc(it.url) : '#';
+
+      const deadlineISO = it.deadline || '';
+      const deadlineTxt = deadlineISO ? formatDT(deadlineISO) : '—';
+      const days = deadlineISO ? daysLeft(deadlineISO) : null;
+      const daysTxt = days === null ? '—' : (days >= 0 ? `${days} day${days===1?'':'s'} left` : 'Closed');
+
+      const vL = num(it.valueLow), vH = num(it.valueHigh);
+      const valueTxt = vL===null && vH===null ? '—' : (vL!==null && vH!==null ? `${gbp(vL)} – ${gbp(vH)}` : gbp(vL ?? vH));
+
+      const k = it._sectorKey || '';
+      const label = k ? cap(k) : '—';
+      const source = esc(it.source || '—');
+
+      return `<tr>
+        <td><a class="title-link" href="${url}" target="_blank" rel="noopener">${title}</a></td>
+        <td>${buyer || '—'}</td>
+        <td>${region || '—'}</td>
+        <td>${deadlineTxt}</td>
+        <td>${daysTxt}</td>
+        <td class="right">${valueTxt}</td>
+        <td><span class="badge ${k}">${label}</span></td>
+        <td>${source}</td>
+      </tr>`;
+    }
+
+    load();
+  </script>
+</body>
+</html>
