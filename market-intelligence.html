@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Market Intelligence – Infrastructure Growth Portal</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --gleeds:#f7c400;
+      --charcoal:#3c3c3c;
+      --ink:#fff;
+      --muted:#9aa0a6;
+      --pill:#eceff4;
+      --accent:#ea4e2b;
+      --card:#fff;
+      --shadow:0 14px 30px rgba(0,0,0,.18);
+      --radius:12px;
+    }
+    *{box-sizing:border-box;margin:0}
+    body{
+      min-height:100vh;
+      background: radial-gradient(1100px 560px at 50% 16%, #4a4a4a 0%, #3c3c3c 58%, #333 100%);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif;
+      color:#222;
+    }
+
+    /* Top bar */
+    .topbar{position:sticky;top:0;z-index:20;background:var(--gleeds);box-shadow:0 2px 8px rgba(0,0,0,.15);}
+    .topbar-inner{max-width:1400px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px}
+    .back{
+      display:inline-flex;align-items:center;gap:8px;background:#fff;color:#111;text-decoration:none;
+      border:1px solid #e5e5e5;border-radius:8px;padding:8px 12px;font-weight:800;
+    }
+    .brand{color:#fff;font-weight:900}
+
+    /* Tabs */
+    .tabs{background:var(--gleeds);display:flex;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.15)}
+    .tab{flex:1 1 25%;min-width:220px;text-align:center;padding:14px 10px;cursor:pointer;color:#fff;font-weight:800;user-select:none;transition:background .15s ease}
+    .tab:hover,.tab.active{background:var(--charcoal)}
+
+    /* Panels & cards */
+    .viewport{max-width:1400px;margin:0 auto;padding:14px}
+    .panel{display:none}
+    .panel.active{display:block}
+    .card{
+      background:#fff;border:1px solid #e9ecef;border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:16px;margin-bottom:14px
+    }
+    h2{font-size:1.15rem;margin-bottom:10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:980px){ .row{grid-template-columns:1fr} }
+    .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+    select, input[type="range"]{
+      padding:.5rem .65rem;border:1px solid #e5e5e5;border-radius:10px;background:#fff;outline:none;font-weight:600
+    }
+    .pill{display:inline-block;background:#f6f7f9;border:1px solid #eceff4;border-radius:999px;padding:.25rem .55rem;font-size:.85rem;margin-right:.35rem}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 10px;border-bottom:1px solid #efefef;text-align:left}
+    th{background:#fafafa;font-weight:800}
+    .muted{color:#666}
+    .band-note{font-size:.88rem;color:#666;margin-left:.4rem}
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="back" href="index.html">← Back to Home</a>
+    <span class="brand">Market Intelligence</span>
+    <span></span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <div class="tab active" data-target="forecasts">Forecasts</div>
+  <div class="tab" data-target="signals">Signals</div>
+  <div class="tab" data-target="scenarios">Scenarios</div>
+</nav>
+
+<div class="viewport">
+
+  <!-- Forecasts -->
+  <section id="forecasts" class="panel active">
+    <div class="card">
+      <h2>12-month Outlook <span class="band-note">with 50% confidence band</span></h2>
+      <div class="controls">
+        <label class="pill">Group by</label>
+        <select id="groupSel">
+          <option value="region">Region</option>
+          <option value="sector">Sector</option>
+          <option value="client">Client</option>
+        </select>
+        <label class="pill">Key</label>
+        <select id="keySel"></select>
+        <label class="pill">Metric</label>
+        <select id="metricSel">
+          <option value="value">Estimated value (£)</option>
+          <option value="count">Opportunity count</option>
+        </select>
+      </div>
+      <canvas id="forecastChart" height="110"></canvas>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h2>Top 10 (next 6 months)</h2>
+        <table id="topTable">
+          <thead><tr><th>Key</th><th class="muted">Metric</th><th>Next 6m total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Framework Rebid Windows</h2>
+        <table id="rebidTable">
+          <thead><tr><th>Framework</th><th>Client</th><th class="muted">Expected notice</th><th>Expected value</th></tr></thead>
+          <tbody><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Signals -->
+  <section id="signals" class="panel">
+    <div class="card">
+      <h2>Momentum Signals</h2>
+      <div class="controls">
+        <label class="pill">Group</label>
+        <select id="sigGroupSel">
+          <option value="client">Client</option>
+          <option value="sector">Sector</option>
+          <option value="region">Region</option>
+        </select>
+        <label class="pill">Key</label>
+        <select id="sigKeySel"></select>
+      </div>
+      <table id="sigTable">
+        <thead><tr><th>Signal</th><th>Score</th><th class="muted">Notes / evidence</th></tr></thead>
+        <tbody><tr><td colspan="3" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Scenarios -->
+  <section id="scenarios" class="panel">
+    <div class="card">
+      <h2>What-if Scenarios</h2>
+      <div class="controls">
+        <span class="pill">Macro capex growth %</span>
+        <input type="range" id="capexGrowth" min="-10" max="15" value="0" step="1"/>
+        <span id="capexLbl" class="pill">0%</span>
+
+        <span class="pill">Utilities weight</span>
+        <input type="range" id="utilW" min="-50" max="50" value="0" step="5"/>
+        <span id="utilLbl" class="pill">0</span>
+
+        <span class="pill">Highways weight</span>
+        <input type="range" id="hwW" min="-50" max="50" value="0" step="5"/>
+        <span id="hwLbl" class="pill">0</span>
+      </div>
+
+      <div class="controls muted">Scenario updates the forecast request in real-time.</div>
+      <canvas id="scenarioChart" height="110"></canvas>
+    </div>
+  </section>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    panels.forEach(p=>p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.target).classList.add('active');
+  }));
+
+  const groupSel = document.getElementById('groupSel');
+  const keySel   = document.getElementById('keySel');
+  const metricSel= document.getElementById('metricSel');
+  let fcChart, scChart;
+
+  async function loadKeys(){
+    // Query with group only to get keys list
+    const r = await fetch('/.netlify/functions/mi-forecast?group='+groupSel.value+'&h=12');
+    const j = await r.json();
+    const keys = j.keys || [];
+    keySel.innerHTML = keys.slice(0,40).map(k=>`<option>${k}</option>`).join('');
+    if (!keySel.value && keys[0]) keySel.value = keys[0];
+  }
+
+  function buildBands(ctx, labels, y, lo, hi, label){
+    if (fcChart) fcChart.destroy();
+    fcChart = new Chart(ctx, {
+      type:'line',
+      data: {
+        labels,
+        datasets: [
+          {label, data:y, tension:.25, borderColor:'#ea4e2b', backgroundColor:'rgba(234,78,43,.08)'},
+          {label:'Lo', data:lo, tension:.25, borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(247,196,0,.12)', fill:'+1'},
+          {label:'Hi', data:hi, tension:.25, borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(247,196,0,.12)'}
+        ]
+      },
+      options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+    });
+  }
+
+  function buildScenario(labels, y, lo, hi){
+    const ctx = document.getElementById('scenarioChart');
+    if (scChart) scChart.destroy();
+    scChart = new Chart(ctx, {
+      type:'line',
+      data: {
+        labels,
+        datasets: [
+          {label:'Scenario', data:y, tension:.25, borderColor:'#1f77b4', backgroundColor:'rgba(31,119,180,.08)'},
+          {label:'Lo', data:lo, tension:.25, borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(31,119,180,.12)', fill:'+1'},
+          {label:'Hi', data:hi, tension:.25, borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(31,119,180,.12)'}
+        ]
+      },
+      options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+    });
+  }
+
+  async function drawForecast(){
+    const params = new URLSearchParams({
+      group: groupSel.value,
+      key: keySel.value,
+      h: 12,
+      metric: metricSel.value
+    });
+    const r = await fetch('/.netlify/functions/mi-forecast?' + params.toString());
+    const j = await r.json();
+    const series = j.series || {labels:[], y:[], lo:[], hi:[]};
+    buildBands(document.getElementById('forecastChart'), series.labels, series.y, series.lo, series.hi, keySel.value||'All');
+
+    // top table
+    const tb = document.querySelector('#topTable tbody');
+    tb.innerHTML = (j.top || []).map(row => `
+      <tr><td>${row.key}</td><td class="muted">${row.metric}</td><td>${fmt(row.total)}</td></tr>
+    `).join('') || `<tr><td colspan="3" class="muted">No data.</td></tr>`;
+  }
+
+  async function loadRebids(){
+    const r = await fetch('/.netlify/functions/mi-frameworks-rebid');
+    const j = await r.json();
+    const tb = document.querySelector('#rebidTable tbody');
+    tb.innerHTML = (j.items||[]).slice(0,10).map(x =>
+      `<tr><td>${esc(x.name)}</td><td>${esc(x.client||'')}</td><td class="muted">${esc(x.notice||'—')}</td><td>${x.value?fmt(x.value):'—'}</td></tr>`
+    ).join('') || `<tr><td colspan="4" class="muted">No framework data.</td></tr>`;
+  }
+
+  // Signals
+  const sigGroupSel = document.getElementById('sigGroupSel');
+  const sigKeySel   = document.getElementById('sigKeySel');
+  async function loadSigKeys(){
+    const r = await fetch('/.netlify/functions/mi-signals?group='+sigGroupSel.value);
+    const j = await r.json();
+    const keys = j.keys || [];
+    sigKeySel.innerHTML = keys.slice(0,50).map(k=>`<option>${k}</option>`).join('');
+    if (!sigKeySel.value && keys[0]) sigKeySel.value = keys[0];
+  }
+  async function drawSignals(){
+    const r = await fetch('/.netlify/functions/mi-signals?group='+sigGroupSel.value+'&key='+encodeURIComponent(sigKeySel.value||''));
+    const j = await r.json();
+    const tb = document.querySelector('#sigTable tbody');
+    tb.innerHTML = (j.signals||[]).map(s =>
+      `<tr><td>${esc(s.name)}</td><td>${s.score.toFixed(2)}</td><td class="muted">${esc(s.note||'')}</td></tr>`
+    ).join('') || `<tr><td colspan="3" class="muted">No signals.</td></tr>`;
+  }
+
+  // Scenarios
+  const capex = document.getElementById('capexGrowth');
+  const utilW = document.getElementById('utilW');
+  const hwW   = document.getElementById('hwW');
+  const capexLbl=document.getElementById('capexLbl');
+  const utilLbl=document.getElementById('utilLbl');
+  const hwLbl  =document.getElementById('hwLbl');
+  [capex,utilW,hwW].forEach(el=>el.addEventListener('input',()=>{capexLbl.textContent=capex.value+'%';utilLbl.textContent=utilW.value;hwLbl.textContent=hwW.value;debouncedScenario()}));
+  let scTimer=null;
+  function debouncedScenario(){ clearTimeout(scTimer); scTimer=setTimeout(runScenario,250); }
+  async function runScenario(){
+    const params = new URLSearchParams({
+      group: groupSel.value,
+      key: keySel.value,
+      h: 12,
+      metric: metricSel.value,
+      capex: capex.value,
+      utilW: utilW.value,
+      hwW: hwW.value
+    });
+    const r = await fetch('/.netlify/functions/mi-forecast?'+params.toString());
+    const j = await r.json();
+    const s = j.series || {labels:[], y:[], lo:[], hi:[]};
+    buildScenario(s.labels, s.y, s.lo, s.hi);
+  }
+
+  // Utils
+  const esc = s => String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const fmt = n => (n==null)?'—':new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n);
+
+  // Wiring
+  groupSel.addEventListener('change', async ()=>{await loadKeys(); await drawForecast(); await loadSigKeys(); await drawSignals();});
+  keySel.addEventListener('change', drawForecast);
+  metricSel.addEventListener('change', drawForecast);
+  sigGroupSel.addEventListener('change', async()=>{await loadSigKeys(); await drawSignals();});
+  sigKeySel.addEventListener('change', drawSignals);
+
+  // Boot
+  (async ()=>{
+    await loadKeys();      // sets first key
+    await drawForecast();
+    await loadRebids();
+    await loadSigKeys();
+    await drawSignals();
+    await runScenario();
+  })();
+</script>
+</body>
+</html>
