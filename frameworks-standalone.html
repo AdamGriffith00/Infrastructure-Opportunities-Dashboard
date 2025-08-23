@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Frameworks</title>
+  <link rel="stylesheet" href="assets/css/frameworks.css">
+  <style>
+    body{margin:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#222}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .live-header{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:.5rem}
+    .live-title{font-size:1.75rem;font-weight:700;margin:0}
+    .last-updated{color:#555;font-size:.95rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="live-header">
+      <h2 class="live-title">Frameworks</h2>
+      <div class="last-updated">Last refreshed: <span id="fw-last-refreshed">—</span></div>
+    </div>
+    <!-- Your JS looks for this root -->
+    <div id="frameworks-root"></div>
+  </div>
+
+  <!-- Your existing logic (table, star, wizard, export, etc.) -->
+  <script src="assets/js/frameworks.js" defer></script>
+</body>
+</html>
