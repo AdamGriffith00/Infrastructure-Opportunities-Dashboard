@@ -5,94 +5,139 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Infrastructure Growth Portal</title>
   <style>
-    body {
+    * {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #3c3c3c;
-      color: #f7c400;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: rgb(60, 60, 60);
+      color: rgb(247, 196, 0);
+      font-family: 'Arial', sans-serif;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      text-align: center;
     }
 
     .logo-container {
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      margin-left: 45px;
     }
+
     .logo {
-      max-width: 240px;
+      max-width: 300px;
       height: auto;
     }
 
     .title {
-      font-size: 2.4rem;
+      font-size: 2.5rem;
       font-weight: bold;
-      margin-bottom: 2.5rem;
+      text-align: center;
+      margin-bottom: 3rem;
+      letter-spacing: 1px;
     }
 
-    .navigation {
+    .navigation-buttons {
       display: flex;
       flex-direction: column;
-      gap: 1.2rem;
-      align-items: center;
+      gap: 1.5rem;
+      max-width: 800px;
+      width: 100%;
+      padding: 0 2rem;
     }
+
     .row {
       display: flex;
-      gap: 1.2rem;
       justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
     }
 
     .nav-button {
-      background-color: #777;
-      color: #fff;
+      flex: 1;
+      min-width: 180px;
+      max-width: 220px;
+      height: 80px;
+      background-color: rgb(120, 120, 120);
+      color: white;
+      padding: 1rem 2rem;
       border: none;
-      border-radius: 10px;
-      padding: 1.2rem 2rem;
+      border-radius: 8px;
       font-size: 1.1rem;
       font-weight: bold;
       cursor: pointer;
       text-decoration: none;
-      min-width: 180px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-      transition: background 0.3s, transform 0.2s;
-    }
-    .nav-button:hover {
-      background-color: #555;
-      transform: translateY(-2px);
-    }
-    .nav-button.primary {
-      background-color: #da4f27;
-    }
-    .nav-button.primary:hover {
-      background-color: #b83c1f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
 
-    @media (max-width: 720px) {
+    .nav-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Highlight Budgets + Bidding Portal */
+    .nav-button.budgets {
+      background-color: rgb(218, 79, 39);
+    }
+    .nav-button.budgets:hover {
+      background-color: rgb(180, 60, 25);
+    }
+
+    .nav-button.bidding {
+      background-color: rgb(218, 79, 39);
+    }
+    .nav-button.bidding:hover {
+      background-color: rgb(180, 60, 25);
+    }
+
+    @media (max-width: 768px) {
+      .logo {
+        max-width: 250px;
+      }
+      .title {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+      }
       .row {
-        flex-direction: column;
+        flex-wrap: wrap;
       }
       .nav-button {
-        min-width: unset;
-        width: 100%;
+        flex: 1 1 calc(50% - 0.75rem);
+        min-width: 140px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .logo {
+        max-width: 200px;
+      }
+      .title {
+        font-size: 1.5rem;
+        padding: 0 1rem;
       }
     }
   </style>
 </head>
 <body>
   <div class="logo-container">
-    <!-- Gleeds logo -->
     <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDM1MCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHRleHQgeD0iMjAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZpbGw9IndoaXRlIj5nbGVlZHM8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMjkwIiBjeT0iMzAiIHI9IjIyIiBmaWxsPSIjRjdD
-NDAwIi8+CiAgPHRleHQgeD0iMjkwIiB5PSIzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiPkc8L3RleHQ+Cjwvc3ZnPg==" alt="Gleeds Logo" class="logo">
+NDAwIi8+CiAgPHRleHQgeD0iMjkwIiB5PSIzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiPkc8L3RleHQ+Cjwvc3ZnPg==" alt="Gleeds Logo" class="logo">
   </div>
 
   <h1 class="title">Infrastructure Growth Portal</h1>
 
-  <div class="navigation">
+  <div class="navigation-buttons">
     <div class="row">
-      <a href="budgets.html" class="nav-button primary">Budgets</a>
-      <a href="bidding-portal.html" class="nav-button">Bidding Portal</a>
+      <a href="budgets.html" class="nav-button budgets">Budgets</a>
+      <a href="bidding-portal.html" class="nav-button bidding">Bidding Portal</a>
       <a href="#" class="nav-button">Client Engagement</a>
     </div>
     <div class="row">
