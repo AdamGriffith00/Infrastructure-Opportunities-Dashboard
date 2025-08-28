@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Globe</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; background: #000; }
+      .topbar {
+        position: fixed; inset: 0 auto auto 0; right: 0; height: 48px;
+        display: flex; align-items: center; gap: 12px;
+        padding: 0 14px; background: rgba(20,20,20,.6); color: #fff;
+        border-bottom: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px);
+        font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        z-index: 10;
+      }
+      .btn {
+        appearance: none; border: 1px solid rgba(255,255,255,.25);
+        background: rgba(255,255,255,.06); color: #fff; padding: 6px 10px;
+        border-radius: 8px; cursor: pointer;
+      }
+      .btn:hover { background: rgba(255,255,255,.12); }
+      .panel {
+        position: fixed; left: 50%; transform: translateX(-50%);
+        bottom: 16px; background: rgba(20,20,20,.7); color: #fff;
+        padding: 10px 14px; border-radius: 12px; border:1px solid rgba(255,255,255,.12);
+        z-index: 10; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      }
+      .spacer { flex: 1 }
+      .switch { display:inline-flex; align-items:center; gap:8px; user-select:none; }
+      .switch input { transform: scale(1.1); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
