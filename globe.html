@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Gleeds | Interactive 3D Globe</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- MapLibre GL (CDN) -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+  <!-- Turf.js for bbox/centroid (for smooth zoom-to-country) -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+  <style>
+    :root{ --gleeds:#f7c400; --charcoal:#3c3c3c; }
+    html,body{ height:100%; margin:0; }
+    #map{ position:fixed; inset:0; }
+    /* Minimal UI overlay */
+    .hud{
+      position:fixed; top:12px; left:12px; z-index:2;
+      background:rgba(60,60,60,.8); color:#fff; padding:8px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.12); font:14px/1.4 Arial, sans-serif;
+    }
+    .hud b{ color: var(--gleeds); }
+    .legend{
+      position:fixed; bottom:12px; left:12px; z-index:2;
+      background:rgba(60,60,60,.8); color:#fff; padding:8px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.12); font:12px Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="map" aria-label="3D globe map"></div>
+  <div class="hud">Hover a country. Click to <b>zoom in</b> and open its panel.</div>
+  <div class="legend">Globe view · Drag to rotate · Scroll to zoom</div>
+
+  <script>
+    // 1) Initialise 3D GLOBE
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://demotiles.maplibre.org/style.json', // lightweight basemap
+      center: [0, 20],
+      zoom: 1.35,
+      projection: 'globe' // 🌍 3D globe
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.on('style.load', () => {
+      // Subtle atmosphere
+      map.setFog({
+        color: 'rgba(120,120,120,0.1)',
+        highColor: 'rgba(255,255,255,0.1)',
+        horizonBlend: 0.1
+      });
+    });
+
+    // 2) Load COUNTRY polygons (GeoJSON)
+    // You can replace this with your own curated file later.
+    const COUNTRIES_GEOJSON_URL = 'https://geojson-maps.ash.ms/world.geo.json';
+
+    map.on('load', async () => {
+      const countries = await fetch(COUNTRIES_GEOJSON_URL).then(r => r.json());
+
+      map.addSource('countries', { type: 'geojson', data: countries });
+
+      // Fill layer (choropleth-ready; static colour for now)
+      map.addLayer({
+        id: 'country-fill',
+        type: 'fill',
+        source: 'countries',
+        paint: {
+          'fill-color': '#f7c400',
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false], 0.35, 0.18
+          ]
+        }
+      });
+
+      // Outline
+      map.addLayer({
+        id: 'country-outline',
+        type: 'line',
+        source: 'countries',
+        paint: {
+          'line-color': '#f7c400',
+          'line-width': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false], 1.8, 0.6
+          ]
+        }
+      });
+
+      // 3) Hover highlight
+      let hoveredId = null;
+      map.on('mousemove', 'country-fill', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        const f = e.features && e.features[0];
+        if (!f) return;
+        if (hoveredId !== null) {
+          map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: false });
+        }
+        hoveredId = f.id ?? f.properties?.adm0_a3 ?? f.properties?.iso_a3 ?? null;
+        if (hoveredId !== null) {
+          map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: true });
+        }
+      });
+      map.on('mouseleave', 'country-fill', () => {
+        map.getCanvas().style.cursor = '';
+        if (hoveredId !== null) {
+          map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: false });
+        }
+        hoveredId = null;
+      });
+
+      // 4) Click → smooth zoom to country, open your panel or route
+      map.on('click', 'country-fill', (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+
+        // Compute bounds and fly
+        const bb = turf.bbox(f); // [minX, minY, maxX, maxY]
+        map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], {
+          padding: 60,
+          duration: 1200,
+          maxZoom: 6
+        });
+
+        // You can open a sidebar, modal, or route to a country page:
+        const name = f.properties?.name || f.properties?.ADMIN || f.properties?.admin || 'Selected country';
+        // Example: push a URL param so your dashboard can load budget + bids for this country
+        const url = new URL(window.location.href);
+        url.searchParams.set('country', name);
+        history.replaceState({}, '', url.toString());
+
+        // TODO (hook): trigger your panel render function
+        // openCountryPanel({ name, iso3: f.properties?.iso_a3, bbox: bb });
+      });
+    });
+  </script>
+</body>
+</html>
