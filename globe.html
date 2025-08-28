@@ -1,117 +1,159 @@
-<script>
-  // Try multiple imagery providers so we don't get a blank globe
-  async function pickImagery() {
-    const candidates = [
-      // ArcGIS (good CORS; no key needed)
-      new Cesium.ArcGisMapServerImageryProvider({
-        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'
-      }),
-      // OSM tiles (no key)
-      new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        credit: '© OpenStreetMap contributors'
-      })
-    ];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Gleeds • Interactive 3D Globe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- CesiumJS -->
+  <link rel="stylesheet" href="https://unpkg.com/cesium/Build/Cesium/Widgets/widgets.css">
+  <script src="https://unpkg.com/cesium/Build/Cesium/Cesium.js"></script>
+  <style>
+    html, body, #cesiumContainer { width:100%; height:100%; margin:0; padding:0; background:#111; }
+    .cesium-viewer .cesium-widget-credits { display:none !important; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
 
-    for (const p of candidates) {
-      try {
-        await p.readyPromise;         // wait for validation
-        return p;                     // first one that’s ready wins
-      } catch (e) {
-        console.warn('Imagery failed, trying next…', e);
+  <script>
+    // --- Imagery fallback: ArcGIS World Imagery -> OpenStreetMap tiles
+    async function pickImagery() {
+      const candidates = [
+        new Cesium.ArcGisMapServerImageryProvider({
+          url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'
+        }),
+        new Cesium.UrlTemplateImageryProvider({
+          url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          credit: '© OpenStreetMap contributors'
+        })
+      ];
+      for (const p of candidates) {
+        try {
+          await p.readyPromise;
+          return p;
+        } catch (e) {
+          console.warn('Imagery failed, trying next…', e);
+        }
       }
+      throw new Error('No imagery providers available.');
     }
-    throw new Error('No imagery providers available.');
-  }
 
-  (async () => {
-    const imageryProvider = await pickImagery();
+    (async () => {
+      const imageryProvider = await pickImagery();
 
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      imageryProvider,
-      baseLayerPicker: false,
-      sceneModePicker: false,
-      geocoder: false,
-      navigationHelpButton: false,
-      animation: false,
-      timeline: false,
-      homeButton: false,
-      fullscreenButton: false,
-      terrainProvider: new Cesium.EllipsoidTerrainProvider()
-    });
+      const viewer = new Cesium.Viewer('cesiumContainer', {
+        imageryProvider,
+        baseLayerPicker: false,
+        sceneModePicker: false,
+        geocoder: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        homeButton: false,
+        fullscreenButton: false,
+        terrainProvider: new Cesium.EllipsoidTerrainProvider()
+      });
 
-    // --- the rest of the code stays the same (load GeoJSON, hover, click, flyTo) ---
-    const WORLD_GEOJSON = 'https://geojson-maps.ash.ms/world.geo.json';
-    const gleedsYellow = Cesium.Color.fromCssColorString('#f7c400');
-    const hoverFill    = gleedsYellow.withAlpha(0.25);
-    const normalFill   = gleedsYellow.withAlpha(0.15);
-    const normalStroke = gleedsYellow.withAlpha(0.9);
+      // Optional: subtle globe atmosphere
+      viewer.scene.globe.enableLighting = true;
 
-    let datasource, selectedEntity = null, hoveredEntity = null;
+      // ---- Data: world country polygons (lightweight GeoJSON)
+      const WORLD_GEOJSON = 'https://geojson-maps.ash.ms/world.geo.json';
 
-    Cesium.GeoJsonDataSource.load(WORLD_GEOJSON, {
-      clampToGround: false,
-      stroke: normalStroke,
-      fill: normalFill,
-      strokeWidth: 1
-    }).then(ds => {
-      datasource = ds;
-      viewer.dataSources.add(ds);
+      // Gleeds colours
+      const gleedsYellow = Cesium.Color.fromCssColorString('#f7c400');
+      const hoverFill    = gleedsYellow.withAlpha(0.25);
+      const normalFill   = gleedsYellow.withAlpha(0.15);
+      const normalStroke = gleedsYellow.withAlpha(0.9);
 
-      const entities = ds.entities.values;
-      for (const e of entities) {
-        if (Cesium.defined(e.polygon)) {
-          e.polygon.material     = normalFill;
-          e.polygon.outline      = true;
-          e.polygon.outlineColor = normalStroke;
-          e.polygon.outlineWidth = 1.0;
-        }
-      }
+      let datasource, selectedEntity = null, hoveredEntity = null;
 
-      const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      Cesium.GeoJsonDataSource.load(WORLD_GEOJSON, {
+        clampToGround: false,
+        stroke: normalStroke,
+        fill: normalFill,
+        strokeWidth: 1
+      }).then(ds => {
+        datasource = ds;
+        viewer.dataSources.add(ds);
 
-      handler.setInputAction((movement) => {
-        const picked = viewer.scene.pick(movement.endPosition);
-        if (hoveredEntity && hoveredEntity !== selectedEntity && hoveredEntity.polygon) {
-          hoveredEntity.polygon.material = normalFill;
-        }
-        hoveredEntity = null;
-        if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
-          hoveredEntity = picked.id;
-          if (hoveredEntity !== selectedEntity) {
-            hoveredEntity.polygon.material = hoverFill;
+        // Style polygons
+        const entities = ds.entities.values;
+        for (const e of entities) {
+          if (Cesium.defined(e.polygon)) {
+            e.polygon.material     = normalFill;
+            e.polygon.outline      = true;
+            e.polygon.outlineColor = normalStroke;
+            e.polygon.outlineWidth = 1.0;
           }
         }
-      }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-      handler.setInputAction((click) => {
-        const picked = viewer.scene.pick(click.position);
-        if (selectedEntity && selectedEntity.polygon) {
-          selectedEntity.polygon.material     = normalFill;
-          selectedEntity.polygon.outlineColor = normalStroke;
-          selectedEntity.polygon.outlineWidth = 1.0;
-        }
-        selectedEntity = null;
+        // Pointer interactions
+        const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
-        if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
-          selectedEntity = picked.id;
-          selectedEntity.polygon.material     = hoverFill;
-          selectedEntity.polygon.outlineColor = gleedsYellow;
-          selectedEntity.polygon.outlineWidth = 3.0;
+        // Hover
+        handler.setInputAction((movement) => {
+          const picked = viewer.scene.pick(movement.endPosition);
+          if (hoveredEntity && hoveredEntity !== selectedEntity && hoveredEntity.polygon) {
+            hoveredEntity.polygon.material = normalFill;
+          }
+          hoveredEntity = null;
 
-          viewer.flyTo(selectedEntity, { duration: 1.2, offset: new Cesium.HeadingPitchRange(0, -0.6, 2000000) });
+          if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
+            hoveredEntity = picked.id;
+            if (hoveredEntity !== selectedEntity) {
+              hoveredEntity.polygon.material = hoverFill;
+            }
+          }
+        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-          const name = selectedEntity.properties?.name?.getValue() ||
-                       selectedEntity.properties?.ADMIN?.getValue() || 'country';
-          const url = new URL(window.location.href);
-          url.searchParams.set('country', name);
-          history.replaceState({}, '', url.toString());
-        }
-      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        // Click select
+        handler.setInputAction((click) => {
+          const picked = viewer.scene.pick(click.position);
 
-      viewer.scene.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(0, 20, 4.0e7)
+          // clear previous
+          if (selectedEntity && selectedEntity.polygon) {
+            selectedEntity.polygon.material     = normalFill;
+            selectedEntity.polygon.outlineColor = normalStroke;
+            selectedEntity.polygon.outlineWidth = 1.0;
+          }
+          selectedEntity = null;
+
+          if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
+            selectedEntity = picked.id;
+
+            selectedEntity.polygon.material     = hoverFill;
+            selectedEntity.polygon.outlineColor = gleedsYellow;
+            selectedEntity.polygon.outlineWidth = 3.0;
+
+            // Smooth fly-to
+            viewer.flyTo(selectedEntity, {
+              duration: 1.2,
+              offset: new Cesium.HeadingPitchRange(0, -0.6, 2000000)
+            });
+
+            // Push selection to URL so other pages can react
+            const name =
+              selectedEntity.properties?.name?.getValue() ||
+              selectedEntity.properties?.ADMIN?.getValue() || 'country';
+            const url = new URL(window.location.href);
+            url.searchParams.set('country', name);
+            history.replaceState({}, '', url.toString());
+          }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        // Initial camera view
+        viewer.scene.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(0, 20, 4.0e7)
+        });
+      }).catch(err => {
+        console.error('GeoJSON load error:', err);
+        alert('Failed to load country boundaries. Check network/CORS.');
       });
-    }).catch(err => console.error('GeoJSON load error', err));
-  })();
-</script>
+    })().catch(err => {
+      console.error(err);
+      alert('Imagery could not be loaded. Please reload over http/https.');
+    });
+  </script>
+</body>
+</html>
