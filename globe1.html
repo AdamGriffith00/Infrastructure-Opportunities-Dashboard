@@ -1,0 +1,229 @@
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import Globe from "react-globe.gl";
+import * as d3geo from "d3-geo";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Compass, Globe2 } from "lucide-react";
+
+const WORLD_GEOJSON_URL =
+  "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson";
+
+// --- Brand + styling ---
+const GLEEDS_YELLOW = "#FFC300";
+const NON_GLEEDS_GREY = "#555555";
+const HOVER_BORDER = "#FFFFFF"; // bright border when hovered
+const DEFAULT_BORDER = "rgba(0,0,0,0.7)";
+
+// Countries Gleeds operates in (ISO_A3 codes)
+const GLEEDS_COUNTRIES = new Set([
+  "GBR", "IRL", // UK & Ireland
+  "AUT", "CZE", "FRA", "DEU", "HUN", "ITA", "POL", "PRT", "ROU", "SVK", "ESP", "UKR", // Mainland Europe offices
+  "EGY", "QAT", "SAU", "ARE", // MENA offices
+  "AUS", "CHN", "HKG", "IND", "SGP", "VNM", // Asia-Pacific offices
+  "CAN", "PER", "TTO", "USA", // Americas offices
+  // Partner countries
+  "BGR", "HRV", "MNE", "SRB", "BEL", "CHE", "LUX", "GRC", "DNK", "FIN", "NLD", "NOR", "SWE", // Europe partners
+  "ZAF", // South Africa partner
+  "LKA", // Sri Lanka partner
+  "ECU"  // Ecuador partner
+]);
+
+function centroidOf(feature) {
+  try {
+    return d3geo.geoCentroid(feature);
+  } catch {
+    return [0, 0];
+  }
+}
+
+// Compute a camera altitude that fits the clicked country's size
+function altitudeForFeature(feat) {
+  try {
+    const [[minLng, minLat], [maxLng, maxLat]] = d3geo.geoBounds(feat);
+    const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
+    const midLat = (maxLat + minLat) / 2;
+    const lngSpanRaw = Math.max(0.0001, Math.abs(maxLng - minLng));
+    const lngSpan = lngSpanRaw * Math.cos((Math.PI / 180) * Math.abs(midLat));
+    const span = Math.max(latSpan, lngSpan);
+    // Lower altitude => closer. Tuned for a nice fit.
+    if (span > 60) return 1.6;   // continent scale
+    if (span > 30) return 1.2;   // very large countries
+    if (span > 15) return 0.9;   // large countries
+    if (span > 8)  return 0.65;  // medium
+    if (span > 4)  return 0.5;   // small
+    if (span > 2)  return 0.38;  // very small
+    return 0.28;                 // micro-states
+  } catch {
+    return 1.0;
+  }
+}
+
+// --- Lightweight self-tests for helpers (runs once in dev) ---
+const RUN_SELF_TESTS = true;
+function makeRectFeature(minLng, minLat, maxLng, maxLat) {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [[
+        [minLng, minLat], [maxLng, minLat], [maxLng, maxLat], [minLng, maxLat], [minLng, minLat]
+      ]]
+    }
+  };
+}
+function runSelfTests() {
+  try {
+    const big = makeRectFeature(-130, 15, -60, 55);  // large swath (USA-like)
+    const med = makeRectFeature(-10, 35, 2, 60);     // medium (France/Spain-ish)
+    const small = makeRectFeature(-8.8, 49.8, 1.8, 58.7); // UK-ish box
+    const aBig = altitudeForFeature(big);
+    const aMed = altitudeForFeature(med);
+    const aSmall = altitudeForFeature(small);
+    console.assert(aBig > aMed && aMed > aSmall, "altitudeForFeature should zoom closer for smaller areas", { aBig, aMed, aSmall });
+  } catch (e) {
+    console.warn("Self-tests skipped/failed:", e);
+  }
+}
+
+export default function InteractiveGlobe() {
+  const globeRef = useRef(null);
+
+  const [worldData, setWorldData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [activeCountry, setActiveCountry] = useState(null);
+  const [hovered, setHovered] = useState(null);
+
+  const fetchCountries = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(WORLD_GEOJSON_URL);
+      const gj = await res.json();
+      setWorldData(gj.features || []);
+    } catch (e) {
+      console.error("Failed to load world GeoJSON", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCountries();
+  }, [fetchCountries]);
+
+  useEffect(() => {
+    if (RUN_SELF_TESTS) runSelfTests();
+  }, []);
+
+  const filteredFeatures = useMemo(() => worldData, [worldData]);
+
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const controls = globeRef.current.controls();
+    controls.autoRotate = autoRotate;
+    controls.autoRotateSpeed = 0.4;
+  }, [autoRotate]);
+
+  const focusCountry = useCallback(
+    (feat) => {
+      if (!feat || !globeRef.current) return;
+      const [lng, lat] = centroidOf(feat);
+      setActiveCountry(feat);
+      const controls = globeRef.current.controls?.();
+      if (controls) controls.autoRotate = false; // pause rotate while focused
+      const altitude = altitudeForFeature(feat);
+      globeRef.current.pointOfView({ lat, lng, altitude }, 1200);
+    },
+    []
+  );
+
+  const resetView = useCallback(() => {
+    if (!globeRef.current) return;
+    setActiveCountry(null);
+    globeRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
+  }, []);
+
+  return (
+    <div className="w-full h-screen bg-black text-foreground">
+      {/* Top bar */}
+      <div className="fixed top-0 left-0 right-0 z-20 backdrop-blur bg-background/70 border-b">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
+          <Globe2 className="w-5 h-5" />
+          <div className="font-semibold">Interactive Globe</div>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Auto-rotate</span>
+              <Switch checked={autoRotate} onCheckedChange={setAutoRotate} />
+            </div>
+            <Button variant="outline" size="sm" onClick={resetView}><Compass className="w-4 h-4 mr-2" />Reset</Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Info panel */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20">
+        <Card className="rounded-2xl shadow-xl">
+          <CardContent className="p-3 px-4 flex items-center gap-4">
+            <div className="text-sm">
+              {activeCountry ? (
+                <>
+                  <div className="font-medium">{activeCountry.properties?.name || activeCountry.id}</div>
+                </>
+              ) : (
+                <div className="text-muted-foreground">Drag to spin • Scroll to zoom • Hover to highlight • Click a country to focus</div>
+              )}
+            </div>
+            {activeCountry && (
+              <Button asChild>
+                <a href={`#/portal?country=${activeCountry.id}`}>
+                  Open in Portal
+                </a>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Globe canvas */}
+      <div className="absolute inset-0 top-10">
+        {loading ? (
+          <div className="w-full h-full grid place-items-center">
+            <div className="flex items-center gap-3 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /> Loading world…</div>
+          </div>
+        ) : (
+          <Globe
+            ref={globeRef}
+            width={window.innerWidth}
+            height={window.innerHeight}
+            backgroundColor="#000000"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+            bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+            showAtmosphere
+            atmosphereAltitude={0.12}
+
+            style={{ cursor: hovered ? "pointer" : "grab" }}
+
+            // Polygons (countries)
+            polygonsData={filteredFeatures}
+            polygonCapColor={(d) => (GLEEDS_COUNTRIES.has(d.id) ? GLEEDS_YELLOW : NON_GLEEDS_GREY)}
+            polygonSideColor={(d) => (d === hovered ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.2)")}
+            polygonStrokeColor={(d) => (d === hovered ? HOVER_BORDER : DEFAULT_BORDER)}
+            polygonAltitude={(d) => (d === hovered ? 0.06 : 0.01)}
+            polygonsTransitionDuration={300}
+            polygonLabel={(d) => `\n<b>${d.properties?.name || d.id}</b>\n`}
+
+            onPolygonHover={(feat) => setHovered(feat)}
+            onPolygonClick={focusCountry}
+
+            onGlobeReady={() => {
+              if (!globeRef.current) return;
+              globeRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
