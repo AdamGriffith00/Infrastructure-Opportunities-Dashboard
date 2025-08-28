@@ -21,17 +21,17 @@
     .swatch { width:14px; height:14px; border-radius:3px; display:inline-block; margin-right:6px; }
   </style>
 
-  <!-- libs -->
+  <!-- libs from CDN -->
   <script src="https://unpkg.com/three"></script>
   <script src="https://unpkg.com/globe.gl"></script>
   <script src="https://d3js.org/d3-geo.v1.min.js"></script>
 </head>
 <body>
-  <div class="hud">Drag to spin • Scroll to zoom • Hover to highlight • Click a country to focus</div>
+  <div class="hud">Drag to spin • Scroll to zoom • Hover/click only on Gleeds countries</div>
   <div id="globeViz"></div>
   <div class="legend">
     <span><span class="swatch" style="background:#FFC300"></span>Gleeds presence</span>
-    <span><span class="swatch" style="background:#6b6b6b"></span>Other countries</span>
+    <span><span class="swatch" style="background:#6b6b6b"></span>Other countries (non-interactive)</span>
   </div>
 
   <script>
@@ -55,7 +55,7 @@
       'ZAF','LKA','ECU'
     ]);
 
-    // Name-based fallback (in case the GeoJSON lacks ISO codes or uses variants)
+    // Name-based fallback
     const GLEEDS_NAMES = new Set([
       'united kingdom','ireland',
       'austria','czech republic','france','germany','hungary','italy','poland','portugal','romania','slovakia','spain','ukraine',
@@ -66,7 +66,7 @@
       'south africa','sri lanka','ecuador'
     ]);
 
-    // Helper: read ISO3 defensively + normalised name
+    // Helpers
     function iso3(feature) {
       return feature.id || feature.properties?.iso_a3 || feature.properties?.ISO_A3 || feature.properties?.adm0_a3 || '';
     }
@@ -80,8 +80,6 @@
       const nm = normName(f);
       return nm && GLEEDS_NAMES.has(nm);
     }
-
-    // Compute altitude so the selected country fills most of the screen
     function fitAltitude(feat) {
       try {
         const [[minLng, minLat],[maxLng, maxLat]] = d3.geoBounds(feat);
@@ -90,18 +88,14 @@
         const lngSpanRaw = Math.max(0.0001, Math.abs(maxLng - minLng));
         const lngSpan = lngSpanRaw * Math.cos((Math.PI/180) * Math.abs(midLat));
         const span = Math.max(latSpan, lngSpan);
-
-        // More aggressive zoom so the country fills the view
-        if (span > 60) return 1.1;  // huge (continents)
-        if (span > 30) return 0.8;  // very large
-        if (span > 15) return 0.55; // large
-        if (span > 8)  return 0.40; // medium
-        if (span > 4)  return 0.32; // small
-        if (span > 2)  return 0.26; // very small
-        return 0.22;                // micro-states
-      } catch {
-        return 0.8;
-      }
+        if (span > 60) return 1.1;
+        if (span > 30) return 0.8;
+        if (span > 15) return 0.55;
+        if (span > 8 ) return 0.40;
+        if (span > 4 ) return 0.32;
+        if (span > 2 ) return 0.26;
+        return 0.22;
+      } catch { return 0.8; }
     }
 
     // Build globe
@@ -111,6 +105,10 @@
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
       .showAtmosphere(true)
       .atmosphereAltitude(0.15);
+
+    const controls = globe.controls();
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.35;
 
     let hoverFeat = null;
 
@@ -130,10 +128,15 @@
           .polygonStrokeColor(f => (hoverFeat === f ? BORDER_HOVER : BORDER_DEFAULT))
           .polygonAltitude(f => (hoverFeat === f ? 0.06 : 0.012))
           .polygonsTransitionDuration(250)
-          .polygonLabel(f => `<b>${f.properties?.name || iso3(f) || 'Country'}</b>`)
+          .polygonLabel(f => isGleedsCountry(f) ? `<b>${f.properties?.name || iso3(f) || 'Country'}</b>` : null)
 
+          // HOVER: only react on Gleeds countries
           .onPolygonHover(f => {
-            hoverFeat = f || null;
+            if (!f || !isGleedsCountry(f)) {
+              hoverFeat = null;
+            } else {
+              hoverFeat = f;
+            }
             globe
               .polygonCapColor(d =>
                 (hoverFeat === d)
@@ -142,16 +145,19 @@
               )
               .polygonStrokeColor(d => (hoverFeat === d ? BORDER_HOVER : BORDER_DEFAULT))
               .polygonAltitude(d => (hoverFeat === d ? 0.06 : 0.012));
-            document.body.style.cursor = f ? 'pointer' : 'grab';
+            document.body.style.cursor = (hoverFeat ? 'pointer' : 'grab');
           })
 
+          // CLICK: only act on Gleeds countries
           .onPolygonClick(f => {
+            if (!f || !isGleedsCountry(f)) return;
             const [lng, lat] = d3.geoCentroid(f);
             const altitude = fitAltitude(f);
-            globe.pointOfView({ lat, lng, altitude }, 1000);
+            controls.autoRotate = false;
+            globe.pointOfView({ lat, lng, altitude }, 900);
           });
 
-        // Nice starting camera
+        // Starting camera
         globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
       })
       .catch(err => {
