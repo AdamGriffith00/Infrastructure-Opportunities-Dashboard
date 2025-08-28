@@ -1,219 +1,78 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Interactive 3D Globe</title>
-  <style>
-    :root {
-      --gleeds-yellow: #ffc300;
-      --cap-default: #808080;           /* country fill */
-      --side-default: rgba(0,0,0,.25);  /* extruded side */
-      --stroke-default: rgba(255,255,255,.65);
-      --stroke-hover: #ffffff;
-      --bg: #000;
-    }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: #eee; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #app { position: fixed; inset: 0; }
-
-    .toolbar {
-      position: fixed; left: 16px; top: 12px; z-index: 10;
-      background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.08);
-      padding: 8px 10px; border-radius: 10px; backdrop-filter: blur(6px);
-      display: flex; align-items: center; gap: 10px; font-size: 14px;
-    }
-    .toolbar button, .toolbar label {
-      color: #eee; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
-      padding: 6px 10px; border-radius: 8px; cursor: pointer;
-    }
-    .toolbar input[type="checkbox"] { transform: translateY(1px); }
-    .hint { opacity: .85; font-size: 12px; margin-left: 6px; }
-    .status {
-      position: fixed; left: 16px; bottom: 14px; z-index: 10;
-      color: #9ad0ff; font-size: 12px; opacity: .9;
-    }
-  </style>
-</head>
-<body>
-  <div class="toolbar">
-    <label><input id="rotateToggle" type="checkbox" checked /> Auto-rotate</label>
-    <button id="resetBtn">Reset</button>
-    <span class="hint">Drag to spin • Scroll to zoom • Click a country to focus</span>
-  </div>
-  <div id="app"></div>
-  <div class="status" id="status">Loading globe…</div>
-
-  <!-- Local libraries (no CDNs) -->
-  <script src="/assets/globe.gl.min.js"></script>
-  <script src="/assets/topojson.min.js"></script>
-
-  <script>
-    (async function () {
-      const statusEl = document.getElementById('status');
-
-      // ------- local assets (with remote fallback for textures) -------
-      const ASSETS = {
-        topojson: '/assets/countries-110m.json',
-        globeTexLocal: '/assets/earth.jpg',
-        bumpTexLocal:  '/assets/earth-bump.jpg',
-        globeTexRemote: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-        bumpTexRemote:  'https://unpkg.com/three-globe/example/img/earth-topology.png'
-      };
-
-      // utility: probe if an image URL loads; resolves with working URL (local or remote)
-      async function pickImage(localUrl, remoteUrl) {
-        const tryLoad = (url) => new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve(url);
-          img.onerror = reject;
-          img.src = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now(); // bust cache
-        });
-        try {
-          return await tryLoad(localUrl);
-        } catch {
-          try {
-            return await tryLoad(remoteUrl);
-          } catch {
-            return ''; // no texture; globe will still render with atmosphere
-          }
-        }
+  <head>
+    <meta charset="UTF-8" />
+    <title>Interactive 3D Globe</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background: black;
       }
+      #globeViz {
+        width: 100%;
+        height: 100%;
+      }
+      #info {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 6px 10px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        border-radius: 4px;
+      }
+    </style>
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+  </head>
+  <body>
+    <div id="globeViz"></div>
+    <div id="info">🌍 Drag to spin • Scroll to zoom • Hover to highlight • Click a country to focus</div>
 
-      // ------- init globe -------
+    <script>
+      const WORLD_GEOJSON_URL = './assets/world.geojson'; // Local copy now
+
       const globe = Globe()
-        .backgroundColor('#000000')
+        (document.getElementById('globeViz'))
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+        .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
         .showAtmosphere(true)
-        .atmosphereAltitude(0.12)
-        .polygonsTransitionDuration(350);
+        .atmosphereAltitude(0.15);
 
-      // mount
-      const appEl = document.getElementById('app');
-      appEl.appendChild(globe());
+      // Load local GeoJSON
+      fetch(WORLD_GEOJSON_URL)
+        .then(res => res.json())
+        .then(countries => {
+          globe
+            .polygonsData(countries.features)
+            .polygonCapColor(() => 'rgba(200,200,200,0.7)')
+            .polygonSideColor(() => 'rgba(0,0,0,0.3)')
+            .polygonStrokeColor(() => '#111')
+            .polygonAltitude(() => 0.01)
+            .polygonLabel(d => `
+              <b>${d.properties.name}</b>
+            `)
+            .onPolygonHover(hoverD => globe
+              .polygonCapColor(d => d === hoverD ? 'orange' : 'rgba(200,200,200,0.7)')
+            )
+            .onPolygonClick(d => {
+              const coords = d3.geoCentroid(d);
+              globe.pointOfView({ lat: coords[1], lng: coords[0], altitude: 1.8 }, 1000);
+            });
+        });
 
-      // Auto-rotate controls
-      const controls = globe.controls();
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.35;
+      // Start at a nice viewpoint
+      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
+    </script>
 
-      // UI wiring
-      document.getElementById('rotateToggle').addEventListener('change', (e) => {
-        controls.autoRotate = !!e.target.checked;
-      });
-      document.getElementById('resetBtn').addEventListener('click', () => {
-        // reset to a nice world view
-        globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
-      });
-
-      // pick textures (local → remote)
-      const globeTex = await pickImage(ASSETS.globeTexLocal, ASSETS.globeTexRemote);
-      const bumpTex  = await pickImage(ASSETS.bumpTexLocal,  ASSETS.bumpTexRemote);
-      if (globeTex) globe.globeImageUrl(globeTex);
-      if (bumpTex)  globe.bumpImageUrl(bumpTex);
-
-      // ------- load countries (TopoJSON → GeoJSON) -------
-      try {
-        const resp = await fetch(ASSETS.topojson, { cache: 'no-store' });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const topo = await resp.json();
-
-        // convert to GeoJSON features
-        const { feature } = topojson;           // from topojson-client (local script)
-        const geo = feature(topo, topo.objects.countries);
-        const features = geo.features || [];
-
-        statusEl.textContent = 'Ready. Click a country to focus.';
-
-        let hovered = null;
-        globe
-          .polygonsData(features)
-          .polygonCapColor(d => hovered === d ? '#a0a0a0' : getCapColor(d))
-          .polygonSideColor(d => hovered === d ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.25)')
-          .polygonStrokeColor(d => hovered === d ? '#ffffff' : 'rgba(255,255,255,.65)')
-          .polygonAltitude(d => hovered === d ? 0.06 : 0.01)
-          .onPolygonHover(d => { hovered = d; globe.polygonsData(features); })
-          .onPolygonClick(d => focusCountry(d));
-
-        // “Gleeds” highlight (ISO_A3)
-        const GLEEDS = new Set([
-          'GBR','IRL','AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
-          'EGY','QAT','SAU','ARE',
-          'AUS','CHN','HKG','IND','SGP','VNM',
-          'CAN','PER','TTO','USA',
-          'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
-          'ZAF','LKA','ECU'
-        ]);
-        function getCapColor(f) {
-          // many world-atlas exports carry 3-letter id in `id` or in `properties.iso_a3`
-          const iso = (f && (f.id || f.properties?.iso_a3 || f.properties?.ISO_A3 || f.properties?.adm0_a3)) || '';
-          return GLEEDS.has(iso) ? 'var(--gleeds-yellow)' : 'var(--cap-default)';
-        }
-
-        // focus handler: fly to centroid at a smart altitude based on bounds
-        function focusCountry(f) {
-          if (!f) return;
-          const centroid = getCentroid(f);
-          const altitude = altitudeForFeature(f);
-          controls.autoRotate = false;
-          globe.pointOfView({ lat: centroid[1], lng: centroid[0], altitude }, 1200);
-          statusEl.textContent = (f.properties && (f.properties.name || f.properties.ADMIN)) || 'Selected country';
-        }
-
-        // helpers (centroid & altitude)
-        function getCentroid(f) {
-          try {
-            return window.d3?.geoCentroid ? window.d3.geoCentroid(f) : centroidFallback(f);
-          } catch { return [0, 0]; }
-        }
-        // tiny fallback centroid for MultiPolygon/Polygon
-        function centroidFallback(f) {
-          const coords = (f.geometry?.type === 'MultiPolygon')
-            ? f.geometry.coordinates.flat(1)
-            : (f.geometry?.type === 'Polygon' ? [f.geometry.coordinates[0]] : []);
-          let sumX = 0, sumY = 0, n = 0;
-          coords.forEach(ring => {
-            ring.forEach(([x, y]) => { sumX += x; sumY += y; n++; });
-          });
-          return n ? [sumX / n, sumY / n] : [0, 0];
-        }
-        function altitudeForFeature(f) {
-          // approximate fit using bbox
-          const b = bbox(f);
-          const latSpan = Math.max(0.0001, Math.abs(b[3] - b[1]));
-          const midLat  = (b[3] + b[1]) / 2;
-          const lngSpan = Math.max(0.0001, Math.abs(b[2] - b[0])) * Math.cos(Math.abs(midLat) * Math.PI/180);
-          const span = Math.max(latSpan, lngSpan);
-          if (span > 60) return 1.6;
-          if (span > 30) return 1.2;
-          if (span > 15) return 0.9;
-          if (span >  8) return 0.65;
-          if (span >  4) return 0.5;
-          if (span >  2) return 0.38;
-          return 0.28;
-        }
-        function bbox(f) {
-          let minX=180, minY=90, maxX=-180, maxY=-90;
-          const push = (x,y)=>{ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; };
-          const walk = (g) => {
-            if (!g) return;
-            if (g.type === 'Polygon') {
-              g.coordinates[0].forEach(([x,y]) => push(x,y));
-            } else if (g.type === 'MultiPolygon') {
-              g.coordinates.forEach(poly => poly[0].forEach(([x,y]) => push(x,y)));
-            }
-          };
-          walk(f.geometry);
-          return [minX, minY, maxX, maxY];
-        }
-
-        // initial camera
-        globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
-
-      } catch (err) {
-        console.error('Failed to load country boundaries', err);
-        statusEl.textContent = 'Failed to load country boundaries.';
-        alert('Failed to load country boundaries. Please confirm /assets/countries-110m.json exists.');
-      }
-    })();
-  </script>
-</body>
+    <!-- D3 for centroid math -->
+    <script src="https://d3js.org/d3-geo.v1.min.js"></script>
+  </body>
 </html>
