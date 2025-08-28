@@ -1,78 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Interactive 3D Globe</title>
-    <style>
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
-        overflow: hidden;
-        background: black;
+<head>
+  <meta charset="UTF-8" />
+  <title>Interactive 3D Globe — Gleeds</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { height:100%; margin:0; background:#000; overflow:hidden; }
+    #globeViz { position:fixed; inset:0; }
+    .hud {
+      position: fixed; left: 12px; top: 12px; z-index: 10;
+      background: rgba(0,0,0,0.55); color:#fff; padding:8px 10px; border-radius:8px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:14px;
+    }
+    .legend {
+      position: fixed; right: 12px; bottom: 12px; z-index: 10;
+      background: rgba(0,0,0,0.55); color:#fff; padding:10px 12px; border-radius:8px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:13px;
+      display:flex; gap:12px; align-items:center;
+    }
+    .swatch { width:14px; height:14px; border-radius:3px; display:inline-block; margin-right:6px; }
+  </style>
+
+  <!-- libs -->
+  <script src="https://unpkg.com/three"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <script src="https://d3js.org/d3-geo.v1.min.js"></script>
+</head>
+<body>
+  <div class="hud">Drag to spin • Scroll to zoom • Hover to highlight • Click a country to focus</div>
+  <div id="globeViz"></div>
+  <div class="legend">
+    <span><span class="swatch" style="background:#FFC300"></span>Gleeds presence</span>
+    <span><span class="swatch" style="background:#6b6b6b"></span>Other countries</span>
+  </div>
+
+  <script>
+    // Local GeoJSON (place this file in your repo: /assets/world.geojson)
+    const WORLD_GEOJSON_URL = './assets/world.geojson';
+
+    // Brand colours
+    const GLEEDS_YELLOW = '#FFC300';
+    const OTHER_GREY    = '#6b6b6b';
+    const BORDER_DEFAULT = '#111';
+    const BORDER_HOVER   = '#ffffff';
+
+    // ISO3 codes for Gleeds presence/partners
+    const GLEEDS_ISO3 = new Set([
+      'GBR','IRL',
+      'AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
+      'EGY','QAT','SAU','ARE',
+      'AUS','CHN','HKG','IND','SGP','VNM',
+      'CAN','PER','TTO','USA',
+      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
+      'ZAF','LKA','ECU'
+    ]);
+
+    // Name-based fallback (in case the GeoJSON lacks ISO codes or uses variants)
+    const GLEEDS_NAMES = new Set([
+      'united kingdom','ireland',
+      'austria','czech republic','france','germany','hungary','italy','poland','portugal','romania','slovakia','spain','ukraine',
+      'egypt','qatar','saudi arabia','united arab emirates',
+      'australia','china','hong kong','india','singapore','vietnam',
+      'canada','peru','trinidad and tobago','united states','united states of america','usa',
+      'bulgaria','croatia','montenegro','serbia','belgium','switzerland','luxembourg','greece','denmark','finland','netherlands','norway','sweden',
+      'south africa','sri lanka','ecuador'
+    ]);
+
+    // Helper: read ISO3 defensively + normalised name
+    function iso3(feature) {
+      return feature.id || feature.properties?.iso_a3 || feature.properties?.ISO_A3 || feature.properties?.adm0_a3 || '';
+    }
+    function normName(feature) {
+      const n = feature?.properties?.name || feature?.properties?.ADMIN || '';
+      return n.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,'').trim();
+    }
+    function isGleedsCountry(f) {
+      const code = String(iso3(f)).toUpperCase();
+      if (code && GLEEDS_ISO3.has(code)) return true;
+      const nm = normName(f);
+      return nm && GLEEDS_NAMES.has(nm);
+    }
+
+    // Compute altitude so the selected country fills most of the screen
+    function fitAltitude(feat) {
+      try {
+        const [[minLng, minLat],[maxLng, maxLat]] = d3.geoBounds(feat);
+        const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
+        const midLat = (maxLat + minLat) / 2;
+        const lngSpanRaw = Math.max(0.0001, Math.abs(maxLng - minLng));
+        const lngSpan = lngSpanRaw * Math.cos((Math.PI/180) * Math.abs(midLat));
+        const span = Math.max(latSpan, lngSpan);
+
+        // More aggressive zoom so the country fills the view
+        if (span > 60) return 1.1;  // huge (continents)
+        if (span > 30) return 0.8;  // very large
+        if (span > 15) return 0.55; // large
+        if (span > 8)  return 0.40; // medium
+        if (span > 4)  return 0.32; // small
+        if (span > 2)  return 0.26; // very small
+        return 0.22;                // micro-states
+      } catch {
+        return 0.8;
       }
-      #globeViz {
-        width: 100%;
-        height: 100%;
-      }
-      #info {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        padding: 6px 10px;
-        background: rgba(0, 0, 0, 0.6);
-        color: white;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        border-radius: 4px;
-      }
-    </style>
-    <script src="https://unpkg.com/three"></script>
-    <script src="https://unpkg.com/globe.gl"></script>
-  </head>
-  <body>
-    <div id="globeViz"></div>
-    <div id="info">🌍 Drag to spin • Scroll to zoom • Hover to highlight • Click a country to focus</div>
+    }
 
-    <script>
-      const WORLD_GEOJSON_URL = './assets/world.geojson'; // Local copy now
+    // Build globe
+    const globe = Globe()(document.getElementById('globeViz'))
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+      .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+      .showAtmosphere(true)
+      .atmosphereAltitude(0.15);
 
-      const globe = Globe()
-        (document.getElementById('globeViz'))
-        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-        .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
-        .showAtmosphere(true)
-        .atmosphereAltitude(0.15);
+    let hoverFeat = null;
 
-      // Load local GeoJSON
-      fetch(WORLD_GEOJSON_URL)
-        .then(res => res.json())
-        .then(countries => {
-          globe
-            .polygonsData(countries.features)
-            .polygonCapColor(() => 'rgba(200,200,200,0.7)')
-            .polygonSideColor(() => 'rgba(0,0,0,0.3)')
-            .polygonStrokeColor(() => '#111')
-            .polygonAltitude(() => 0.01)
-            .polygonLabel(d => `
-              <b>${d.properties.name}</b>
-            `)
-            .onPolygonHover(hoverD => globe
-              .polygonCapColor(d => d === hoverD ? 'orange' : 'rgba(200,200,200,0.7)')
-            )
-            .onPolygonClick(d => {
-              const coords = d3.geoCentroid(d);
-              globe.pointOfView({ lat: coords[1], lng: coords[0], altitude: 1.8 }, 1000);
-            });
-        });
+    fetch(WORLD_GEOJSON_URL, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(gj => {
+        const features = gj.features || [];
 
-      // Start at a nice viewpoint
-      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
-    </script>
+        globe
+          .polygonsData(features)
+          .polygonCapColor(f =>
+            (hoverFeat === f)
+              ? 'rgba(255,255,255,0.9)'
+              : (isGleedsCountry(f) ? GLEEDS_YELLOW : OTHER_GREY)
+          )
+          .polygonSideColor(f => (hoverFeat === f ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'))
+          .polygonStrokeColor(f => (hoverFeat === f ? BORDER_HOVER : BORDER_DEFAULT))
+          .polygonAltitude(f => (hoverFeat === f ? 0.06 : 0.012))
+          .polygonsTransitionDuration(250)
+          .polygonLabel(f => `<b>${f.properties?.name || iso3(f) || 'Country'}</b>`)
 
-    <!-- D3 for centroid math -->
-    <script src="https://d3js.org/d3-geo.v1.min.js"></script>
-  </body>
+          .onPolygonHover(f => {
+            hoverFeat = f || null;
+            globe
+              .polygonCapColor(d =>
+                (hoverFeat === d)
+                  ? 'rgba(255,255,255,0.9)'
+                  : (isGleedsCountry(d) ? GLEEDS_YELLOW : OTHER_GREY)
+              )
+              .polygonStrokeColor(d => (hoverFeat === d ? BORDER_HOVER : BORDER_DEFAULT))
+              .polygonAltitude(d => (hoverFeat === d ? 0.06 : 0.012));
+            document.body.style.cursor = f ? 'pointer' : 'grab';
+          })
+
+          .onPolygonClick(f => {
+            const [lng, lat] = d3.geoCentroid(f);
+            const altitude = fitAltitude(f);
+            globe.pointOfView({ lat, lng, altitude }, 1000);
+          });
+
+        // Nice starting camera
+        globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
+      })
+      .catch(err => {
+        console.error('Failed to load /assets/world.geojson', err);
+        alert('Could not load assets/world.geojson — please confirm the file exists in your repo.');
+      });
+  </script>
+</body>
 </html>
