@@ -5,165 +5,132 @@
   <title>Gleeds | Interactive 3D Globe</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-  <!-- MapLibre GL (CDN) -->
-  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-
-  <!-- Turf for bbox -->
-  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  <!-- CesiumJS (CDN, no token needed when using OSM imagery) -->
+  <link href="https://unpkg.com/cesium/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://unpkg.com/cesium/Build/Cesium/Cesium.js"></script>
 
   <style>
     :root { --gleeds:#f7c400; --charcoal:#3c3c3c; }
-    html, body { height: 100%; margin: 0; background: #222; }
-    #map { position: fixed; inset: 0; }
-
+    html, body { height:100%; margin:0; background:#1e1e1e; }
+    #cesiumContainer { position:fixed; inset:0; }
     .hud {
-      position: fixed; top: 10px; left: 10px; z-index: 2;
-      background: rgba(60,60,60,.85); color: #fff; padding: 8px 12px;
-      border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+      position: fixed; top: 10px; left: 10px; z-index: 10;
+      background: rgba(60,60,60,.85); color:#fff; padding:8px 12px;
+      border:1px solid rgba(255,255,255,.15); border-radius:10px;
       font: 14px/1.4 Arial, sans-serif;
     }
     .hud b { color: var(--gleeds); }
   </style>
 </head>
 <body>
-  <div id="map" aria-label="3D globe map"></div>
-  <div class="hud">Hover to highlight · Click to <b>zoom</b> &amp; <b>outline</b></div>
+  <div id="cesiumContainer"></div>
+  <div class="hud">Hover to highlight · Click to <b>outline</b> &amp; <b>fly to</b> a country</div>
 
   <script>
-    // 1) Base map
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: 'https://demotiles.maplibre.org/style.json', // simple basemap
-      center: [0, 20],
-      zoom: 1.4
-      // NOTE: some styles force their own projection on load,
-      // so we set the globe AFTER style.load below.
+    // 1) Create viewer with OSM tiles (no token required)
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        credit: '© OpenStreetMap contributors'
+      }),
+      baseLayerPicker: false,
+      sceneModePicker: false,
+      geocoder: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      homeButton: false,
+      fullscreenButton: false,
+      terrainProvider: new Cesium.EllipsoidTerrainProvider() // simple globe, no token
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    // 2) Load world GeoJSON (countries)
+    const WORLD_GEOJSON = 'https://geojson-maps.ash.ms/world.geo.json';
+    const gleedsYellow = Cesium.Color.fromCssColorString('#f7c400');
+    const hoverFill    = gleedsYellow.withAlpha(0.25);
+    const normalFill   = gleedsYellow.withAlpha(0.15);
+    const normalStroke = gleedsYellow.withAlpha(0.9);
 
-    // Force the globe AFTER the style is applied
-    map.on('style.load', () => {
-      map.setProjection({ name: 'globe' });   // <<--- key fix for space-view 🌍
-      map.setFog({
-        color: 'rgba(120,120,120,0.07)',
-        highColor: 'rgba(255,255,255,0.08)',
-        horizonBlend: 0.1
-      });
-    });
+    let datasource, selectedEntity = null, hoveredEntity = null;
 
-    // 2) Countries source/layers
-    const COUNTRIES_GEOJSON_URL = 'https://geojson-maps.ash.ms/world.geo.json';
+    Cesium.GeoJsonDataSource.load(WORLD_GEOJSON, {
+      clampToGround: false,                   // floats over terrain (if enabled later)
+      stroke: normalStroke,
+      fill: normalFill,
+      strokeWidth: 1
+    }).then(ds => {
+      datasource = ds;
+      viewer.dataSources.add(ds);
 
-    map.on('load', async () => {
-      const data = await fetch(COUNTRIES_GEOJSON_URL).then(r => r.json());
+      // Polygons for countries
+      const entities = ds.entities.values;
 
-      // Ensure we have stable feature ids for feature-state
-      // If the file already has 'id' we keep it; otherwise synthesize from ISO3/name
-      data.features.forEach((f, idx) => {
-        if (typeof f.id === 'undefined') {
-          f.id = f.properties?.iso_a3 || f.properties?.adm0_a3 || f.properties?.name || idx;
+      // Ensure a consistent baseline style
+      for (const e of entities) {
+        if (Cesium.defined(e.polygon)) {
+          e.polygon.material     = normalFill;
+          e.polygon.outline      = true;
+          e.polygon.outlineColor = normalStroke;
+          e.polygon.outlineWidth = 1.0;
         }
-      });
+      }
 
-      map.addSource('countries', { type: 'geojson', data });
+      const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
-      // Fill (hover reacts; selected gets stronger)
-      map.addLayer({
-        id: 'country-fill',
-        type: 'fill',
-        source: 'countries',
-        paint: {
-          'fill-color': '#f7c400',
-          'fill-opacity': [
-            'case',
-            ['boolean', ['feature-state', 'selected'], false], 0.45,
-            ['boolean', ['feature-state', 'hover'], false],    0.30,
-            0.18
-          ]
+      // Hover highlight
+      handler.setInputAction((movement) => {
+        const picked = viewer.scene.pick(movement.endPosition);
+        // Clear previous hover if not selected
+        if (hoveredEntity && hoveredEntity !== selectedEntity && hoveredEntity.polygon) {
+          hoveredEntity.polygon.material = normalFill;
         }
-      });
+        hoveredEntity = null;
 
-      // Outline (thin base)
-      map.addLayer({
-        id: 'country-outline',
-        type: 'line',
-        source: 'countries',
-        paint: {
-          'line-color': '#f7c400',
-          'line-width': 0.6
+        if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
+          hoveredEntity = picked.id;
+          if (hoveredEntity !== selectedEntity) {
+            hoveredEntity.polygon.material = hoverFill;
+          }
         }
-      });
+      }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-      // Selected outline (bold)
-      map.addLayer({
-        id: 'country-outline-selected',
-        type: 'line',
-        source: 'countries',
-        filter: ['==', ['id'], ''], // empty initially; we’ll set it on click
-        paint: {
-          'line-color': '#f7c400',
-          'line-width': 2.4
+      // Click select + outline bold + flyTo
+      handler.setInputAction((click) => {
+        const picked = viewer.scene.pick(click.position);
+
+        // Clear previous selection
+        if (selectedEntity && selectedEntity.polygon) {
+          selectedEntity.polygon.material     = normalFill;
+          selectedEntity.polygon.outlineColor = normalStroke;
+          selectedEntity.polygon.outlineWidth = 1.0;
         }
-      });
+        selectedEntity = null;
 
-      // 3) Hover + click state handling
-      let hoveredId = null;
-      let selectedId = null;
+        if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
+          selectedEntity = picked.id;
+          selectedEntity.polygon.material     = hoverFill;
+          selectedEntity.polygon.outlineColor = gleedsYellow;
+          selectedEntity.polygon.outlineWidth = 3.0;
 
-      map.on('mousemove', 'country-fill', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        const f = e.features?.[0];
-        if (!f) return;
+          // Smooth camera flight to the country
+          viewer.flyTo(selectedEntity, { duration: 1.2, offset: new Cesium.HeadingPitchRange(0, -0.6, 2000000) });
 
-        if (hoveredId !== null && hoveredId !== selectedId) {
-          map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: false });
+          // Optional: put the country name into the URL (to link with your dashboard)
+          const name = selectedEntity.properties?.name?.getValue() ||
+                       selectedEntity.properties?.ADMIN?.getValue() ||
+                       'country';
+          const url = new URL(window.location.href);
+          url.searchParams.set('country', name);
+          history.replaceState({}, '', url.toString());
         }
-        hoveredId = f.id;
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        if (hoveredId !== selectedId) {
-          map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: true });
-        }
+      // Start from a nice global view
+      viewer.scene.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(0, 20, 4.0e7) // lon, lat, height (meters)
       });
-
-      map.on('mouseleave', 'country-fill', () => {
-        map.getCanvas().style.cursor = '';
-        if (hoveredId !== null && hoveredId !== selectedId) {
-          map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: false });
-        }
-        hoveredId = null;
-      });
-
-      map.on('click', 'country-fill', (e) => {
-        const f = e.features?.[0];
-        if (!f) return;
-
-        // Clear previous selected
-        if (selectedId !== null) {
-          map.setFeatureState({ source: 'countries', id: selectedId }, { selected: false });
-        }
-
-        selectedId = f.id;
-        map.setFeatureState({ source: 'countries', id: selectedId }, { selected: true });
-
-        // Update selected outline filter to the clicked feature id
-        map.setFilter('country-outline-selected', ['==', ['id'], selectedId]);
-
-        // Smooth zoom to country
-        const bb = turf.bbox(f); // [minX,minY,maxX,maxY]
-        map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], {
-          padding: 60,
-          duration: 1200,
-          maxZoom: 6
-        });
-
-        // Optional: set URL param for your dashboard to load country data
-        const name = f.properties?.name || f.properties?.ADMIN || f.properties?.admin || 'country';
-        const url = new URL(window.location.href);
-        url.searchParams.set('country', name);
-        history.replaceState({}, '', url.toString());
-      });
+    }).catch(err => {
+      console.error('GeoJSON load error', err);
     });
   </script>
 </body>
