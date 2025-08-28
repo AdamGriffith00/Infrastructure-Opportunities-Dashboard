@@ -1,159 +1,169 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Gleeds • Interactive 3D Globe</title>
+  <title>Interactive 3D Globe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- CesiumJS -->
-  <link rel="stylesheet" href="https://unpkg.com/cesium/Build/Cesium/Widgets/widgets.css">
-  <script src="https://unpkg.com/cesium/Build/Cesium/Cesium.js"></script>
   <style>
-    html, body, #cesiumContainer { width:100%; height:100%; margin:0; padding:0; background:#111; }
-    .cesium-viewer .cesium-widget-credits { display:none !important; }
+    html, body { height: 100%; margin: 0; background:#000; color:#fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #globeContainer { position: fixed; inset: 0; }
+    .hud {
+      position: fixed; left: 16px; top: 12px; z-index: 10;
+      background: rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.12); border-radius: 10px;
+      padding: 8px 10px; backdrop-filter: blur(6px);
+      font-size: 13px; line-height: 1.35;
+    }
+    .hud strong { color:#FFC300; }
+    .footer {
+      position: fixed; right: 16px; bottom: 12px; z-index: 10;
+      background: rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.12); border-radius: 10px;
+      padding: 8px 10px; backdrop-filter: blur(6px);
+      font-size: 13px;
+    }
+    .btn { cursor:pointer; padding:6px 10px; border-radius:8px; background:#222; border:1px solid #444; color:#eee; }
+    .btn:hover { background:#2e2e2e; }
+    .tooltip {
+      position: fixed; pointer-events: none; z-index: 20;
+      background: rgba(0,0,0,.8); border:1px solid rgba(255,255,255,.2);
+      padding: 6px 8px; border-radius: 8px; font-size: 12px;
+      transform: translate(-50%, calc(-100% - 10px));
+      white-space: nowrap;
+    }
   </style>
+
+  <!-- CDN libs (no build step needed) -->
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three-globe@2.30.1"></script>
+  <script src="https://unpkg.com/globe.gl@4.6.7/dist/globe.gl.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <script src="https://unpkg.com/d3-geo@3"></script>
 </head>
 <body>
-  <div id="cesiumContainer"></div>
+  <div class="hud">
+    <div><strong>Interactive 3D Globe</strong></div>
+    <div>Drag to spin • Scroll to zoom • Hover to preview • Click a country to focus</div>
+  </div>
+  <div class="footer">
+    <button id="resetBtn" class="btn">Reset view</button>
+    <label style="margin-left:10px;">
+      <input id="rotateChk" type="checkbox" checked /> Auto-rotate
+    </label>
+  </div>
+
+  <div id="globeContainer"></div>
+  <div id="tip" class="tooltip" style="display:none;"></div>
 
   <script>
-    // --- Imagery fallback: ArcGIS World Imagery -> OpenStreetMap tiles
-    async function pickImagery() {
-      const candidates = [
-        new Cesium.ArcGisMapServerImageryProvider({
-          url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'
-        }),
-        new Cesium.UrlTemplateImageryProvider({
-          url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          credit: '© OpenStreetMap contributors'
-        })
-      ];
-      for (const p of candidates) {
-        try {
-          await p.readyPromise;
-          return p;
-        } catch (e) {
-          console.warn('Imagery failed, trying next…', e);
-        }
-      }
-      throw new Error('No imagery providers available.');
+    // --- Constants
+    const WORLD_ATLAS = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+    const GLEEDS_YELLOW = "#FFC300";
+    const NON_GLEEDS_GREY = "#6b6b6b";
+    const HOVER_BORDER = "#ffffff";
+    const DEFAULT_BORDER = "rgba(0,0,0,0.7)";
+
+    // Gleeds presence (ISO_A3 codes)
+    const GLEEDS_COUNTRIES = new Set([
+      "GBR","IRL",
+      "AUT","CZE","FRA","DEU","HUN","ITA","POL","PRT","ROU","SVK","ESP","UKR",
+      "EGY","QAT","SAU","ARE",
+      "AUS","CHN","HKG","IND","SGP","VNM",
+      "CAN","PER","TTO","USA",
+      "BGR","HRV","MNE","SRB","BEL","CHE","LUX","GRC","DNK","FIN","NLD","NOR","SWE",
+      "ZAF","LKA","ECU"
+    ]);
+
+    const el = document.getElementById('globeContainer');
+    const tip = document.getElementById('tip');
+
+    // Create globe
+    const world = Globe()
+      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+      .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
+      .backgroundColor("#000000")
+      .showAtmosphere(true)
+      .atmosphereAltitude(0.12)
+      .onGlobeReady(() => {
+        world.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
+        world.controls().autoRotate = true;
+        world.controls().autoRotateSpeed = 0.4;
+      })(el);
+
+    // Hover tooltip
+    el.addEventListener('mousemove', e => {
+      tip.style.left = `${e.clientX}px`;
+      tip.style.top = `${e.clientY}px`;
+    });
+
+    // Reset + auto-rotate UI
+    document.getElementById('resetBtn').onclick = () =>
+      world.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
+
+    document.getElementById('rotateChk').onchange = (e) => {
+      world.controls().autoRotate = !!e.target.checked;
+    };
+
+    // Helpers
+    function centroidOf(feat) {
+      try { return d3.geoCentroid(feat); } catch { return [0,0]; }
+    }
+    function altitudeForFeature(feat) {
+      try {
+        const [[minLng,minLat],[maxLng,maxLat]] = d3.geoBounds(feat);
+        const latSpan = Math.max(0.0001, Math.abs(maxLat-minLat));
+        const midLat = (maxLat+minLat)/2;
+        const lngSpanRaw = Math.max(0.0001, Math.abs(maxLng-minLng));
+        const lngSpan = lngSpanRaw * Math.cos((Math.PI/180) * Math.abs(midLat));
+        const span = Math.max(latSpan, lngSpan);
+        if (span > 60) return 1.6;
+        if (span > 30) return 1.2;
+        if (span > 15) return 0.9;
+        if (span > 8)  return 0.65;
+        if (span > 4)  return 0.5;
+        if (span > 2)  return 0.38;
+        return 0.28;
+      } catch { return 1.0; }
     }
 
-    (async () => {
-      const imageryProvider = await pickImagery();
+    // Load world topojson → geojson features
+    fetch(WORLD_ATLAS)
+      .then(r => r.json())
+      .then(topology => {
+        const countries = topojson.feature(topology, topology.objects.countries).features;
 
-      const viewer = new Cesium.Viewer('cesiumContainer', {
-        imageryProvider,
-        baseLayerPicker: false,
-        sceneModePicker: false,
-        geocoder: false,
-        navigationHelpButton: false,
-        animation: false,
-        timeline: false,
-        homeButton: false,
-        fullscreenButton: false,
-        terrainProvider: new Cesium.EllipsoidTerrainProvider()
-      });
-
-      // Optional: subtle globe atmosphere
-      viewer.scene.globe.enableLighting = true;
-
-      // ---- Data: world country polygons (lightweight GeoJSON)
-      const WORLD_GEOJSON = 'https://geojson-maps.ash.ms/world.geo.json';
-
-      // Gleeds colours
-      const gleedsYellow = Cesium.Color.fromCssColorString('#f7c400');
-      const hoverFill    = gleedsYellow.withAlpha(0.25);
-      const normalFill   = gleedsYellow.withAlpha(0.15);
-      const normalStroke = gleedsYellow.withAlpha(0.9);
-
-      let datasource, selectedEntity = null, hoveredEntity = null;
-
-      Cesium.GeoJsonDataSource.load(WORLD_GEOJSON, {
-        clampToGround: false,
-        stroke: normalStroke,
-        fill: normalFill,
-        strokeWidth: 1
-      }).then(ds => {
-        datasource = ds;
-        viewer.dataSources.add(ds);
-
-        // Style polygons
-        const entities = ds.entities.values;
-        for (const e of entities) {
-          if (Cesium.defined(e.polygon)) {
-            e.polygon.material     = normalFill;
-            e.polygon.outline      = true;
-            e.polygon.outlineColor = normalStroke;
-            e.polygon.outlineWidth = 1.0;
-          }
-        }
-
-        // Pointer interactions
-        const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-
-        // Hover
-        handler.setInputAction((movement) => {
-          const picked = viewer.scene.pick(movement.endPosition);
-          if (hoveredEntity && hoveredEntity !== selectedEntity && hoveredEntity.polygon) {
-            hoveredEntity.polygon.material = normalFill;
-          }
-          hoveredEntity = null;
-
-          if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
-            hoveredEntity = picked.id;
-            if (hoveredEntity !== selectedEntity) {
-              hoveredEntity.polygon.material = hoverFill;
-            }
-          }
-        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-
-        // Click select
-        handler.setInputAction((click) => {
-          const picked = viewer.scene.pick(click.position);
-
-          // clear previous
-          if (selectedEntity && selectedEntity.polygon) {
-            selectedEntity.polygon.material     = normalFill;
-            selectedEntity.polygon.outlineColor = normalStroke;
-            selectedEntity.polygon.outlineWidth = 1.0;
-          }
-          selectedEntity = null;
-
-          if (Cesium.defined(picked) && picked.id && picked.id.polygon) {
-            selectedEntity = picked.id;
-
-            selectedEntity.polygon.material     = hoverFill;
-            selectedEntity.polygon.outlineColor = gleedsYellow;
-            selectedEntity.polygon.outlineWidth = 3.0;
-
-            // Smooth fly-to
-            viewer.flyTo(selectedEntity, {
-              duration: 1.2,
-              offset: new Cesium.HeadingPitchRange(0, -0.6, 2000000)
-            });
-
-            // Push selection to URL so other pages can react
-            const name =
-              selectedEntity.properties?.name?.getValue() ||
-              selectedEntity.properties?.ADMIN?.getValue() || 'country';
-            const url = new URL(window.location.href);
-            url.searchParams.set('country', name);
-            history.replaceState({}, '', url.toString());
-          }
-        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-        // Initial camera view
-        viewer.scene.camera.setView({
-          destination: Cesium.Cartesian3.fromDegrees(0, 20, 4.0e7)
+        // label each feature with id/name if present
+        countries.forEach(f => {
+          // some datasets stick ISO_A3 in "id"; others in properties.
+          f.id = f.id || f.properties?.iso_a3 || f.properties?.iso3 || null;
         });
-      }).catch(err => {
-        console.error('GeoJSON load error:', err);
-        alert('Failed to load country boundaries. Check network/CORS.');
+
+        world
+          .polygonsData(countries)
+          .polygonCapColor(d => GLEEDS_COUNTRIES.has(d.id) ? GLEEDS_YELLOW : NON_GLEEDS_GREY)
+          .polygonSideColor(d => d === world.polygonHoverObject() ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.25)")
+          .polygonStrokeColor(d => d === world.polygonHoverObject() ? HOVER_BORDER : DEFAULT_BORDER)
+          .polygonAltitude(d => d === world.polygonHoverObject() ? 0.06 : 0.01)
+          .polygonsTransitionDuration(300)
+          .onPolygonHover(d => {
+            world.polygonHoverObject(d || null);
+            if (d) {
+              tip.textContent = d.properties?.name || d.id || "Unknown";
+              tip.style.display = "block";
+            } else {
+              tip.style.display = "none";
+            }
+          })
+          .onPolygonClick(d => {
+            if (!d) return;
+            const [lng, lat] = centroidOf(d);
+            const alt = altitudeForFeature(d);
+            world.pointOfView({ lat, lng, altitude: alt }, 1200);
+            world.controls().autoRotate = false;
+          });
+      })
+      .catch(err => {
+        alert("Failed to load country boundaries. Check network/CORS.");
+        console.error(err);
       });
-    })().catch(err => {
-      console.error(err);
-      alert('Imagery could not be loaded. Please reload over http/https.');
-    });
   </script>
 </body>
 </html>
