@@ -152,7 +152,7 @@
     }
 
     // Load world boundaries
-    fetch('assets/world-110m.geojson')
+    fetch('/assets/world-110m.geojson')
       .then(r => { say('World load: '+r.status+' '+r.statusText, r.ok); return r.json(); })
       .then(gj => {
         const feats = gj.features || [];
