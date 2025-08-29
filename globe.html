@@ -1,239 +1,225 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Interactive 3D Globe</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-      color: #ddd;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    html,body { height:100%; margin:0; background:#000; color:#eee; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif }
+    #globe-canvas { position:fixed; inset:0; }
+    .toolbar {
+      position: fixed; top:8px; left:8px; z-index:10; display:flex; gap:.5rem; flex-wrap:wrap;
+      background:rgba(0,0,0,.5); padding:6px 8px; border-radius:8px; backdrop-filter: blur(4px);
     }
-    #globeViz {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-    #toolbar {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      display: flex;
-      gap: 8px;
-      z-index: 10;
-    }
-    .btn {
-      background: rgba(30, 30, 30, 0.9);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 6px;
-      padding: 6px 10px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .btn:hover { background: rgba(50, 50, 50, 0.9); }
-    #hint {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      font-size: 12px;
-      color: #aaa;
-      z-index: 10;
-      background: rgba(0,0,0,0.5);
-      padding: 6px 10px;
-      border-radius: 6px;
-    }
-    #err {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      z-index: 10;
-      background: rgba(220, 0, 0, .85);
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 6px;
-      display: none;
-      max-width: 50ch;
+    .btn { border:1px solid #333; background:#111; color:#eee; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    .btn:hover { background:#222; }
+    .hint {
+      position:fixed; left:8px; bottom:8px; z-index:10; font-size:.8rem; color:#aaa;
+      background:rgba(0,0,0,.5); padding:6px 10px; border-radius:8px; backdrop-filter: blur(4px);
     }
   </style>
+
+  <!-- ========= COMPATIBLE LIB VERSIONS ========= -->
+  <!-- three r146 (stable with current three-globe) -->
+  <script src="https://unpkg.com/three@0.146.0/build/three.min.js"></script>
+  <!-- three-globe UMD: instantiate with 'new ThreeGlobe()' -->
+  <script src="https://unpkg.com/three-globe@2.28.10/dist/three-globe.min.js"></script>
+  <!-- d3 v7 (ok) -->
+  <script src="https://unpkg.com/d3@7.8.5/dist/d3.min.js"></script>
+  <!-- d3-geo v1 (needed to avoid the Adder constructor error) -->
+  <script src="https://unpkg.com/d3-geo@1.12.1/build/d3-geo.min.js"></script>
 </head>
 <body>
-  <div id="toolbar">
+  <div class="toolbar">
     <button class="btn" id="btn-gleeds">Gleeds Countries</button>
     <button class="btn" id="btn-world">Back to World</button>
     <button class="btn" id="btn-usa">Back to USA</button>
     <button class="btn" id="btn-reset">Reset View</button>
   </div>
-  <div id="globeViz"></div>
-  <div id="hint">Drag to spin • Scroll to zoom • Click a yellow country • Click a state when USA is active</div>
-  <div id="err"></div>
-
-  <!-- libs (pinned) -->
-  <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three-globe@2.27.1/dist/three-globe.min.js"></script>
-  <script src="https://unpkg.com/d3-geo@3"></script>
+  <div class="hint">Drag to spin • Scroll to zoom • Click a yellow country • Click a state when USA is active</div>
+  <div id="globe-canvas"></div>
 
   <script>
-    // ---- config / constants ----
-    const WORLD_GEO = "/assets/world-110m.geo.json";     // your world file (GeoJSON)
-    const USA_STATES_1 = "/assets/us-states.geojson";     // preferred name
-    const USA_STATES_2 = "/assets/us-states.json";        // fallback name (if you used this)
+    // ---------- config ----------
+    const GLEEDS_YELLOW = '#FFC300';
+    const GREY          = '#555555';
+    const HOVER_BORDER  = '#ffffff';
+    const DEFAULT_EDGE  = 'rgba(0,0,0,0.6)';
 
-    const GLEEDS_YELLOW = "#FFC300";
-    const NON_GLEEDS_GREY = "#555";
-
-    const GLEEDS_SET = new Set([
-      "GBR", "IRL",
-      "AUT", "CZE", "FRA", "DEU", "HUN", "ITA", "POL", "PRT", "ROU", "SVK", "ESP", "UKR",
-      "EGY", "QAT", "SAU", "ARE",
-      "AUS", "CHN", "HKG", "IND", "SGP", "VNM",
-      "CAN", "PER", "TTO", "USA",
-      "BGR", "HRV", "MNE", "SRB", "BEL", "CHE", "LUX", "GRC", "DNK", "FIN", "NLD", "NOR", "SWE",
-      "ZAF", "LKA", "ECU"
+    // ISO_A3 of Gleeds presence
+    const GLEEDS_COUNTRIES = new Set([
+      'GBR','IRL',
+      'AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
+      'EGY','QAT','SAU','ARE',
+      'AUS','CHN','HKG','IND','SGP','VNM',
+      'CAN','PER','TTO','USA',
+      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
+      'ZAF','LKA','ECU'
     ]);
 
-    // ---- globe init ----
-    const globe = ThreeGlobe.Globe()
-      .width(window.innerWidth)
-      .height(window.innerHeight)
-      .backgroundImageUrl("https://unpkg.com/three-globe/example/img/night-sky.png")
-      .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-dark.jpg")
-      .showAtmosphere(true)
-      .atmosphereAltitude(0.18)
-      .atmosphereColor("#80bfff")
-      .polygonSideColor(() => "rgba(0,0,0,0.3)")
-      .polygonStrokeColor(() => "rgba(220,220,220,0.9)")
-      .polygonsTransitionDuration(300)
-      .onPolygonClick(handlePolygonClick);
+    const WORLD_URL = 'assets/world.geojson';                  // <— make sure this exists
+    const USA_STATES_URL = 'assets/overlays/usa-states.geojson'; // <— and this
 
-    // mount
-    const container = document.getElementById("globeViz");
-    container.appendChild(globe());
+    // ---------- three scene ----------
+    const scene = new THREE.Scene();
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    document.getElementById('globe-canvas').appendChild(renderer.domElement);
 
-    // resize management (prevents blank canvas on some setups)
-    window.addEventListener("resize", () => {
-      globe.width(window.innerWidth);
-      globe.height(window.innerHeight);
-    });
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 350;
 
-    // camera defaults
-    function resetView() {
-      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1000);
-    }
+    const light = new THREE.AmbientLight(0xffffff, 1.1);
+    scene.add(light);
 
-    // ---- state ----
-    let worldFeatures = [];
-    let usaStateFeatures = [];
-    let usaActive = false;
+    // OrbitControls (from three examples CDN)
+    const controlsScript = document.createElement('script');
+    controlsScript.src = 'https://unpkg.com/three@0.146.0/examples/js/controls/OrbitControls.js';
+    controlsScript.onload = initGlobe;
+    document.head.appendChild(controlsScript);
 
-    // ---- fetch helpers ----
-    function showErr(msg) {
-      const el = document.getElementById("err");
-      el.textContent = msg;
-      el.style.display = "block";
-      setTimeout(() => (el.style.display = "none"), 6000);
-    }
+    let controls, globe, worldFeatures = [], usaStates = [];
+    let hovered = null;
+    let showingUSAStates = false;
 
-    async function fetchJSON(url) {
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
-      return res.json();
-    }
+    function initGlobe(){
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.minDistance = 120;
+      controls.maxDistance = 500;
 
-    async function loadWorld() {
-      const gj = await fetchJSON(WORLD_GEO);
-      if (gj.type !== "FeatureCollection") throw new Error("World file must be GeoJSON FeatureCollection");
-      // normalise .id to ISO3
-      gj.features.forEach(f => {
-        const iso = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || f.properties?.ADM0_A3;
-        if (iso) f.id = iso;
+      // Instantiate Globe (UMD)
+      globe = new ThreeGlobe()
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+        .showAtmosphere(true)
+        .atmosphereColor('#7aa7ff')
+        .atmosphereAltitude(0.14);
+
+      scene.add(globe);
+
+      loadData().then(() => {
+        // initial view
+        focusView({ lat: 20, lng: 0, altitude: 2.2 });
+        animate();
       });
-      worldFeatures = gj.features;
+
+      window.addEventListener('resize', onResize, false);
+      wireButtons();
     }
 
-    async function loadUSAStates() {
+    async function loadData(){
       try {
-        const gj = await fetchJSON(USA_STATES_1);
-        usaStateFeatures = normaliseStateFeatures(gj);
-      } catch {
-        // try fallback name
-        const gj2 = await fetchJSON(USA_STATES_2);
-        usaStateFeatures = normaliseStateFeatures(gj2);
+        // World polygons (GeoJSON)
+        const world = await fetch(WORLD_URL).then(r => r.json());
+        worldFeatures = world.features || [];
+        globe
+          .polygonsData(worldFeatures)
+          .polygonCapColor(f => GLEEDS_COUNTRIES.has(f.id) ? GLEEDS_YELLOW : GREY)
+          .polygonSideColor(f => (f===hovered ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.2)'))
+          .polygonStrokeColor(f => (f===hovered ? HOVER_BORDER : DEFAULT_EDGE))
+          .polygonAltitude(f => (f===hovered ? 0.06 : 0.01))
+          .polygonsTransitionDuration(300)
+          .onPolygonHover(f => {
+            hovered = f;
+            globe
+              .polygonSideColor(ff => (ff===hovered ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.2)'))
+              .polygonStrokeColor(ff => (ff===hovered ? HOVER_BORDER : DEFAULT_EDGE))
+              .polygonAltitude(ff => (ff===hovered ? 0.06 : 0.01));
+          })
+          .onPolygonClick(f => {
+            if (!f) return;
+            const name = f.properties?.name || f.id;
+            if (name === 'United States of America' || f.id === 'USA') {
+              showUSAStates();
+            } else {
+              zoomToFeature(f);
+            }
+          });
+
+        // USA states (GeoJSON)
+        const states = await fetch(USA_STATES_URL).then(r => r.json());
+        usaStates = states.features || [];
+      } catch (e) {
+        alert('Failed to load GeoJSON. Check that the asset files exist and paths are correct.');
+        console.error(e);
       }
     }
 
-    function normaliseStateFeatures(gj) {
-      if (gj.type !== "FeatureCollection") throw new Error("USA states file must be GeoJSON FeatureCollection");
-      return gj.features.map(f => {
-        // ensure an id we can test (non-null tells us it's a state)
-        const code = f.properties?.postal || f.properties?.STUSPS || f.properties?.name;
-        return { ...f, id: `US-${code}` };
+    function showUSAStates(){
+      if (!usaStates.length) return;
+      showingUSAStates = true;
+
+      globe.polygonCapColor(f => {
+        const nm = f.properties?.name || f.id;
+        // Hide all countries (make fully transparent) except USA outline
+        if (f.id === 'USA' || nm === 'United States of America') return 'rgba(255,195,0,0.12)';
+        return 'rgba(0,0,0,0)'; // hide other countries
       });
-    }
 
-    // ---- rendering data sources ----
-    function renderWorldOnly() {
-      usaActive = false;
+      // Add a second polygon layer via "hexPolygonsData" trick OR re-use single layer:
+      // simplest for now: draw states as lines using "arcs" (so we don't alter world data)
+      // But three-globe polygon layer needed to click states—so reuse the same layer temporarily.
+
+      // Replace polygons with the states for interaction, keep earth visible via globe texture
       globe
-        .polygonCapColor(f => (GLEEDS_SET.has(f.id) ? GLEEDS_YELLOW : NON_GLEEDS_GREY))
-        .polygonsData(worldFeatures);
-      resetView();
-    }
-
-    function renderWorldWithUSA() {
-      // world without USA + USA states features
-      const worldMinusUSA = worldFeatures.filter(f => f.id !== "USA");
-      const merged = worldMinusUSA.concat(usaStateFeatures);
-      usaActive = true;
-
-      globe
-        .polygonCapColor(f => {
-          // US states are our merged features with id like "US-CA"
-          if (typeof f.id === "string" && f.id.startsWith("US-")) return GLEEDS_YELLOW;
-          // non-USA world countries:
-          return GLEEDS_SET.has(f.id) ? GLEEDS_YELLOW : NON_GLEEDS_GREY;
+        .polygonsData(usaStates)
+        .polygonCapColor(() => 'rgba(255,195,0,0.75)')
+        .polygonSideColor(() => 'rgba(0,0,0,0.15)')
+        .polygonStrokeColor(() => '#111')
+        .polygonAltitude(f => (f===hovered ? 0.04 : 0.02))
+        .onPolygonHover(f => {
+          hovered = f;
+          globe
+            .polygonStrokeColor(ff => (ff===hovered ? '#fff' : '#111'))
+            .polygonAltitude(ff => (ff===hovered ? 0.04 : 0.02));
         })
-        .polygonsData(merged);
+        .onPolygonClick(f => {
+          if (f) zoomToFeature(f);
+        });
 
-      // zoom to continental US centroids
-      globe.pointOfView({ lat: 39, lng: -97, altitude: 0.9 }, 900);
+      // Focus camera over CONUS
+      focusView({ lat: 39, lng: -98, altitude: 0.9 });
     }
 
-    // ---- interaction ----
-    function handlePolygonClick(f) {
-      if (!f) return;
-      // Clicking a state while USA active -> zoom a bit more
-      if (usaActive && typeof f.id === "string" && f.id.startsWith("US-")) {
-        zoomToFeature(f);
-        return;
-      }
-      // Clicking a country in world view
-      if (!usaActive && f.id === "USA") {
-        renderWorldWithUSA();
-        return;
-      }
-      // Otherwise: zoom to that country
-      if (!usaActive) {
-        zoomToFeature(f);
-      }
+    function backToWorld(){
+      showingUSAStates = false;
+      globe
+        .polygonsData(worldFeatures)
+        .polygonCapColor(f => GLEEDS_COUNTRIES.has(f.id) ? GLEEDS_YELLOW : GREY)
+        .polygonSideColor(() => 'rgba(0,0,0,0.2)')
+        .polygonStrokeColor(() => DEFAULT_EDGE)
+        .polygonAltitude(() => 0.01)
+        .onPolygonHover(f => {
+          if (!f || !GLEEDS_COUNTRIES.has(f.id)) { hovered = null; return; }
+          hovered = f;
+          globe
+            .polygonSideColor(ff => (ff===hovered ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.2)'))
+            .polygonStrokeColor(ff => (ff===hovered ? HOVER_BORDER : DEFAULT_EDGE))
+            .polygonAltitude(ff => (ff===hovered ? 0.06 : 0.01));
+        })
+        .onPolygonClick(f => {
+          if (!f) return;
+          const name = f.properties?.name || f.id;
+          if (name === 'United States of America' || f.id === 'USA') showUSAStates();
+          else zoomToFeature(f);
+        });
+
+      focusView({ lat: 20, lng: 0, altitude: 2.2 });
     }
 
-    function zoomToFeature(feat) {
+    function zoomToFeature(feat){
       try {
-        const centroid = d3.geoCentroid(feat);
-        // altitude scaled by feature bounds size
-        const [[minLng, minLat], [maxLng, maxLat]] = d3.geoBounds(feat);
-        const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
-        const midLat = (maxLat + minLat) / 2;
-        const lngSpan = Math.max(0.0001, Math.abs(maxLng - minLng)) * Math.cos(Math.abs(midLat) * Math.PI / 180);
+        const [lng, lat] = d3.geoCentroid(feat);
+        const [[minLng,minLat],[maxLng,maxLat]] = d3.geoBounds(feat);
+        const latSpan = Math.max(0.001, Math.abs(maxLat - minLat));
+        const midLat = (maxLat + minLat)/2;
+        const lngSpan = Math.max(0.001, Math.abs(maxLng - minLng) * Math.cos(Math.abs(midLat) * Math.PI/180));
         const span = Math.max(latSpan, lngSpan);
-        let altitude = 1.2;
+        // altitude tuned: smaller area -> closer
+        let altitude = 2.0;
         if (span > 60) altitude = 1.6;
         else if (span > 30) altitude = 1.2;
         else if (span > 15) altitude = 0.9;
@@ -242,33 +228,44 @@
         else if (span > 2)  altitude = 0.38;
         else altitude = 0.28;
 
-        globe.pointOfView({ lat: centroid[1], lng: centroid[0], altitude }, 900);
+        focusView({ lat, lng, altitude });
       } catch (e) {
-        console.warn("zoomToFeature:", e);
+        console.warn('zoomToFeature failed', e);
       }
     }
 
-    // ---- UI buttons ----
-    document.getElementById("btn-reset").addEventListener("click", resetView);
-    document.getElementById("btn-world").addEventListener("click", renderWorldOnly);
-    document.getElementById("btn-usa").addEventListener("click", renderWorldWithUSA);
-    document.getElementById("btn-gleeds").addEventListener("click", () => {
-      // small “nudge” to re-evaluate coloring if needed
-      globe.polygonCapColor(f => (GLEEDS_SET.has(f.id) || (typeof f.id === "string" && f.id.startsWith("US-"))) ? GLEEDS_YELLOW : NON_GLEEDS_GREY);
-    });
+    function focusView({ lat, lng, altitude }){
+      // orbit-controls target
+      const phi   = (90 - lat) * (Math.PI/180);
+      const theta = (lng + 180) * (Math.PI/180);
+      const r = 200; // earth radius used internally by three-globe
+      controls.target.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+      controls.update();
+      globe.pointOfView({ lat, lng, altitude }, 1200);
+    }
 
-    // ---- boot ----
-    (async function boot() {
-      try {
-        await loadWorld();
-        renderWorldOnly();           // draw globe
-        // prefetch states in background (no UI lag on click)
-        loadUSAStates().catch(err => { showErr("Failed to load USA states: " + err.message); });
-      } catch (err) {
-        console.error(err);
-        showErr("Failed to load world boundaries: " + err.message);
-      }
-    })();
+    function animate(){
+      requestAnimationFrame(animate);
+      controls && controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function onResize(){
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function wireButtons(){
+      document.getElementById('btn-gleeds').onclick = () => backToWorld();
+      document.getElementById('btn-world').onclick  = () => backToWorld();
+      document.getElementById('btn-usa').onclick    = () => showUSAStates();
+      document.getElementById('btn-reset').onclick  = () => focusView({ lat: 20, lng: 0, altitude: 2.2 });
+    }
   </script>
 </body>
 </html>
