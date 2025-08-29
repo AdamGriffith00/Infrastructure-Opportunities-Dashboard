@@ -3,28 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Interactive 3D Globe</title>
-
+  <title>Interactive 3D Globe – Safe</title>
   <style>
     html, body { margin:0; height:100%; background:#000; color:#ddd; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
     #ui {
       position: fixed; top:10px; left:10px; z-index: 10; display:flex; gap:.5rem; align-items:center;
       background: rgba(0,0,0,.35); backdrop-filter: blur(6px); padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
     }
-    .btn {
-      appearance:none; border:1px solid rgba(255,255,255,.12); background:#161616; color:#eee;
-      padding:6px 10px; border-radius:9px; cursor:pointer; font-size:.9rem;
-    }
+    .btn { appearance:none; border:1px solid rgba(255,255,255,.12); background:#161616; color:#eee; padding:6px 10px; border-radius:9px; cursor:pointer; font-size:.9rem; }
     .btn:hover { background:#1d1d1d; }
     .btn[disabled] { opacity:.4; cursor:not-allowed; }
     #hint {
-      position: fixed; left:12px; bottom:10px; color:#aaa; font-size:.8rem; opacity:.8;
+      position: fixed; left:12px; bottom:10px; color:#aaa; font-size:.8rem; opacity:.85;
       background: rgba(0,0,0,.35); padding:6px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.08);
     }
+    #diag { position:fixed; top:8px; right:10px; z-index:11; font:12px/1.3 monospace; color:#9fe59f; text-align:right; }
+    #diag .bad { color:#ff8f8f; }
     canvas { display:block; }
   </style>
 
-  <!-- Local vendor scripts (UMD / non-module) -->
+  <!-- Local vendor scripts (UMD order matters) -->
   <script src="assets/vendor/three.min.js"></script>
   <script src="assets/vendor/OrbitControls.js"></script>
   <script src="assets/vendor/d3-geo.v1.min.js"></script>
@@ -37,20 +35,33 @@
     <button class="btn" id="btnReset">Reset View</button>
   </div>
   <div id="hint">Drag to spin • Scroll to zoom • Click a yellow country • Click a state when USA is active</div>
+  <div id="diag">loading…</div>
   <div id="container"></div>
 
   <script>
   (function () {
-    // --- Gleeds brand + countries ---
+    const diag = document.getElementById('diag');
+    const say = (msg, ok=true) => {
+      const span = document.createElement('div');
+      span.textContent = msg;
+      if (!ok) span.className = 'bad';
+      diag.appendChild(span);
+    };
+
+    // ---- Sanity checks for libs
+    say('THREE present: ' + !!window.THREE, !!window.THREE);
+    say('OrbitControls present: ' + !!(window.THREE && THREE.OrbitControls), !!(window.THREE && THREE.OrbitControls));
+    say('d3-geo present: ' + !!window.d3, !!window.d3);
+    say('ThreeGlobe present: ' + !!window.ThreeGlobe, !!window.ThreeGlobe);
+
+    if (!window.THREE || !window.ThreeGlobe) return;
+
+    // --- Brand + countries ---
     const GLEEDS_YELLOW = '#FFC300';
     const GLEEDS_COUNTRIES = new Set([
-      'GBR','IRL',
-      'AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
-      'EGY','QAT','SAU','ARE',
-      'AUS','CHN','HKG','IND','SGP','VNM',
-      'CAN','PER','TTO','USA',
-      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
-      'ZAF','LKA','ECU'
+      'GBR','IRL','AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
+      'EGY','QAT','SAU','ARE','AUS','CHN','HKG','IND','SGP','VNM','CAN','PER','TTO','USA',
+      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE','ZAF','LKA','ECU'
     ]);
 
     // --- Three scene ---
@@ -65,13 +76,11 @@
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
     camera.position.z = 500;
 
-    // lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
     dir.position.set(200, 200, 200);
     scene.add(dir);
 
-    // controls
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -80,98 +89,75 @@
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.3;
 
-    // Globe (base)
-    const globe = new ThreeGlobe()
-      .globeImageUrl('assets/earth-blue-marble.jpg') /* optional; drop file if you have one */
-      .bumpImageUrl('assets/earth-topology.png')     /* optional; drop file if you have one */
-      .showAtmosphere(true)
-      .atmosphereAltitude(0.18)
-      .atmosphereColor('#9ecbff');
-
+    const globe = new ThreeGlobe(); // NO textures -> always renders
     scene.add(globe);
 
-    // Keep a ref to the USA states overlay
     let statesLayer = null;
 
-    // Initial POV
-    function viewHome() {
+    function home() {
       controls.autoRotate = true;
-      globe.pointOfView({ lat: 20, lng: 0, altitude: 300 }, 1000);
+      globe.pointOfView({ lat: 20, lng: 0, altitude: 300 }, 900);
     }
-    viewHome();
+    home();
 
-    // Resize
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Animation loop
-    (function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    })();
+    (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); })();
 
-    // --- Helper: zoom to a feature centroid ---
-    function zoomToFeature(feat, fixedAlt) {
-      if (!feat) return;
-      const c = d3.geoCentroid(feat); // [lng, lat]
-      // A simple size-based altitude (smaller feature -> closer)
+    function centroid(feat){
+      try { return d3.geoCentroid(feat); } catch { return [0,0]; }
+    }
+    function zoomTo(feat, fixedAlt){
+      const c = centroid(feat);
       let alt = 170;
-      try {
+      try{
         const b = d3.geoBounds(feat);
-        const span = Math.max(Math.abs(b[1][0] - b[0][0]), Math.abs(b[1][1] - b[0][1]));
+        const span = Math.max(Math.abs(b[1][0]-b[0][0]), Math.abs(b[1][1]-b[0][1]));
         alt = span > 60 ? 240 : span > 30 ? 210 : span > 15 ? 180 : span > 8 ? 150 : 120;
-      } catch {}
-      globe.pointOfView({ lat: c[1], lng: c[0], altitude: fixedAlt || alt }, 900);
+      } catch{}
+      globe.pointOfView({ lat:c[1], lng:c[0], altitude: fixedAlt || alt }, 900);
       controls.autoRotate = false;
     }
 
-    // --- Helper: load USA states overlay (once) ---
     function loadUSAStatesOverlay() {
-      if (statesLayer) return; // already loaded
+      if (statesLayer) return;
       fetch('assets/overlays/usa-states.geojson')
-        .then(r => r.json())
-        .then(states => {
+        .then(r => { say('USA states load: '+r.status+' '+r.statusText, r.ok); return r.json(); })
+        .then(gj => {
           statesLayer = new ThreeGlobe()
-            .polygonsData(states.features)
-            .polygonCapColor(() => 'rgba(255,195,0,0.35)') // semi Gleeds yellow
+            .polygonsData(gj.features || [])
+            .polygonCapColor(() => 'rgba(255,195,0,0.35)')
             .polygonSideColor(() => 'rgba(60,60,60,0.45)')
             .polygonStrokeColor(() => '#333')
             .polygonAltitude(() => 0.012)
             .polygonsTransitionDuration(220);
-
           scene.add(statesLayer);
-
-          // click a state to zoom tighter
-          statesLayer.onPolygonClick(f => zoomToFeature(f, 120));
-
-          // expose "Hide States" button
+          // guard older builds
+          if (typeof statesLayer.onPolygonClick === 'function') {
+            statesLayer.onPolygonClick(f => zoomTo(f, 120));
+          } else {
+            say('states onPolygonClick not available (old build)', false);
+          }
           document.getElementById('btnHideStates').style.display = 'inline-block';
         })
-        .catch(err => {
-          alert('Could not load USA states overlay: ' + err);
-        });
+        .catch(e => { say('USA states load failed: '+e, false); });
     }
-
-    function clearUSAStates() {
-      if (statesLayer) {
-        scene.remove(statesLayer);
-        statesLayer = null;
-      }
+    function clearUSAStates(){
+      if (statesLayer) { scene.remove(statesLayer); statesLayer = null; }
       document.getElementById('btnHideStates').style.display = 'none';
     }
 
-    // --- Load world polygons + wire up interactions ---
+    // Load world boundaries
     fetch('assets/world-110m.geojson')
-      .then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
+      .then(r => { say('World load: '+r.status+' '+r.statusText, r.ok); return r.json(); })
       .then(gj => {
         const feats = gj.features || [];
+        say('World features: ' + feats.length, feats.length > 0);
+
         globe
           .polygonsData(feats)
           .polygonCapColor(d => GLEEDS_COUNTRIES.has(d.id) ? GLEEDS_YELLOW : 'rgba(200,200,200,0.85)')
@@ -180,38 +166,35 @@
           .polygonsTransitionDuration(250)
           .polygonLabel(d => `<div style="padding:4px 6px"><b>${d.properties?.name || d.id}</b></div>`);
 
-        // Hover feedback (only for yellow countries)
-        globe.onPolygonHover(f => {
-          const interactive = f && GLEEDS_COUNTRIES.has(f.id);
-          renderer.domElement.style.cursor = interactive ? 'pointer' : 'grab';
-        });
+        // Guard old builds that don't have event hooks
+        if (typeof globe.onPolygonHover === 'function') {
+          globe.onPolygonHover(f => {
+            const interactive = f && GLEEDS_COUNTRIES.has(f.id);
+            renderer.domElement.style.cursor = interactive ? 'pointer' : 'grab';
+          });
+        } else {
+          say('onPolygonHover not available (old build)', false);
+        }
 
-        // Click to zoom (only for Gleeds countries)
-        globe.onPolygonClick(f => {
-          if (!f || !GLEEDS_COUNTRIES.has(f.id)) return;
-          zoomToFeature(f);
-          if (f.id === 'USA') loadUSAStatesOverlay();
-        });
+        if (typeof globe.onPolygonClick === 'function') {
+          globe.onPolygonClick(f => {
+            if (!f || !GLEEDS_COUNTRIES.has(f.id)) return;
+            zoomTo(f);
+            if (f.id === 'USA') loadUSAStatesOverlay();
+          });
+        } else {
+          say('onPolygonClick not available (old build)', false);
+        }
       })
-      .catch(err => {
-        alert('Could not load world boundaries from /assets/world-110m.geojson\n' + err);
+      .catch(e => {
+        say('World load failed: ' + e, false);
+        alert('Could not load world boundaries from /assets/world-110m.geojson');
       });
 
-    // --- UI buttons ---
-    document.getElementById('btnBackWorld').addEventListener('click', () => {
-      clearUSAStates();
-      viewHome();
-    });
-
-    document.getElementById('btnHideStates').addEventListener('click', () => {
-      clearUSAStates();
-    });
-
-    document.getElementById('btnReset').addEventListener('click', () => {
-      controls.reset();
-      clearUSAStates();
-      viewHome();
-    });
+    // UI
+    document.getElementById('btnBackWorld').addEventListener('click', () => { clearUSAStates(); home(); });
+    document.getElementById('btnHideStates').addEventListener('click', () => { clearUSAStates(); });
+    document.getElementById('btnReset').addEventListener('click', () => { controls.reset(); clearUSAStates(); home(); });
   })();
   </script>
 </body>
