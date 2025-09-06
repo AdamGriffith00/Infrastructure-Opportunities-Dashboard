@@ -1,15 +1,19 @@
 // netlify/lib/update-runner.mjs
 import { getStore } from '@netlify/blobs';
+import fetchPCS from '../functions/adapters/public-contracts-scotland.mjs'; // <-- NEW
 
 // ---- ENV
 const SITE_ID = process.env.BLOBS_SITE_ID;
 const TOKEN   = process.env.BLOBS_TOKEN;
 
 // ---- Tunables
-const CF_PAGES_MAX_FAST  = 2;
-const CF_PAGES_MAX_FULL  = 12;
-const FTS_BATCH_MAX_FAST = 1;
-const FTS_BATCH_MAX_FULL = 6;
+const CF_PAGES_MAX_FAST   = 2;
+const CF_PAGES_MAX_FULL   = 12;
+const FTS_BATCH_MAX_FAST  = 1;
+const FTS_BATCH_MAX_FULL  = 6;
+// Public Contracts Scotland CSV row cap (adapter also accepts { limit })
+const PCS_LIMIT_FAST      = 250;
+const PCS_LIMIT_FULL      = 2000;
 
 const HEADERS = {
   headers: {
@@ -97,7 +101,7 @@ async function safeFetchJSON(url, { timeout = 15000 } = {}) {
   }
 }
 
-// ---------- source adapters
+// ---------- source adapters (CF & FTS remain unchanged)
 async function fetchCF(pagesMax) {
   const out = [];
   for (let page = 1; page <= pagesMax; page++) {
@@ -201,15 +205,17 @@ export async function runUpdate({ fast = false } = {}) {
 
   const pagesMax   = fast ? CF_PAGES_MAX_FAST   : CF_PAGES_MAX_FULL;
   const batchesMax = fast ? FTS_BATCH_MAX_FAST  : FTS_BATCH_MAX_FULL;
+  const pcsLimit   = fast ? PCS_LIMIT_FAST      : PCS_LIMIT_FULL;
 
-  console.log(`[update] start; fast=${fast} (CF=${pagesMax}, FTS=${batchesMax})`);
+  console.log(`[update] start; fast=${fast} (CF=${pagesMax}, FTS=${batchesMax}, PCS=${pcsLimit})`);
 
-  const [cfItems, ftsItems] = await Promise.all([
+  const [cfItems, ftsItems, pcsItems] = await Promise.all([
     fetchCF(pagesMax).catch(e => { console.error('CF fetch error', e); return []; }),
     fetchFTS(batchesMax).catch(e => { console.error('FTS fetch error', e); return []; }),
+    fetchPCS({ limit: pcsLimit }).catch(e => { console.error('PCS fetch error', e); return []; }) // <-- NEW
   ]);
 
-  const merged = dedupe([...cfItems, ...ftsItems]);
+  const merged = dedupe([...cfItems, ...ftsItems, ...pcsItems]);
   const now = Date.now();
 
   const relevant = merged.filter(it => {
@@ -225,5 +231,5 @@ export async function runUpdate({ fast = false } = {}) {
   });
 
   console.log(`[update] wrote ${relevant.length} items`);
-  return { cf: cfItems.length, fts: ftsItems.length, final: relevant.length };
+  return { cf: cfItems.length, fts: ftsItems.length, pcs: pcsItems.length, final: relevant.length }; // <-- counts include PCS
 }
