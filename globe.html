@@ -30,7 +30,7 @@
     }
   </style>
 
-  <!-- libs from CDN (rendering only; GeoJSON is local) -->
+  <!-- Rendering libs (keep CDN for now; GeoJSON is loaded from your repo) -->
   <script src="https://unpkg.com/three"></script>
   <script src="https://unpkg.com/globe.gl"></script>
   <script src="https://d3js.org/d3-geo.v1.min.js"></script>
@@ -51,10 +51,10 @@
   </div>
 
   <script>
-    // --- Local data files (commit these to your repo) ---
-    const WORLD_GEOJSON_URL   = './assets/world.geojson';
-    const USA_STATES_URL      = './assets/usa-states.geojson';
-    const ENGLAND_REGIONS_URL = './assets/england-regions.geojson';
+    // --- Local data files (these must exist in your repo) ---
+    const WORLD_GEOJSON_URL   = './assets/world-110m.geojson';
+    const USA_STATES_URL      = './assets/overlays/usa-states.geojson';
+    const ENGLAND_REGIONS_URL = './assets/overlays/england-regions.geojson';
 
     // --- Brand + UI colours ---
     const GLEEDS_YELLOW   = '#FFC300';
@@ -141,15 +141,19 @@
 
     // --- Load world layer ---
     fetch(WORLD_GEOJSON_URL, { cache: 'no-store' })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(gj => {
         WORLD_FEATURES = gj.features || [];
+        if (!WORLD_FEATURES.length) throw new Error('No features in world GeoJSON');
         setWorldLayer();
         globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
       })
       .catch(err => {
-        console.error('Failed to load /assets/world.geojson', err);
-        alert('Could not load assets/world.geojson — please confirm the file exists in your repo.');
+        console.error('Failed to load', WORLD_GEOJSON_URL, err);
+        alert(`Could not load world boundaries from ${WORLD_GEOJSON_URL}`);
       });
 
     // --- World layer (Gleeds countries interactive only) ---
@@ -186,7 +190,7 @@
             )
             .polygonStrokeColor(d => (hoverFeat === d ? BORDER_HOVER : BORDER_DEFAULT))
             .polygonAltitude(d => (hoverFeat === d ? 0.06 : 0.012));
-          document.body.style.cursor = (hoverFeat ? 'pointer' : 'grab';
+          document.body.style.cursor = (hoverFeat ? 'pointer' : 'grab');
         })
         .onPolygonClick(f => {
           if (!f || !isGleedsCountry(f)) return;
@@ -246,7 +250,6 @@
             globe.pointOfView({ lat, lng, altitude }, 900);
           });
 
-        // Zoom to USA on drill
         const [lng, lat] = d3.geoCentroid(countryFeature);
         const altitude = fitAltitude(countryFeature);
         controls.autoRotate = false;
@@ -254,7 +257,6 @@
 
       } catch (e) {
         console.warn('USA states layer missing or invalid:', e);
-        // Fallback: just zoom to country if we can't load states
         const [lng, lat] = d3.geoCentroid(countryFeature);
         const altitude = fitAltitude(countryFeature);
         controls.autoRotate = false;
@@ -269,9 +271,6 @@
         if (!res.ok) throw new Error('england-regions.geojson not found');
         const gj = await res.json();
         let regions = gj.features || [];
-
-        // If your GeoJSON covers all UK, filter to England only (optional):
-        // regions = regions.filter(f => /england/i.test(f.properties?.country || f.properties?.NAME_1 || ''));
 
         CURRENT_LAYER = 'england';
         backBtn.style.display = '';
@@ -302,7 +301,6 @@
             globe.pointOfView({ lat, lng, altitude }, 900);
           });
 
-        // Zoom to UK on drill (center on clicked country)
         const [lng, lat] = d3.geoCentroid(countryFeature);
         const altitude = fitAltitude(countryFeature);
         controls.autoRotate = false;
@@ -310,7 +308,6 @@
 
       } catch (e) {
         console.warn('England regions layer missing or invalid:', e);
-        // Fallback: zoom to UK only
         const [lng, lat] = d3.geoCentroid(countryFeature);
         const altitude = fitAltitude(countryFeature);
         controls.autoRotate = false;
