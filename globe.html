@@ -1,125 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <title>Interactive 3D Globe</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    html,body {height:100%; margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
-    #stage {position:fixed; inset:0}
-    #hud {position:fixed; top:10px; left:10px; display:flex; gap:8px; z-index:10}
-    .btn {background:#222;border:1px solid #333;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
-    .btn:hover{background:#2c2c2c}
-    #diag {position:fixed; top:10px; right:10px; font:12px/1.3 ui-monospace,Consolas,Menlo,monospace;
-           background:rgba(0,0,0,.65); border:1px solid #333; padding:8px 10px; border-radius:8px; z-index:10; white-space:pre-wrap; max-width:min(40vw,520px)}
-    #hint {position:fixed; left:10px; bottom:10px; opacity:.85; font-size:12px}
+    body { margin: 0; overflow: hidden; background: #111; }
+    #globeViz { width: 100vw; height: 100vh; }
+    #loading {
+      position: absolute; top: 10px; right: 10px;
+      color: lime; font-family: monospace; font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <div id="stage"></div>
-  <div id="hud">
-    <button class="btn" id="resetBtn">Reset View</button>
-  </div>
-  <div id="diag">loading…</div>
-  <div id="hint">Drag to spin • Scroll to zoom • Hover to highlight • Click a country to focus</div>
+  <div id="globeViz"></div>
+  <div id="loading">Loading...</div>
 
-  <!-- These paths are from the site root -->
+  <!-- Vendor scripts -->
   <script src="/assets/vendor/three.min.js"></script>
   <script src="/assets/vendor/OrbitControls.js"></script>
   <script src="/assets/vendor/d3-geo.v1.min.js"></script>
   <script src="/assets/vendor/three-globe.min.js"></script>
 
   <script>
-  const DIAG = document.getElementById('diag');
-  const log = (m)=> DIAG.textContent = String(m);
+    const container = document.getElementById('globeViz');
 
-  function bindHandler(obj, key, fn){ if(typeof obj[key]==='function') obj[key](fn); else obj[key]=fn; }
-  function centroidOf(f){ try{ return d3.geoCentroid(f); } catch { return [0,0]; } }
-  function altitudeForFeature(f){
-    try {
-      const [[minLng,minLat],[maxLng,maxLat]] = d3.geoBounds(f);
-      const latSpan = Math.max(0.0001, Math.abs(maxLat-minLat));
-      const midLat  = (maxLat+minLat)/2;
-      const lngSpan = Math.max(0.0001, Math.abs(maxLng-minLng)*Math.cos(Math.abs(midLat)*Math.PI/180));
-      const span = Math.max(latSpan,lngSpan);
-      if (span>60) return 1.6; if (span>30) return 1.2; if (span>15) return 0.9;
-      if (span>8)  return 0.65; if (span>4)  return 0.5; if (span>2)  return 0.38;
-      return 0.28;
-    } catch { return 1.0; }
-  }
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 250;
 
-  const GLEEDS = new Set(["GBR","IRL","AUT","CZE","FRA","DEU","HUN","ITA","POL","PRT","ROU","SVK","ESP","UKR",
-                          "EGY","QAT","SAU","ARE","AUS","CHN","HKG","IND","SGP","VNM","CAN","PER","TTO","USA",
-                          "BGR","HRV","MNE","SRB","BEL","CHE","LUX","GRC","DNK","FIN","NLD","NOR","SWE","ZAF","LKA","ECU"]);
-  const GLEEDS_YELLOW="#FFC300", OTHER_GREY="#6b6b6b";
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
 
-  const container=document.getElementById('stage');
-  const renderer=new THREE.WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  container.appendChild(renderer.domElement);
+    // Controls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = true;
 
-  const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 2000);
-  camera.position.z=300;
-  const controls=new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping=true;
+    // Lights
+    scene.add(new THREE.AmbientLight(0xbbbbbb));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(1, 1, 1);
+    scene.add(dirLight);
 
-  scene.add(new THREE.AmbientLight(0xcccccc,1.0));
-  const dir=new THREE.DirectionalLight(0xffffff,0.6); dir.position.set(5,3,5); scene.add(dir);
+    // Globe
+    const globe = new ThreeGlobe()
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png');
 
-  const globe=new ThreeGlobe()
-    .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
-    .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
-    .showAtmosphere(true)
-    .atmosphereAltitude(0.12);
-  scene.add(globe);
+    scene.add(globe);
 
-  const WORLD_URL = "/assets/world-110m.geojson"; // root-relative
+    // Load country polygons
+    fetch('/assets/world-110m.geojson')
+      .then(res => res.json())
+      .then(countries => {
+        globe
+          .polygonsData(countries.features)
+          .polygonCapColor(feat => {
+            // Gleeds yellow for UK, rest grey
+            const highlight = ['United Kingdom'];
+            return highlight.includes(feat.properties.name)
+              ? 'rgba(255, 215, 0, 0.8)'
+              : 'rgba(100,100,100,0.3)';
+          })
+          .polygonStrokeColor(() => '#111')
+          .polygonLabel(({ properties: d }) => `
+            <b>${d.name}</b>
+          `);
 
-  (async function init(){
-    log("loading world…");
-    try{
-      const res = await fetch(WORLD_URL, { cache: "no-store" });
-      if(!res.ok) throw new Error(`HTTP ${res.status} for ${WORLD_URL}`);
-      const txt = await res.text();
-      if(!txt.trim().startsWith("{")) throw new Error("World file not JSON (doesn't start with '{')");
-      const world = JSON.parse(txt);
-      const features = world.features || [];
-      if(!features.length) throw new Error("No features in world geojson");
-
-      let hovered=null;
-      globe
-        .polygonsData(features)
-        .polygonCapColor(f => GLEEDS.has(f.id) ? GLEEDS_YELLOW : OTHER_GREY)
-        .polygonSideColor(f => (f===hovered ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.25)"))
-        .polygonStrokeColor(f => (f===hovered ? "#fff" : "#222"))
-        .polygonAltitude(f => (f===hovered ? 0.06 : 0.01))
-        .polygonsTransitionDuration(300)
-        .polygonLabel(f => `<b>${f.properties?.name || f.id}</b>`);
-
-      bindHandler(globe, "onPolygonHover", f => { hovered=f; });
-      bindHandler(globe, "onPolygonClick", f => {
-        if(!f) return;
-        const [lng,lat]=centroidOf(f);
-        globe.pointOfView({lat,lng,altitude:altitudeForFeature(f)}, 1200);
+        document.getElementById('loading').innerText = 'Loaded ✅';
+      })
+      .catch(err => {
+        console.error('GeoJSON load error:', err);
+        alert('Could not load world boundaries from /assets/world-110m.geojson');
       });
 
-      document.getElementById("resetBtn").onclick = () =>
-        globe.pointOfView({lat:20,lng:0,altitude:2.2}, 1000);
+    // Animate
+    (function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    })();
 
-      globe.pointOfView({lat:20,lng:0,altitude:2.2}, 1000);
-      log("ready");
-      animate();
-    }catch(err){
-      console.error(err);
-      log(`ERROR\n${err.message}\n\nTried: ${WORLD_URL}\nTip: ensure /assets/world-110m.geojson exists (exact name & leading "/")`);
-      alert('Could not load world boundaries from /assets/world-110m.geojson');
-    }
-  })();
-
-  function animate(){ controls.update(); renderer.render(scene,camera); requestAnimationFrame(animate); }
-  window.addEventListener("resize", ()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+    // Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
