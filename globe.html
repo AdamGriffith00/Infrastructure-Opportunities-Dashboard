@@ -2,92 +2,332 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Interactive 3D Globe</title>
+  <title>Interactive 3D Globe — Gleeds</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { margin: 0; overflow: hidden; background: #111; }
-    #globeViz { width: 100vw; height: 100vh; }
-    #loading {
-      position: absolute; top: 10px; right: 10px;
-      color: lime; font-family: monospace; font-size: 14px;
+    html, body { height:100%; margin:0; background:#000; overflow:hidden; }
+    #globeViz { position:fixed; inset:0; }
+    .hud {
+      position: fixed; left: 12px; top: 12px; z-index: 10;
+      background: rgba(0,0,0,0.55); color:#fff; padding:8px 10px; border-radius:8px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:14px;
+      display:flex; gap:8px; align-items:center;
+    }
+    .hud button{
+      background:#1e1e1e; color:#fff; border:1px solid #444; border-radius:8px; padding:6px 10px; cursor:pointer;
+    }
+    .hud button:hover{ background:#2a2a2a; }
+    .legend {
+      position: fixed; right: 12px; bottom: 12px; z-index: 10;
+      background: rgba(0,0,0,0.55); color:#fff; padding:10px 12px; border-radius:8px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:13px;
+      display:flex; gap:12px; align-items:center;
+    }
+    .swatch { width:14px; height:14px; border-radius:3px; display:inline-block; margin-right:6px; }
+    .crumbs{
+      position: fixed; left: 12px; top: 50px; z-index: 10; color:#ddd; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:13px;
+      background: rgba(0,0,0,0.45); padding:6px 8px; border-radius:8px;
     }
   </style>
+
+  <!-- libs from CDN (rendering only; GeoJSON is local) -->
+  <script src="https://unpkg.com/three"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <script src="https://d3js.org/d3-geo.v1.min.js"></script>
 </head>
 <body>
-  <div id="globeViz"></div>
-  <div id="loading">Loading...</div>
+  <div class="hud">
+    <span id="hint">Drag to spin • Scroll to zoom • Hover/click on Gleeds countries</span>
+    <button id="backBtn" style="display:none">⬅ Back to World</button>
+    <button id="resetBtn">Reset View</button>
+  </div>
+  <div class="crumbs" id="crumbs" style="display:none"></div>
 
-  <!-- Vendor scripts -->
-  <script src="/assets/vendor/three.min.js"></script>
-  <script src="/assets/vendor/OrbitControls.js"></script>
-  <script src="/assets/vendor/d3-geo.v1.min.js"></script>
-  <script src="/assets/vendor/three-globe.min.js"></script>
+  <div id="globeViz"></div>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:#FFC300"></span>Gleeds presence</span>
+    <span><span class="swatch" style="background:#6b6b6b"></span>Other countries</span>
+  </div>
 
   <script>
-    const container = document.getElementById('globeViz');
+    // --- Local data files (commit these to your repo) ---
+    const WORLD_GEOJSON_URL   = './assets/world.geojson';
+    const USA_STATES_URL      = './assets/usa-states.geojson';
+    const ENGLAND_REGIONS_URL = './assets/england-regions.geojson';
 
-    // Scene setup
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.z = 250;
+    // --- Brand + UI colours ---
+    const GLEEDS_YELLOW   = '#FFC300';
+    const OTHER_GREY      = '#6b6b6b';
+    const BORDER_DEFAULT  = '#111';
+    const BORDER_HOVER    = '#ffffff';
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
+    // --- Gleeds countries (ISO-3 + name fallback) ---
+    const GLEEDS_ISO3 = new Set([
+      'GBR','IRL',
+      'AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
+      'EGY','QAT','SAU','ARE',
+      'AUS','CHN','HKG','IND','SGP','VNM',
+      'CAN','PER','TTO','USA',
+      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
+      'ZAF','LKA','ECU'
+    ]);
+    const GLEEDS_NAMES = new Set([
+      'united kingdom','ireland',
+      'austria','czech republic','france','germany','hungary','italy','poland','portugal','romania','slovakia','spain','ukraine',
+      'egypt','qatar','saudi arabia','united arab emirates',
+      'australia','china','hong kong','india','singapore','vietnam',
+      'canada','peru','trinidad and tobago','united states','united states of america','usa',
+      'bulgaria','croatia','montenegro','serbia','belgium','switzerland','luxembourg','greece','denmark','finland','netherlands','norway','sweden',
+      'south africa','sri lanka','ecuador'
+    ]);
 
-    // Controls
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableZoom = true;
+    // --- Helpers: feature identification ---
+    function iso3(f) {
+      return f.id || f.properties?.iso_a3 || f.properties?.ISO_A3 || f.properties?.adm0_a3 || '';
+    }
+    function nameOf(f) {
+      return f.properties?.name || f.properties?.ADMIN || '';
+    }
+    function normName(f) {
+      return nameOf(f).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,'').trim();
+    }
+    function isGleedsCountry(f) {
+      const code = String(iso3(f)).toUpperCase();
+      if (code && GLEEDS_ISO3.has(code)) return true;
+      const nm = normName(f);
+      return nm && GLEEDS_NAMES.has(nm);
+    }
 
-    // Lights
-    scene.add(new THREE.AmbientLight(0xbbbbbb));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(1, 1, 1);
-    scene.add(dirLight);
+    // --- Camera fit for area ---
+    function fitAltitude(feat) {
+      try {
+        const [[minLng, minLat],[maxLng, maxLat]] = d3.geoBounds(feat);
+        const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
+        const midLat = (maxLat + minLat) / 2;
+        const lngSpanRaw = Math.max(0.0001, Math.abs(maxLng - minLng));
+        const lngSpan = lngSpanRaw * Math.cos((Math.PI/180) * Math.abs(midLat));
+        const span = Math.max(latSpan, lngSpan);
+        if (span > 60) return 1.1;
+        if (span > 30) return 0.8;
+        if (span > 15) return 0.55;
+        if (span > 8 ) return 0.40;
+        if (span > 4 ) return 0.32;
+        if (span > 2 ) return 0.26;
+        return 0.22;
+      } catch { return 0.8; }
+    }
 
-    // Globe
-    const globe = new ThreeGlobe()
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
-      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png');
+    // --- Globe setup ---
+    const globe = Globe()(document.getElementById('globeViz'))
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+      .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+      .showAtmosphere(true)
+      .atmosphereAltitude(0.15);
 
-    scene.add(globe);
+    const controls = globe.controls();
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.35;
 
-    // Load country polygons
-    fetch('/assets/world-110m.geojson')
-      .then(res => res.json())
-      .then(countries => {
-        globe
-          .polygonsData(countries.features)
-          .polygonCapColor(feat => {
-            // Gleeds yellow for UK, rest grey
-            const highlight = ['United Kingdom'];
-            return highlight.includes(feat.properties.name)
-              ? 'rgba(255, 215, 0, 0.8)'
-              : 'rgba(100,100,100,0.3)';
-          })
-          .polygonStrokeColor(() => '#111')
-          .polygonLabel(({ properties: d }) => `
-            <b>${d.name}</b>
-          `);
+    const backBtn = document.getElementById('backBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const crumbsEl = document.getElementById('crumbs');
+    const hintEl = document.getElementById('hint');
 
-        document.getElementById('loading').innerText = 'Loaded ✅';
+    let WORLD_FEATURES = [];
+    let CURRENT_LAYER = 'world'; // 'world' | 'usa' | 'england'
+    let hoverFeat = null;
+
+    // --- Load world layer ---
+    fetch(WORLD_GEOJSON_URL, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(gj => {
+        WORLD_FEATURES = gj.features || [];
+        setWorldLayer();
+        globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
       })
       .catch(err => {
-        console.error('GeoJSON load error:', err);
-        alert('Could not load world boundaries from /assets/world-110m.geojson');
+        console.error('Failed to load /assets/world.geojson', err);
+        alert('Could not load assets/world.geojson — please confirm the file exists in your repo.');
       });
 
-    // Animate
-    (function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    })();
+    // --- World layer (Gleeds countries interactive only) ---
+    function setWorldLayer() {
+      CURRENT_LAYER = 'world';
+      backBtn.style.display = 'none';
+      crumbsEl.style.display = 'none';
+      hintEl.textContent = 'Drag to spin • Scroll to zoom • Hover/click on Gleeds countries';
 
-    // Resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      hoverFeat = null;
+      globe
+        .polygonsData(WORLD_FEATURES)
+        .polygonCapColor(f =>
+          (hoverFeat === f)
+            ? 'rgba(255,255,255,0.9)'
+            : (isGleedsCountry(f) ? GLEEDS_YELLOW : OTHER_GREY)
+        )
+        .polygonSideColor(f => (hoverFeat === f ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'))
+        .polygonStrokeColor(f => (hoverFeat === f ? BORDER_HOVER : BORDER_DEFAULT))
+        .polygonAltitude(f => (hoverFeat === f ? 0.06 : 0.012))
+        .polygonsTransitionDuration(250)
+        .polygonLabel(f => isGleedsCountry(f) ? `<b>${nameOf(f)}</b>` : null)
+        .onPolygonHover(f => {
+          if (!f || !isGleedsCountry(f)) {
+            hoverFeat = null;
+          } else {
+            hoverFeat = f;
+          }
+          globe
+            .polygonCapColor(d =>
+              (hoverFeat === d)
+                ? 'rgba(255,255,255,0.9)'
+                : (isGleedsCountry(d) ? GLEEDS_YELLOW : OTHER_GREY)
+            )
+            .polygonStrokeColor(d => (hoverFeat === d ? BORDER_HOVER : BORDER_DEFAULT))
+            .polygonAltitude(d => (hoverFeat === d ? 0.06 : 0.012));
+          document.body.style.cursor = (hoverFeat ? 'pointer' : 'grab';
+        })
+        .onPolygonClick(f => {
+          if (!f || !isGleedsCountry(f)) return;
+
+          const nm = normName(f);
+          const iso = String(iso3(f)).toUpperCase();
+
+          // Drill rules: USA → states, United Kingdom → England regions
+          if (iso === 'USA' || nm === 'united states' || nm === 'united states of america' || nm === 'usa') {
+            drillUSA(f);
+          } else if (iso === 'GBR' || nm === 'united kingdom') {
+            drillEngland(f);
+          } else {
+            // For other Gleeds countries: just zoom to fit (no sub-layer)
+            const [lng, lat] = d3.geoCentroid(f);
+            const altitude = fitAltitude(f);
+            controls.autoRotate = false;
+            globe.pointOfView({ lat, lng, altitude }, 900);
+          }
+        });
+    }
+
+    // --- Drill: USA states ---
+    async function drillUSA(countryFeature) {
+      try {
+        const res = await fetch(USA_STATES_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('usa-states.geojson not found');
+        const gj = await res.json();
+        const states = gj.features || [];
+
+        CURRENT_LAYER = 'usa';
+        backBtn.style.display = '';
+        crumbsEl.style.display = '';
+        crumbsEl.textContent = 'World ▸ United States ▸ States';
+        hintEl.textContent = 'Hover/click on states • Use Back to World to exit';
+
+        hoverFeat = null;
+        globe
+          .polygonsData(states)
+          .polygonCapColor(d => (hoverFeat === d ? 'rgba(255,255,255,0.9)' : '#cccccc'))
+          .polygonSideColor(d => (hoverFeat === d ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'))
+          .polygonStrokeColor(d => (hoverFeat === d ? BORDER_HOVER : BORDER_DEFAULT))
+          .polygonAltitude(d => (hoverFeat === d ? 0.06 : 0.012))
+          .polygonLabel(d => `<b>${d.properties?.name || d.properties?.NAME || 'State'}</b>`)
+          .onPolygonHover(d => {
+            hoverFeat = d || null;
+            globe
+              .polygonCapColor(x => (hoverFeat === x ? 'rgba(255,255,255,0.9)' : '#cccccc'))
+              .polygonStrokeColor(x => (hoverFeat === x ? BORDER_HOVER : BORDER_DEFAULT))
+              .polygonAltitude(x => (hoverFeat === x ? 0.06 : 0.012));
+            document.body.style.cursor = hoverFeat ? 'pointer' : 'grab';
+          })
+          .onPolygonClick(d => {
+            const [lng, lat] = d3.geoCentroid(d);
+            const altitude = fitAltitude(d);
+            controls.autoRotate = false;
+            globe.pointOfView({ lat, lng, altitude }, 900);
+          });
+
+        // Zoom to USA on drill
+        const [lng, lat] = d3.geoCentroid(countryFeature);
+        const altitude = fitAltitude(countryFeature);
+        controls.autoRotate = false;
+        globe.pointOfView({ lat, lng, altitude }, 900);
+
+      } catch (e) {
+        console.warn('USA states layer missing or invalid:', e);
+        // Fallback: just zoom to country if we can't load states
+        const [lng, lat] = d3.geoCentroid(countryFeature);
+        const altitude = fitAltitude(countryFeature);
+        controls.autoRotate = false;
+        globe.pointOfView({ lat, lng, altitude }, 900);
+      }
+    }
+
+    // --- Drill: England regions ---
+    async function drillEngland(countryFeature) {
+      try {
+        const res = await fetch(ENGLAND_REGIONS_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('england-regions.geojson not found');
+        const gj = await res.json();
+        let regions = gj.features || [];
+
+        // If your GeoJSON covers all UK, filter to England only (optional):
+        // regions = regions.filter(f => /england/i.test(f.properties?.country || f.properties?.NAME_1 || ''));
+
+        CURRENT_LAYER = 'england';
+        backBtn.style.display = '';
+        crumbsEl.style.display = '';
+        crumbsEl.textContent = 'World ▸ United Kingdom ▸ England Regions';
+        hintEl.textContent = 'Hover/click on regions • Use Back to World to exit';
+
+        hoverFeat = null;
+        globe
+          .polygonsData(regions)
+          .polygonCapColor(d => (hoverFeat === d ? 'rgba(255,255,255,0.9)' : '#cccccc'))
+          .polygonSideColor(d => (hoverFeat === d ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'))
+          .polygonStrokeColor(d => (hoverFeat === d ? BORDER_HOVER : BORDER_DEFAULT))
+          .polygonAltitude(d => (hoverFeat === d ? 0.06 : 0.012))
+          .polygonLabel(d => `<b>${d.properties?.name || d.properties?.NAME || 'Region'}</b>`)
+          .onPolygonHover(d => {
+            hoverFeat = d || null;
+            globe
+              .polygonCapColor(x => (hoverFeat === x ? 'rgba(255,255,255,0.9)' : '#cccccc'))
+              .polygonStrokeColor(x => (hoverFeat === x ? BORDER_HOVER : BORDER_DEFAULT))
+              .polygonAltitude(x => (hoverFeat === x ? 0.06 : 0.012));
+            document.body.style.cursor = hoverFeat ? 'pointer' : 'grab';
+          })
+          .onPolygonClick(d => {
+            const [lng, lat] = d3.geoCentroid(d);
+            const altitude = fitAltitude(d);
+            controls.autoRotate = false;
+            globe.pointOfView({ lat, lng, altitude }, 900);
+          });
+
+        // Zoom to UK on drill (center on clicked country)
+        const [lng, lat] = d3.geoCentroid(countryFeature);
+        const altitude = fitAltitude(countryFeature);
+        controls.autoRotate = false;
+        globe.pointOfView({ lat, lng, altitude }, 900);
+
+      } catch (e) {
+        console.warn('England regions layer missing or invalid:', e);
+        // Fallback: zoom to UK only
+        const [lng, lat] = d3.geoCentroid(countryFeature);
+        const altitude = fitAltitude(countryFeature);
+        controls.autoRotate = false;
+        globe.pointOfView({ lat, lng, altitude }, 900);
+      }
+    }
+
+    // --- UI wiring ---
+    backBtn.addEventListener('click', () => {
+      setWorldLayer();
+      controls.autoRotate = true;
+      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 900);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      controls.autoRotate = true;
+      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 900);
     });
   </script>
 </body>
