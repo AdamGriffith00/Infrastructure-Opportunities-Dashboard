@@ -5,259 +5,280 @@
   <title>Interactive 3D Globe</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    html, body { height: 100%; margin: 0; background:#000; color:#ddd; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    :root{
+      --gleeds:#FFC300; --grey:#666; --ink:#ddd;
+      --glass: rgba(0,0,0,.5); --line: rgba(255,255,255,.08);
+    }
+    html, body { height: 100%; margin: 0; background:#000; color:var(--ink); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+    #globe { position: absolute; inset: 0; }
+    #toast {
+      position: fixed; right: 12px; top: 12px; z-index: 11; font-size: 12px; color:#ff9f9f; white-space: pre-line;
+      background: rgba(0,0,0,.55); border: 1px solid rgba(255,0,0,.5); border-radius: 10px; padding: 8px 10px; max-width: 42ch; display:none;
+    }
     #toolbar {
       position: fixed; top: 10px; left: 10px; z-index: 10; display: flex; gap: 8px; align-items: center;
-      background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 6px 8px; backdrop-filter: blur(6px);
+      background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; backdrop-filter: blur(6px);
     }
     .btn {
       font-size: 13px; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,.15);
-      background: #111; color: #ddd;
+      background: #111; color: var(--ink);
     }
     .btn[disabled] { opacity: .45; cursor: default; }
+    .badge { display:inline-block; padding:2px 6px; border-radius: 6px; margin-left: 6px; font-size: 11px; background:#222; border:1px solid rgba(255,255,255,.12); }
+
     .legend {
       position: fixed; right: 12px; bottom: 12px; z-index: 10; font-size: 12px; line-height: 1.3;
-      background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; backdrop-filter: blur(6px);
+      background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; backdrop-filter: blur(6px);
     }
     .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
     #hint { position: fixed; left: 12px; bottom: 10px; z-index: 10; font-size: 12px; color: #ccc; opacity: .8; }
-    #globe { position: absolute; inset: 0; }
-    #toast {
-      position: fixed; right: 12px; top: 12px; z-index: 11; font-size: 12px; color:#9fe29f; white-space: pre-line;
-      background: rgba(0,0,0,.55); border: 1px solid rgba(0,0,0,.9); border-radius: 10px; padding: 8px 10px; max-width: 40ch;
+
+    /* Budgets panel */
+    #budgetWrap{ position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:15; width:min(100vw, 920px); display:none; }
+    #budgetCard{
+      background:#0d0d0d; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,.45);
     }
-    .badge { display:inline-block; padding:2px 6px; border-radius: 6px; margin-left: 6px; font-size: 11px; background:#222; border:1px solid rgba(255,255,255,.12); }
+    #budgetHead{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      padding:10px 12px; background:rgba(0,0,0,.35); border-bottom:1px solid var(--line); backdrop-filter: blur(6px);
+    }
+    #budgetBody{ max-height: 60vh; overflow:auto; }
+    table { width:100%; border-collapse: collapse; font-size: 14px; }
+    thead th { position: sticky; top: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); text-align: left; padding: 10px 12px; }
+    tbody td { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,.06); }
+    tbody tr:nth-child(odd){ background: rgba(255,255,255,.02); }
   </style>
+
+  <!-- Prefer local vendor files; if missing, we fall back to CDN automatically -->
+  <script src="/assets/vendor/three.min.js" onerror="window.__needThreeCDN=true"></script>
+  <script src="/assets/vendor/OrbitControls.js" onerror="window.__needControlsCDN=true"></script>
+  <script src="/assets/vendor/d3-geo.v1.min.js" onerror="window.__needD3GeoCDN=true"></script>
+  <script src="/assets/vendor/three-globe.min.js" onerror="window.__needThreeGlobeCDN=true"></script>
+
+  <script>
+    // Load CDN fallbacks if any local vendor failed
+    (function ensureVendors(){
+      const pending = [];
+      if (window.__needThreeCDN || typeof window.THREE === 'undefined') {
+        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/three@0.152.2/build/three.min.js'; s.onload=r; document.head.appendChild(s); }));
+      }
+      if (window.__needControlsCDN || !window.THREE?.OrbitControls) {
+        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js'; s.onload=r; document.head.appendChild(s); }));
+      }
+      if (window.__needD3GeoCDN || typeof window.d3 === 'undefined' || !window.d3.geoCentroid) {
+        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/d3-geo@1.12.1/dist/d3-geo.min.js'; s.onload=r; document.head.appendChild(s); }));
+      }
+      if (window.__needThreeGlobeCDN || (typeof window.ThreeGlobe === 'undefined' && typeof window.Globe === 'undefined')) {
+        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/three-globe@2.33.1/dist/three-globe.min.js'; s.onload=r; document.head.appendChild(s); }));
+      }
+      window.__vendorsReady = Promise.all(pending);
+    })();
+  </script>
 </head>
 <body>
-
   <div id="toolbar">
-    <button id="btnBackWorld" class="btn" disabled>← Back to world</button>
+    <button id="btnBudgets" class="btn">Budgets</button>
     <button id="btnReset" class="btn">Reset view</button>
     <span id="mode" class="badge">World</span>
   </div>
 
   <div class="legend">
-    <div><span class="key" style="background:#FFC300"></span>Gleeds presence</div>
-    <div><span class="key" style="background:#666"></span>Other countries</div>
+    <div><span class="key" style="background:var(--gleeds)"></span>Gleeds presence</div>
+    <div><span class="key" style="background:var(--grey)"></span>Other countries</div>
   </div>
 
-  <div id="hint">Drag to spin • Scroll to zoom • Click a yellow country • Click a state when USA is active</div>
-  <div id="toast" style="display:none"></div>
-
+  <div id="hint">Drag to spin • Scroll to zoom • Click a yellow country to focus</div>
+  <div id="toast"></div>
   <div id="globe"></div>
 
-  <!-- Local vendor libs -->
-  <script src="/assets/vendor/three.min.js"></script>
-  <script src="/assets/vendor/OrbitControls.js"></script>
-  <script src="/assets/vendor/d3-geo.v1.min.js"></script>
-  <script src="/assets/vendor/three-globe.min.js"></script>
+  <!-- Budgets panel -->
+  <div id="budgetWrap" aria-hidden="true">
+    <div id="budgetCard">
+      <div id="budgetHead">
+        <strong>Budgets · Gleeds Countries</strong>
+        <button id="btnCloseBudget" class="btn">Close</button>
+      </div>
+      <div id="budgetBody">
+        <table>
+          <thead>
+            <tr><th style="width:40%">Country</th><th>1 year</th><th>5 years</th><th>10 years</th></tr>
+          </thead>
+          <tbody id="budgetRows"><!-- rows injected --></tbody>
+        </table>
+      </div>
+      <div style="padding:8px 12px; font-size:12px; color:#aaa; border-top:1px solid var(--line);">
+        Demo values only (GBP millions). Replace with your real data source when ready.
+      </div>
+    </div>
+  </div>
 
   <script>
-  // ---------- CONFIG (change paths if needed)
-  const WORLD_URL = '/assets/world-110m.geojson';
-  const USA_STATES_URL = '/assets/overlays/usa-states.geojson';
+    // ---------- CONFIG: update paths if you store files elsewhere
+    const WORLD_URL      = '/assets/world-110m.geojson';              // must exist in your repo
+    const USA_STATES_URL = '/assets/overlays/usa-states.geojson';     // future overlay (optional for now)
 
-  const GLEEDS_YELLOW = '#FFC300';
-  const NON_GLEEDS_GREY = '#666';
-  const HOVER_BORDER = '#FFFFFF';
-  const DEFAULT_BORDER = 'rgba(0,0,0,0.65)';
+    const GLEEDS_COUNTRIES = new Set([
+      'GBR','IRL',
+      'AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
+      'EGY','QAT','SAU','ARE',
+      'AUS','CHN','HKG','IND','SGP','VNM',
+      'CAN','PER','TTO','USA',
+      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
+      'ZAF','LKA','ECU'
+    ]);
 
-  // ISO3 codes we want in yellow (trim this later if you like)
-  const GLEEDS_COUNTRIES = new Set([
-    'GBR','IRL','AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
-    'EGY','QAT','SAU','ARE',
-    'AUS','CHN','HKG','IND','SGP','VNM',
-    'CAN','PER','TTO','USA',
-    'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
-    'ZAF','LKA','ECU'
-  ]);
+    const $ = s => document.querySelector(s);
+    const toastEl = $('#toast');
+    function showError(msg){ toastEl.textContent = msg; toastEl.style.display='block'; }
 
-  // ---------- small helpers
-  const $ = sel => document.querySelector(sel);
-  function toast(msg, ms = 1600) {
-    const t = $('#toast'); t.textContent = msg; t.style.display = 'block';
-    clearTimeout(toast._id); toast._id = setTimeout(()=>t.style.display='none', ms);
-  }
-  const centroidOf = feat => {
-    try { return d3.geoCentroid(feat); } catch { return [0,0]; }
-  };
-  const boundsOf = feat => {
-    try { return d3.geoBounds(feat); } catch { return [[-10,-10],[10,10]]; }
-  };
-  function altitudeForFeature(feat) {
-    const [[minLng, minLat],[maxLng,maxLat]] = boundsOf(feat);
-    const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
-    const midLat = (maxLat + minLat) / 2;
-    const lngSpan = Math.max(0.0001, Math.abs(maxLng - minLng)) * Math.cos(Math.abs(midLat)*Math.PI/180);
-    const span = Math.max(latSpan, lngSpan);
-    if (span > 60) return 1.6;
-    if (span > 30) return 1.2;
-    if (span > 15) return 0.9;
-    if (span >  8) return 0.65;
-    if (span >  4) return 0.50;
-    if (span >  2) return 0.38;
-    return 0.28;
-  }
+    function centroidOf(feat){ try { return d3.geoCentroid(feat); } catch { return [0,0]; } }
+    function boundsOf(feat){ try { return d3.geoBounds(feat); } catch { return [[-10,-10],[10,10]]; } }
+    function altitudeForFeature(feat){
+      const [[minLng,minLat],[maxLng,maxLat]] = boundsOf(feat);
+      const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
+      const midLat  = (maxLat + minLat) / 2;
+      const lngSpan = Math.max(0.0001, Math.abs(maxLng - minLng)) * Math.cos(Math.abs(midLat)*Math.PI/180);
+      const span = Math.max(latSpan, lngSpan);
+      if (span > 60) return 1.6;
+      if (span > 30) return 1.2;
+      if (span > 15) return 0.9;
+      if (span >  8) return 0.65;
+      if (span >  4) return 0.50;
+      if (span >  2) return 0.38;
+      return 0.28;
+    }
 
-  // ---------- state
-  let worldFeatures = [];
-  let activeOverlay = null; // { name, data, colorFn, strokeFn, onClick }
-  let focusFeature = null;
+    // Deterministic demo budgets (replace later)
+    function seededRandom(seed){ let x=0; for(let i=0;i<seed.length;i++) x=(x+seed.charCodeAt(i)*(i+1))>>>0; x^=x<<13; x^=x>>>17; x^=x<<5; x>>>=0; return (x%1000)/1000; }
+    function formatGBPMillions(n){
+      try { return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n*1_000_000); }
+      catch { return '£'+(n*1_000_000).toLocaleString('en-GB',{maximumFractionDigits:0}); }
+    }
 
-  // ---------- globe init
-  const globe = new ThreeGlobe.Globe()
-    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-    .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-    .showAtmosphere(true)
-    .atmosphereAltitude(0.11)
-    .backgroundColor('#000000');
+    (window.__vendorsReady || Promise.resolve()).then(init);
 
-  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  $('#globe').appendChild(renderer.domElement);
+    function init(){
+      const GlobeCtor = (window.ThreeGlobe && window.ThreeGlobe.Globe) || window.Globe;
+      if (!GlobeCtor) { showError('three-globe failed to load. Check vendor paths or CDN.'); return; }
 
-  const scene = new THREE.Scene();
-  scene.add(globe);
+      let worldFeatures = [];
 
-  const camera = new THREE.PerspectiveCamera();
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  camera.position.z = 500;
+      const globe = new GlobeCtor()
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+        .showAtmosphere(true)
+        .atmosphereAltitude(0.11)
+        .backgroundColor('#000000');
 
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.12;
-  controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.35;
-  controls.minDistance = 160;
-  controls.maxDistance = 800;
+      const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      $('#globe').appendChild(renderer.domElement);
 
-  window.addEventListener('resize', () => {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-  });
+      const scene = new THREE.Scene();
+      scene.add(globe);
 
-  (function animate() {
-    controls.update();
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
-  })();
+      const camera = new THREE.PerspectiveCamera();
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      camera.position.z = 500;
 
-  // ---------- world view
-  function paintWorld(feats) {
-    $('#mode').textContent = 'World';
-    $('#btnBackWorld').disabled = true;
-    activeOverlay = null;
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.12;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.35;
+      controls.minDistance = 160;
+      controls.maxDistance = 800;
 
-    globe
-      .polygonsData(feats)
-      .polygonCapColor(d => GLEEDS_COUNTRIES.has(d.id) ? GLEEDS_YELLOW : NON_GLEEDS_GREY)
-      .polygonSideColor(d => d.__hover ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.18)')
-      .polygonStrokeColor(d => d.__hover ? HOVER_BORDER : DEFAULT_BORDER)
-      .polygonAltitude(d => d.__hover ? 0.06 : 0.01)
-      .polygonLabel(d => `<b>${d.properties?.name || d.id}</b>`)
-      .onPolygonHover(d => {
-        feats.forEach(f => f.__hover = false);
-        if (d && GLEEDS_COUNTRIES.has(d.id)) d.__hover = true;
-      })
-      .onPolygonClick(async d => {
-        if (!d || !GLEEDS_COUNTRIES.has(d.id)) return;
-        focusFeature = d;
-        const [lng, lat] = centroidOf(d);
-        controls.autoRotate = false;
-        globe.pointOfView({ lat, lng, altitude: altitudeForFeature(d) }, 1200);
-
-        // overlays by ISO3
-        if (d.id === 'USA') {
-          await activateOverlay({
-            name: 'USA States',
-            url: USA_STATES_URL,
-            focus: d,
-            color: f => GLEEDS_YELLOW,
-            stroke: () => '#222',
-            onClick: st => {
-              if (!st) return;
-              const [lng2, lat2] = centroidOf(st);
-              globe.pointOfView({ lat: lat2, lng: lng2, altitude: altitudeForFeature(st) * 0.8 }, 900);
-              toast(`USA • ${st.properties?.name || st.id}`);
-            }
-          });
-          return;
-        }
-
-        // (future) add more overlays here, e.g. England regions by ISO3 GBR + attribute filter
-        // if (d.id === 'GBR') { await activateOverlay({ ... }); return; }
+      window.addEventListener('resize', ()=>{
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
       });
 
-    // nice initial POV
-    globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
-  }
+      (function animate(){ controls.update(); renderer.render(scene, camera); requestAnimationFrame(animate); })();
 
-  // ---------- overlays (universal)
-  async function activateOverlay({ name, url, focus, color, stroke, onClick }) {
-    $('#mode').textContent = name;
-    $('#btnBackWorld').disabled = false;
+      function paintWorld(feats){
+        $('#mode').textContent = 'World';
+        globe
+          .polygonsData(feats)
+          .polygonCapColor(d => GLEEDS_COUNTRIES.has(d.id) ? getComputedStyle(document.documentElement).getPropertyValue('--gleeds').trim() : getComputedStyle(document.documentElement).getPropertyValue('--grey').trim())
+          .polygonSideColor(d => d.__hover ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.18)')
+          .polygonStrokeColor(d => d.__hover ? '#fff' : 'rgba(0,0,0,0.65)')
+          .polygonAltitude(d => d.__hover ? 0.06 : 0.01)
+          .polygonLabel(d => `<b>${d.properties?.name || d.id}</b>`)
+          .onPolygonHover(d => {
+            feats.forEach(f => f.__hover=false);
+            if (d && GLEEDS_COUNTRIES.has(d.id)) d.__hover = true;
+          })
+          .onPolygonClick(d => {
+            if (!d || !GLEEDS_COUNTRIES.has(d.id)) return;
+            const [lng, lat] = centroidOf(d);
+            controls.autoRotate = false;
+            globe.pointOfView({ lat, lng, altitude: altitudeForFeature(d) }, 1200);
 
-    try {
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
-      const gj = await res.json();
-      const feats = Array.isArray(gj.features) ? gj.features : [];
-      if (!feats.length) throw new Error('No features');
+            // Hook for overlays (USA states, etc.)
+            if (d.id === 'USA') {
+              // Later you’ll replace this with activateOverlay(USA_STATES_URL, d);
+              // For now we just zoom nicely into USA.
+            }
+          });
 
-      activeOverlay = { name, data: feats };
-
-      globe
-        .polygonsData(feats)
-        .polygonCapColor(d => (color ? color(d) : '#f5d67b'))
-        .polygonSideColor(() => 'rgba(0,0,0,0.25)')
-        .polygonStrokeColor(d => (stroke ? stroke(d) : '#333'))
-        .polygonAltitude(d => d.__hover ? 0.06 : 0.012)
-        .polygonLabel(d => `<b>${d.properties?.name || d.id}</b>`)
-        .onPolygonHover(d => {
-          feats.forEach(f => f.__hover = false);
-          if (d) d.__hover = true;
-        })
-        .onPolygonClick(onClick || null);
-
-      // focus where user clicked on world
-      if (focus) {
-        const [lng, lat] = centroidOf(focus);
-        globe.pointOfView({ lat, lng, altitude: Math.max(0.45, altitudeForFeature(focus)) }, 1000);
+        globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
       }
-    } catch (e) {
-      toast(`Failed to load overlay: ${name}`);
-      // go back to world if overlay fails
-      paintWorld(worldFeatures);
-    }
-  }
 
-  // ---------- UI
-  $('#btnBackWorld').addEventListener('click', () => {
-    paintWorld(worldFeatures);
-    controls.autoRotate = true;
-  });
-  $('#btnReset').addEventListener('click', () => {
-    const pv = activeOverlay
-      ? { lat: 37.8, lng: -96, altitude: 0.8 } // pleasant USA view when in overlay
-      : { lat: 20, lng: 0, altitude: 2.2 };   // default world view
-    globe.pointOfView(pv, 900);
-  });
+      async function boot(){
+        try{
+          const res = await fetch(WORLD_URL, { headers:{Accept:'application/json'} });
+          if (!res.ok) throw new Error(`HTTP ${res.status} for ${WORLD_URL}`);
+          const gj = await res.json();
+          worldFeatures = (gj.features||[]).map(f => {
+            const iso = f.properties?.iso_a3 || f.properties?.ISO_A3 || f.id || f.properties?.name;
+            return { ...f, id: iso };
+          });
+          if (!worldFeatures.length) throw new Error('No features in world file');
+          paintWorld(worldFeatures);
+          buildBudgets(worldFeatures);
+        } catch(e){
+          showError(`Could not load world boundaries.\n${e.message}\n\nCheck the file path:\n${WORLD_URL}`);
+        }
+      }
 
-  // ---------- boot
-  (async function boot() {
-    try {
-      const res = await fetch(WORLD_URL, { headers: { 'Accept': 'application/json' }});
-      const gj = await res.json();
-      worldFeatures = Array.isArray(gj.features) ? gj.features : [];
-      if (!worldFeatures.length) throw new Error('No features in world file');
-      paintWorld(worldFeatures);
-    } catch (e) {
-      alert('Could not load world boundaries from ' + WORLD_URL);
-      console.error(e);
+      function buildBudgets(feats){
+        const gleedsFeats = feats.filter(f => GLEEDS_COUNTRIES.has(f.id));
+        const rows = gleedsFeats
+          .map(f => {
+            const code = f.id; const name = f.properties?.name || code;
+            const base = 25 + seededRandom(code) * 225;  // £25m .. £250m
+            const y1 = Math.round(base);
+            const y5 = Math.round(base * 5 * (0.98 + seededRandom(code+'5') * 0.1));
+            const y10= Math.round(base * 10 * (0.96 + seededRandom(code+'10')* 0.15));
+            return { code, name, y1, y5, y10 };
+          })
+          .sort((a,b)=> a.name.localeCompare(b.name));
+
+        $('#budgetRows').innerHTML = rows.map(r => `
+          <tr>
+            <td>${r.name}</td>
+            <td>${formatGBPMillions(r.y1)}</td>
+            <td>${formatGBPMillions(r.y5)}</td>
+            <td>${formatGBPMillions(r.y10)}</td>
+          </tr>
+        `).join('');
+      }
+
+      // UI hooks
+      $('#btnReset').addEventListener('click', ()=> globe.pointOfView({ lat:20, lng:0, altitude:2.2 }, 900));
+      $('#btnBudgets').addEventListener('click', ()=>{
+        const wrap = $('#budgetWrap');
+        const isOpen = wrap.style.display === 'block';
+        wrap.style.display = isOpen ? 'none' : 'block';
+      });
+      $('#btnCloseBudget').addEventListener('click', ()=> $('#budgetWrap').style.display='none');
+
+      boot();
     }
-  })();
   </script>
 </body>
 </html>
