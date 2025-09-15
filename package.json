@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "npm run build:globe && npm run build:copy",
     "build:globe": "vite build --config globe-react/vite.config.js",
-    "build": "npm run build:globe",
+    "build:copy": "mkdir -p globe && cp -r globe-react/dist/* globe/",
     "dev:globe": "vite --config globe-react/vite.config.js",
     "preview:globe": "vite preview --config globe-react/vite.config.js"
   },
@@ -14,8 +15,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-globe.gl": "^2.27.1",
-    "three": "^0.160.0",
-    "three-globe": "^2.31.1",
+    "three": "^0.165.0",
     "d3-geo": "^3.1.0",
     "framer-motion": "^11.0.0"
   },
