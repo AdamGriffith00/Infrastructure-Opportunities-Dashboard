@@ -2,13 +2,13 @@
   "name": "infrastructure-opportunities-dashboard",
   "private": true,
   "type": "module",
+ {
   "scripts": {
-    "build": "npm run build:globe && npm run build:copy",
-    "build:globe": "vite build --config globe-react/vite.config.js",
-    "build:copy": "mkdir -p globe && cp -r globe-react/dist/* globe/",
+    "build": "vite build --config globe-react/vite.config.js",
     "dev:globe": "vite --config globe-react/vite.config.js",
     "preview:globe": "vite preview --config globe-react/vite.config.js"
-  },
+  }
+}
   "dependencies": {
     "@netlify/blobs": "^6.0.0",
     "docx": "^8.1.3",
