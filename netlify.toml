@@ -5,7 +5,7 @@
 [build]
   # Vite will output to "dist" by default
   command = "npm run build"
-  publish = "dist"
+  publish = "."
   functions = "netlify/functions"
 
 ########################################
