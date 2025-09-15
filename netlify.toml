@@ -3,8 +3,9 @@
 ########################################
 
 [build]
-  publish = "."
-  # If you keep functions in the default folder you can omit this, included for clarity:
+  # Vite will output to "dist" by default
+  command = "npm run build"
+  publish = "dist"
   functions = "netlify/functions"
 
 ########################################
@@ -21,11 +22,9 @@
 # Scheduled Functions
 ########################################
 
-# Your existing background refresh (keep your schedule)
 [functions."update-tenders-background"]
   schedule = "5 9 * * *"
 
-# Optional: archive latest.json nightly for time-series (add the function file if you enable)
 [functions."mi-archive"]
   schedule = "5 1 * * *"
 
@@ -33,14 +32,12 @@
 # Redirects (API aliases)
 ########################################
 
-# Existing: serve latest blob via function
 [[redirects]]
   from = "/api/latest"
   to   = "/.netlify/functions/latest"
   status = 200
   force = true
 
-# Handy aliases for your update functions (optional)
 [[redirects]]
   from = "/api/update-tenders"
   to   = "/.netlify/functions/update-tenders"
@@ -53,7 +50,6 @@
   status = 200
   force = true
 
-# Market Intelligence endpoints
 [[redirects]]
   from = "/api/mi-forecast"
   to   = "/.netlify/functions/mi-forecast"
