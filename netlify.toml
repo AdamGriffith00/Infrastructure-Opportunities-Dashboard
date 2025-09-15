@@ -1,13 +1,18 @@
 ########################################
 # Netlify configuration for Growth Portal
 ########################################
-
 [build]
-  # Vite will output to "dist" by default
-  command = "npm run build"
+  command = "npm run build && echo '--- LIST /globe ---' && ls -l globe || true && echo '--- LIST /globe/assets ---' && ls -l globe/assets || true"
   publish = "."
   functions = "netlify/functions"
 
+# route the naked /globe to the file (do NOT add a wildcard here)
+[[redirects]]
+  from = "/globe"
+  to   = "/globe/index.html"
+  status = 200
+  force = true
+  
 ########################################
 # Headers
 ########################################
