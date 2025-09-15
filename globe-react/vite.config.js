@@ -1,12 +1,14 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
+// This config file lives *inside* globe-react/, so root is '.'
 export default defineConfig({
-  base: '/globe/',
+  root: '.',                 // use globe-react as the project root
+  base: '/globe/',           // built files will be served under /globe/
+  plugins: [react()],
   build: {
-    outDir: 'dist',      // write into repo root /globe
-    emptyOutDir: true,
-    rollupOptions: { input: './index.html' }
-  },
-  plugins: [react()]
-})
+    outDir: '../globe',      // write final files directly to /globe at repo root
+    emptyOutDir: true,       // clean /globe on every build
+    sourcemap: false
+  }
+});
