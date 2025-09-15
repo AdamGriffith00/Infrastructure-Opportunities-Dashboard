@@ -1,17 +1,14 @@
-<!-- globe-react/index.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive Globe</title>
-    <style>
-      html, body, #root { height: 100%; margin: 0; background: #000; }
-    </style>
+    <style>html,body,#root{height:100%;margin:0;background:#000}</style>
   </head>
   <body>
     <div id="root"></div>
-    <!-- IMPORTANT: source entry (Vite will replace this in build output) -->
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- Vite replaces this with /globe/assets/... on build -->
+    <script type="module" src="/globe-react/src/main.jsx"></script>
   </body>
 </html>
