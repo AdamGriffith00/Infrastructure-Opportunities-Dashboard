@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gleeds Infrastructure Growth Portal</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #333;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .logo img {
+      width: clamp(280px, 40vw, 500px);
+      height: auto;
+      transform: translateX(50px); /* nudged further right */
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #f1c40f;
+      margin-bottom: 30px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .button {
+      padding: 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .button:hover {
+      transform: scale(1.05);
+    }
+
+    .orange {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .grey {
+      background-color: #777;
+      color: white;
+    }
+
+    /* Responsive for mobile */
+    @media (max-width: 768px) {
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo">
+      <img src="assets/gleeds-official.svg" alt="gleeds logo">
+    </div>
+
+    <!-- Title -->
+    <h1>Infrastructure Growth Portal</h1>
+
+    <!-- Buttons -->
+    <div class="buttons">
+      <button class="button orange" onclick="location.href='budgets.html'">Budgets</button>
+      <button class="button orange" onclick="location.href='bidding-portal.html'">Bidding Portal</button>
+      <button class="button orange" onclick="location.href='market-intelligence.html'">Market Intelligence</button>
+      <button class="button grey">Client Engagement</button>
+      <button class="button grey">Hub</button>
+      <button class="button grey">International</button>
+    </div>
+  </div>
+</body>
+</html>
