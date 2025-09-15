@@ -4,11 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive Globe</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; background: #000; }
+    </style>
   </head>
-  <body style="margin:0;background:#000;">
-    <div id="root" style="height:100vh;"></div>
-
-    <!-- IMPORTANT: point to *source* entry, not output -->
-    <script type="module" src="/src/main.jsx"></script>
+  <body>
+    <div id="root"></div>
+    <!-- IMPORTANT: relative to this file -->
+    <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>
