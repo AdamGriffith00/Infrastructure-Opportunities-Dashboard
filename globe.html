@@ -1,284 +1,729 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Interactive 3D Globe</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root{
-      --gleeds:#FFC300; --grey:#666; --ink:#ddd;
-      --glass: rgba(0,0,0,.5); --line: rgba(255,255,255,.08);
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import Globe from "react-globe.gl";
+import * as d3geo from "d3-geo";
+import { AnimatePresence, motion } from "framer-motion";
+
+// External assets
+const WORLD_GEOJSON_URL =
+  "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson";
+const GLOBE_IMG = "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
+const BUMP_IMG = "https://unpkg.com/three-globe/example/img/earth-topology.png";
+
+// --- Brand + styling ---
+const GLEEDS_YELLOW = "#FFC300";
+const NON_GLEEDS_GREY = "#555555";
+const HOVER_BORDER = "#FFFFFF";
+const DEFAULT_BORDER = "rgba(0,0,0,0.7)";
+
+// Countries Gleeds operates in (ISO_A3 codes)
+const GLEEDS_COUNTRIES = new Set([
+  "GBR",
+  "IRL",
+  // Europe
+  "AUT",
+  "CZE",
+  "FRA",
+  "DEU",
+  "HUN",
+  "ITA",
+  "POL",
+  "PRT",
+  "ROU",
+  "SVK",
+  "ESP",
+  "UKR",
+  // MENA
+  "EGY",
+  "QAT",
+  "SAU",
+  "ARE",
+  // APAC
+  "AUS",
+  "CHN",
+  "HKG",
+  "IND",
+  "SGP",
+  "VNM",
+  // Americas
+  "CAN",
+  "PER",
+  "TTO",
+  "USA",
+  // Partners Europe
+  "BGR",
+  "HRV",
+  "MNE",
+  "SRB",
+  "BEL",
+  "CHE",
+  "LUX",
+  "GRC",
+  "DNK",
+  "FIN",
+  "NLD",
+  "NOR",
+  "SWE",
+  // Other partners
+  "ZAF",
+  "LKA",
+  "ECU",
+]);
+
+// --- Name overrides / normalisation ---
+function displayName(feat) {
+  try {
+    if (!feat) return "";
+    if (feat.id === "GBR") return "United Kingdom";
+    const n = (feat.properties && feat.properties.name) || feat.id;
+    if (n === "French Guiana") return "French Guiana (France)";
+    return n;
+  } catch {
+    return (feat && feat.id) || "";
+  }
+}
+
+function polygonLabelText(d) {
+  return "<b>" + displayName(d) + "</b>";
+}
+
+// Camera helpers
+function centroidOf(feature) {
+  try {
+    return d3geo.geoCentroid(feature);
+  } catch {
+    return [0, 0];
+  }
+}
+function altitudeForFeature(feat) {
+  try {
+    const bounds = d3geo.geoBounds(feat);
+    const min = bounds[0];
+    const max = bounds[1];
+    const latSpan = Math.max(0.0001, Math.abs(max[1] - min[1]));
+    const midLat = (max[1] + min[1]) / 2;
+    const lngSpanRaw = Math.max(0.0001, Math.abs(max[0] - min[0]));
+    const lngSpan = lngSpanRaw * Math.cos((Math.PI / 180) * Math.abs(midLat));
+    const span = Math.max(latSpan, lngSpan);
+    if (span > 60) return 1.6;
+    if (span > 30) return 1.2;
+    if (span > 15) return 0.9;
+    if (span > 8) return 0.65;
+    if (span > 4) return 0.5;
+    if (span > 2) return 0.38;
+    return 0.28;
+  } catch {
+    return 1.0;
+  }
+}
+
+export default function InteractiveGlobe() {
+  const globeRef = useRef(null);
+
+  const [worldData, setWorldData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [activeCountry, setActiveCountry] = useState(null);
+  const [hovered, setHovered] = useState(null);
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+
+  // container sizing
+  const containerRef = useRef(null);
+  const [dims, setDims] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    function updateSize() {
+      if (!containerRef.current) return;
+      const { clientWidth, clientHeight } = containerRef.current;
+      setDims({ w: clientWidth, h: clientHeight });
     }
-    html, body { height: 100%; margin: 0; background:#000; color:var(--ink); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
-    #globe { position: absolute; inset: 0; }
-    #toast {
-      position: fixed; right: 12px; top: 12px; z-index: 11; font-size: 12px; color:#ff9f9f; white-space: pre-line;
-      background: rgba(0,0,0,.55); border: 1px solid rgba(255,0,0,.5); border-radius: 10px; padding: 8px 10px; max-width: 42ch; display:none;
+    updateSize();
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(updateSize);
+      if (containerRef.current) ro.observe(containerRef.current);
     }
-    #toolbar {
-      position: fixed; top: 10px; left: 10px; z-index: 10; display: flex; gap: 8px; align-items: center;
-      background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; backdrop-filter: blur(6px);
+    return () => ro && ro.disconnect && ro.disconnect();
+  }, []);
+
+  // mouse tracking for tooltip
+  useEffect(() => {
+    function onMove(e) {
+      setMouse({ x: e.clientX, y: e.clientY });
     }
-    .btn {
-      font-size: 13px; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,.15);
-      background: #111; color: var(--ink);
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
+  const fetchCountries = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(WORLD_GEOJSON_URL);
+      if (!res.ok) throw new Error(String(res.status));
+      const gj = await res.json();
+      setWorldData(gj.features || []);
+    } catch (e) {
+      console.error(e);
+      setError("Couldn't load world map.");
+    } finally {
+      setLoading(false);
     }
-    .btn[disabled] { opacity: .45; cursor: default; }
-    .badge { display:inline-block; padding:2px 6px; border-radius: 6px; margin-left: 6px; font-size: 11px; background:#222; border:1px solid rgba(255,255,255,.12); }
+  }, []);
+  useEffect(() => {
+    fetchCountries();
+  }, [fetchCountries]);
 
-    .legend {
-      position: fixed; right: 12px; bottom: 12px; z-index: 10; font-size: 12px; line-height: 1.3;
-      background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; backdrop-filter: blur(6px);
-    }
-    .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-    #hint { position: fixed; left: 12px; bottom: 10px; z-index: 10; font-size: 12px; color: #ccc; opacity: .8; }
+  const filteredFeatures = useMemo(() => worldData, [worldData]);
 
-    /* Budgets panel */
-    #budgetWrap{ position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:15; width:min(100vw, 920px); display:none; }
-    #budgetCard{
-      background:#0d0d0d; border:1px solid var(--line); border-radius:16px; overflow:hidden;
-      box-shadow: 0 20px 40px rgba(0,0,0,.45);
-    }
-    #budgetHead{
-      display:flex; align-items:center; justify-content:space-between; gap:8px;
-      padding:10px 12px; background:rgba(0,0,0,.35); border-bottom:1px solid var(--line); backdrop-filter: blur(6px);
-    }
-    #budgetBody{ max-height: 60vh; overflow:auto; }
-    table { width:100%; border-collapse: collapse; font-size: 14px; }
-    thead th { position: sticky; top: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); text-align: left; padding: 10px 12px; }
-    tbody td { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,.06); }
-    tbody tr:nth-child(odd){ background: rgba(255,255,255,.02); }
-  </style>
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const controls = globeRef.current.controls && globeRef.current.controls();
+    if (!controls) return;
+    controls.autoRotate = autoRotate;
+    controls.autoRotateSpeed = 0.4;
+  }, [autoRotate]);
 
-  <!-- Prefer local vendor files; if missing, we fall back to CDN automatically -->
-  <script src="/assets/vendor/three.min.js" onerror="window.__needThreeCDN=true"></script>
-  <script src="/assets/vendor/OrbitControls.js" onerror="window.__needControlsCDN=true"></script>
-  <script src="/assets/vendor/d3-geo.v1.min.js" onerror="window.__needD3GeoCDN=true"></script>
-  <script src="/assets/vendor/three-globe.min.js" onerror="window.__needThreeGlobeCDN=true"></script>
+  const focusCountry = useCallback(
+    (feat) => {
+      if (!feat || !globeRef.current) return;
+      const c = centroidOf(feat);
+      const lng = c[0];
+      const lat = c[1];
+      setActiveCountry(feat);
+      const controls = globeRef.current.controls && globeRef.current.controls();
+      if (controls) controls.autoRotate = false;
+      const altitude = altitudeForFeature(feat);
+      globeRef.current.pointOfView({ lat, lng, altitude }, 1200);
+    },
+    []
+  );
 
-  <script>
-    // Load CDN fallbacks if any local vendor failed
-    (function ensureVendors(){
-      const pending = [];
-      if (window.__needThreeCDN || typeof window.THREE === 'undefined') {
-        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/three@0.152.2/build/three.min.js'; s.onload=r; document.head.appendChild(s); }));
-      }
-      if (window.__needControlsCDN || !window.THREE?.OrbitControls) {
-        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js'; s.onload=r; document.head.appendChild(s); }));
-      }
-      if (window.__needD3GeoCDN || typeof window.d3 === 'undefined' || !window.d3.geoCentroid) {
-        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/d3-geo@1.12.1/dist/d3-geo.min.js'; s.onload=r; document.head.appendChild(s); }));
-      }
-      if (window.__needThreeGlobeCDN || (typeof window.ThreeGlobe === 'undefined' && typeof window.Globe === 'undefined')) {
-        pending.push(new Promise(r=>{ const s=document.createElement('script'); s.src='https://unpkg.com/three-globe@2.33.1/dist/three-globe.min.js'; s.onload=r; document.head.appendChild(s); }));
-      }
-      window.__vendorsReady = Promise.all(pending);
-    })();
-  </script>
-</head>
-<body>
-  <div id="toolbar">
-    <button id="btnBudgets" class="btn">Budgets</button>
-    <button id="btnReset" class="btn">Reset view</button>
-    <span id="mode" class="badge">World</span>
-  </div>
+  const resetView = useCallback(() => {
+    if (!globeRef.current) return;
+    setActiveCountry(null);
+    globeRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
+  }, []);
 
-  <div class="legend">
-    <div><span class="key" style="background:var(--gleeds)"></span>Gleeds presence</div>
-    <div><span class="key" style="background:var(--grey)"></span>Other countries</div>
-  </div>
+  // Budget logic (demo fallback kept for stability)
+  function getBudgetsDemo(id) {
+    const base = (id && id.charCodeAt(0)) || 50 + ((id && id.charCodeAt(1)) || 20);
+    const y1 = Math.round(10 + (base % 200));
+    const y5 = Math.round(y1 * 5 * (0.98 + (base % 7) / 50));
+    const y10 = Math.round(y1 * 10 * (0.95 + (base % 9) / 40));
+    return { y1, y5, y10 };
+  }
+  const gbp = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  });
 
-  <div id="hint">Drag to spin • Scroll to zoom • Click a yellow country to focus</div>
-  <div id="toast"></div>
-  <div id="globe"></div>
+  // Preview overrides (millions GBP) — ASCII-only basis strings; single lines.
+  const BUDGET_OVERRIDES = {
+    GBR: {
+      name: "United Kingdom",
+      y1: 131000,
+      y5: 265000,
+      y10: 725000,
+      basis: "Strategy/Pipeline (preview)",
+    },
+    FRA: {
+      name: "France",
+      y1: 11500,
+      y5: 57500,
+      y10: 115000,
+      basis:
+        "Rail EUR 100bn to 2040 (Reuters, 2023) + RTE grid ~EUR 100bn to 2040 (SDDR 2025); phased; EUR->GBP~0.85",
+    },
+    USA: {
+      name: "United States",
+      y1: 195000,
+      y5: 936000,
+      y10: 1900000,
+      basis:
+        "IIJA/BIL $1.2T over 5y + state/private expected tenders; USD->GBP~0.78",
+    },
+    CHN: {
+      name: "China",
+      y1: 850000,
+      y5: 4000000,
+      y10: 8000000,
+      basis:
+        "NDRC plans + clean energy and transport pipeline; New Infrastructure plan + Five-Year Plan; USD->GBP~0.78",
+    },
+    NOR: {
+      name: "Norway",
+      y1: 7500,
+      y5: 37500,
+      y10: 75000,
+      basis:
+        "National Transport Plan 2025-2036 (~NOK 1.3tn, gov share); NOK->GBP~0.074",
+    },
+    SWE: {
+      name: "Sweden",
+      y1: 8600,
+      y5: 43000,
+      y10: 86000,
+      basis:
+        "National Transport Plan 2022-2033 (SEK 881bn) phased; SEK->GBP~0.074",
+    },
+    FIN: {
+      name: "Finland",
+      y1: 5200,
+      y5: 26000,
+      y10: 52000,
+      basis:
+        "Transport System Plan 2021-2032 (EUR 6.1bn state allocation + municipal co-funding) phased; EUR->GBP~0.85",
+    },
+    UKR: {
+      name: "Ukraine",
+      y1: 8200,
+      y5: 41000,
+      y10: 82000,
+      basis:
+        "Ukraine Recovery Plan 2022-2032 (~$750bn over 10y, infra share phased); USD->GBP~0.78",
+    },
+    POL: {
+      name: "Poland",
+      y1: 10000,
+      y5: 68000,
+      y10: 136000,
+      basis:
+        "National Recovery Plan (KPO) ~EUR 59.8bn to 2026 + cohesion funds 2021-27 infra share phased; EUR->GBP~0.85",
+    },
+    DNK: {
+      name: "Denmark",
+      y1: 6400,
+      y5: 32000,
+      y10: 64000,
+      basis: "Infrastructure Plan 2035 (DKK 160bn) phased; DKK->GBP~0.11",
+    },
+    PRT: {
+      name: "Portugal",
+      y1: 5400,
+      y5: 27000,
+      y10: 54000,
+      basis:
+        "National Investment Plan 2030 (EUR 43bn total to 2030, ~40% infra share) phased; EUR->GBP~0.85",
+    },
+    ESP: {
+      name: "Spain",
+      y1: 6000,
+      y5: 30000,
+      y10: 60000,
+      basis:
+        "ADIF rail EUR 24.1bn 2022-2026 + grid trunk ~EUR 13.6bn 2025-2030 phased; EUR->GBP~0.85",
+    },
+    ITA: {
+      name: "Italy",
+      y1: 18700,
+      y5: 93500,
+      y10: 187000,
+      basis:
+        "Ferrovie dello Stato Industrial Plan EUR 190bn 2022-2031 (+PNRR infra share); phased; EUR->GBP~0.85",
+    },
+    CHE: {
+      name: "Switzerland",
+      y1: 22000,
+      y5: 110000,
+      y10: 210000,
+      basis:
+        "Rail (FABI/STEP) + National Roads Fund (NAF) + grid; phased; CHF->GBP~0.86",
+    },
+    LUX: {
+      name: "Luxembourg",
+      y1: 1200,
+      y5: 6000,
+      y10: 12000,
+      basis:
+        "National Mobility Plan 2035 (~EUR 3.8bn to 2035) + energy/grid upgrades; EUR->GBP~0.85",
+    },
+    BEL: {
+      name: "Belgium",
+      y1: 7500,
+      y5: 37500,
+      y10: 75000,
+      basis:
+        "Federal/Regional Mobility and Infrastructure Plans (rail Infrabel EUR 13bn 2023-2032 + road/port works); EUR->GBP~0.85",
+    },
+    NLD: {
+      name: "Netherlands",
+      y1: 12000,
+      y5: 60000,
+      y10: 115000,
+      basis:
+        "MIRT (Multi-year Infrastructure, Spatial and Transport Programme) + climate/energy investments; EUR->GBP~0.85",
+    },
+    DEU: {
+      name: "Germany",
+      y1: 45000,
+      y5: 225000,
+      y10: 450000,
+      basis:
+        "Bundesverkehrswegeplan (Federal Transport Infrastructure Plan) EUR 270bn through 2030; phased; EUR->GBP~0.85",
+    },
+    AUT: {
+      name: "Austria",
+      y1: 7200,
+      y5: 36000,
+      y10: 72000,
+      basis:
+        "ASFINAG + rail programme EUR 33bn 2023-2028 (incl. OEBB rail infra); phased; EUR->GBP~0.85",
+    },
+    HRV: {
+      name: "Croatia",
+      y1: 2100,
+      y5: 10500,
+      y10: 21000,
+      basis:
+        "EU Cohesion Funds + national transport/energy investments post-EU accession; EUR->GBP~0.85",
+    },
+    CZE: {
+      name: "Czech Republic",
+      y1: 5600,
+      y5: 28000,
+      y10: 56000,
+      basis:
+        "State Transport Infrastructure Fund (SFDI) allocations + EU co-financed projects (~CZK 1.6tn 2021-2030); CZK->GBP~0.034",
+    },
+    HUN: {
+      name: "Hungary",
+      y1: 3900,
+      y5: 19500,
+      y10: 39000,
+      basis:
+        "EU Cohesion Funds + national transport/energy investments 2021-2027 (~EUR 22bn infra share); EUR->GBP~0.85",
+    },
+    SVK: {
+      name: "Slovakia",
+      y1: 3100,
+      y5: 15500,
+      y10: 31000,
+      basis:
+        "EU Cohesion Funds + national transport plan 2021-2027 (~EUR 18bn infra share); EUR->GBP~0.85",
+    },
+    MNE: {
+      name: "Montenegro",
+      y1: 800,
+      y5: 4000,
+      y10: 8000,
+      basis:
+        "EU/IFI-supported road and energy corridor projects (Bar-Boljare highway, grid interconnectors); EUR->GBP~0.85",
+    },
+    GRC: {
+      name: "Greece",
+      y1: 5200,
+      y5: 26000,
+      y10: 52000,
+      basis:
+        "Greece 2.0 Recovery and Resilience Plan + TEN-T projects (~EUR 30bn infra allocation); EUR->GBP~0.85",
+    },
+    BGR: {
+      name: "Bulgaria",
+      y1: 2700,
+      y5: 13500,
+      y10: 27000,
+      basis:
+        "EU Cohesion Funds + Transport Connectivity 2021-2027 (~EUR 16bn infra allocation); EUR->GBP~0.85",
+    },
+    ROU: {
+      name: "Romania",
+      y1: 6400,
+      y5: 32000,
+      y10: 64000,
+      basis:
+        "Transport and Energy operational programmes 2021-2027 (~EUR 40bn infra share + PNRR projects); EUR->GBP~0.85",
+    },
+    EGY: {
+      name: "Egypt",
+      y1: 8200,
+      y5: 41000,
+      y10: 82000,
+      basis:
+        "National Infrastructure and Energy projects (New Capital, transport, renewables) 2020s pipeline ~$100bn; USD->GBP~0.78",
+    },
+    SAU: {
+      name: "Saudi Arabia",
+      y1: 35000,
+      y5: 175000,
+      y10: 350000,
+      basis:
+        "Vision 2030 infrastructure and giga-projects (NEOM, Red Sea, Qiddiya) ~$500bn+ by 2030; USD->GBP~0.78",
+    },
+    ARE: {
+      name: "United Arab Emirates",
+      y1: 21000,
+      y5: 105000,
+      y10: 210000,
+      basis:
+        "UAE Projects of the 50 + Dubai 2040 Urban Master Plan + energy/transport ~$250bn by 2040; USD->GBP~0.78",
+    },
+    IND: {
+      name: "India",
+      y1: 68000,
+      y5: 340000,
+      y10: 680000,
+      basis:
+        "National Infrastructure Pipeline (NIP) INR 111 lakh crore 2020-2025 (~USD 1.4T) + GatiShakti plan; phased; INR->GBP~0.0095",
+    },
+    QAT: {
+      name: "Qatar",
+      y1: 5600,
+      y5: 28000,
+      y10: 56000,
+      basis:
+        "Qatar National Vision 2030 + FIFA World Cup legacy + infrastructure and energy pipeline ~$70bn; USD->GBP~0.78",
+    },
+    VNM: {
+      name: "Vietnam",
+      y1: 7200,
+      y5: 36000,
+      y10: 72000,
+      basis:
+        "Public investment plan 2021-2025 (~USD 120bn, ~USD 30bn annually) + transport/energy pipeline; USD->GBP~0.78",
+    },
+    LKA: {
+      name: "Sri Lanka",
+      y1: 900,
+      y5: 4500,
+      y10: 9000,
+      basis:
+        "Transport and energy projects supported by ADB/World Bank + Port City Colombo; USD->GBP~0.78",
+    },
+    AUS: {
+      name: "Australia",
+      y1: 26000,
+      y5: 130000,
+      y10: 260000,
+      basis:
+        "Australian Federal Infrastructure Investment Programme 10-year AUD 120bn + state projects; AUD->GBP~0.52",
+    },
+    CAN: {
+      name: "Canada",
+      y1: 22000,
+      y5: 110000,
+      y10: 220000,
+      basis:
+        "Investing in Canada Plan (~CAD 180bn to 2030) + provincial transport/energy projects; CAD->GBP~0.59",
+    },
+    ZAF: {
+      name: "South Africa",
+      y1: 6700,
+      y5: 33500,
+      y10: 67000,
+      basis:
+        "National Infrastructure Plan 2050 (phase 1 ~ZAR 2.3tn through 2040) + energy/transport PPP pipeline; ZAR->GBP~0.042",
+    },
+    TTO: {
+      name: "Trinidad and Tobago",
+      y1: 1200,
+      y5: 6000,
+      y10: 12000,
+      basis:
+        "Public Sector Investment Programme + energy and transport projects (~TTD 20bn pipeline); TTD->GBP~0.12",
+    },
+    ECU: {
+      name: "Ecuador",
+      y1: 2500,
+      y5: 12500,
+      y10: 25000,
+      basis:
+        "Government transport/energy investment plans + IMF/IDB supported projects (~USD 30bn 2020s pipeline); USD->GBP~0.78",
+    },
+    PER: {
+      name: "Peru",
+      y1: 4300,
+      y5: 21500,
+      y10: 43000,
+      basis:
+        "National Infrastructure Plan (PNIC) 2022-2025 ~$30bn priority projects (transport, water, energy); USD->GBP~0.78",
+    },
+  };
 
-  <!-- Budgets panel -->
-  <div id="budgetWrap" aria-hidden="true">
-    <div id="budgetCard">
-      <div id="budgetHead">
-        <strong>Budgets · Gleeds Countries</strong>
-        <button id="btnCloseBudget" class="btn">Close</button>
-      </div>
-      <div id="budgetBody">
-        <table>
-          <thead>
-            <tr><th style="width:40%">Country</th><th>1 year</th><th>5 years</th><th>10 years</th></tr>
-          </thead>
-          <tbody id="budgetRows"><!-- rows injected --></tbody>
-        </table>
-      </div>
-      <div style="padding:8px 12px; font-size:12px; color:#aaa; border-top:1px solid var(--line);">
-        Demo values only (GBP millions). Replace with your real data source when ready.
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ---------- CONFIG: update paths if you store files elsewhere
-    const WORLD_URL      = '/assets/world-110m.geojson';              // must exist in your repo
-    const USA_STATES_URL = '/assets/overlays/usa-states.geojson';     // future overlay (optional for now)
-
-    const GLEEDS_COUNTRIES = new Set([
-      'GBR','IRL',
-      'AUT','CZE','FRA','DEU','HUN','ITA','POL','PRT','ROU','SVK','ESP','UKR',
-      'EGY','QAT','SAU','ARE',
-      'AUS','CHN','HKG','IND','SGP','VNM',
-      'CAN','PER','TTO','USA',
-      'BGR','HRV','MNE','SRB','BEL','CHE','LUX','GRC','DNK','FIN','NLD','NOR','SWE',
-      'ZAF','LKA','ECU'
-    ]);
-
-    const $ = s => document.querySelector(s);
-    const toastEl = $('#toast');
-    function showError(msg){ toastEl.textContent = msg; toastEl.style.display='block'; }
-
-    function centroidOf(feat){ try { return d3.geoCentroid(feat); } catch { return [0,0]; } }
-    function boundsOf(feat){ try { return d3.geoBounds(feat); } catch { return [[-10,-10],[10,10]]; } }
-    function altitudeForFeature(feat){
-      const [[minLng,minLat],[maxLng,maxLat]] = boundsOf(feat);
-      const latSpan = Math.max(0.0001, Math.abs(maxLat - minLat));
-      const midLat  = (maxLat + minLat) / 2;
-      const lngSpan = Math.max(0.0001, Math.abs(maxLng - minLng)) * Math.cos(Math.abs(midLat)*Math.PI/180);
-      const span = Math.max(latSpan, lngSpan);
-      if (span > 60) return 1.6;
-      if (span > 30) return 1.2;
-      if (span > 15) return 0.9;
-      if (span >  8) return 0.65;
-      if (span >  4) return 0.50;
-      if (span >  2) return 0.38;
-      return 0.28;
-    }
-
-    // Deterministic demo budgets (replace later)
-    function seededRandom(seed){ let x=0; for(let i=0;i<seed.length;i++) x=(x+seed.charCodeAt(i)*(i+1))>>>0; x^=x<<13; x^=x>>>17; x^=x<<5; x>>>=0; return (x%1000)/1000; }
-    function formatGBPMillions(n){
-      try { return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n*1_000_000); }
-      catch { return '£'+(n*1_000_000).toLocaleString('en-GB',{maximumFractionDigits:0}); }
-    }
-
-    (window.__vendorsReady || Promise.resolve()).then(init);
-
-    function init(){
-      const GlobeCtor = (window.ThreeGlobe && window.ThreeGlobe.Globe) || window.Globe;
-      if (!GlobeCtor) { showError('three-globe failed to load. Check vendor paths or CDN.'); return; }
-
-      let worldFeatures = [];
-
-      const globe = new GlobeCtor()
-        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-        .showAtmosphere(true)
-        .atmosphereAltitude(0.11)
-        .backgroundColor('#000000');
-
-      const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      $('#globe').appendChild(renderer.domElement);
-
-      const scene = new THREE.Scene();
-      scene.add(globe);
-
-      const camera = new THREE.PerspectiveCamera();
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      camera.position.z = 500;
-
-      const controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.12;
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.35;
-      controls.minDistance = 160;
-      controls.maxDistance = 800;
-
-      window.addEventListener('resize', ()=>{
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-      });
-
-      (function animate(){ controls.update(); renderer.render(scene, camera); requestAnimationFrame(animate); })();
-
-      function paintWorld(feats){
-        $('#mode').textContent = 'World';
-        globe
-          .polygonsData(feats)
-          .polygonCapColor(d => GLEEDS_COUNTRIES.has(d.id) ? getComputedStyle(document.documentElement).getPropertyValue('--gleeds').trim() : getComputedStyle(document.documentElement).getPropertyValue('--grey').trim())
-          .polygonSideColor(d => d.__hover ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.18)')
-          .polygonStrokeColor(d => d.__hover ? '#fff' : 'rgba(0,0,0,0.65)')
-          .polygonAltitude(d => d.__hover ? 0.06 : 0.01)
-          .polygonLabel(d => `<b>${d.properties?.name || d.id}</b>`)
-          .onPolygonHover(d => {
-            feats.forEach(f => f.__hover=false);
-            if (d && GLEEDS_COUNTRIES.has(d.id)) d.__hover = true;
-          })
-          .onPolygonClick(d => {
-            if (!d || !GLEEDS_COUNTRIES.has(d.id)) return;
-            const [lng, lat] = centroidOf(d);
-            controls.autoRotate = false;
-            globe.pointOfView({ lat, lng, altitude: altitudeForFeature(d) }, 1200);
-
-            // Hook for overlays (USA states, etc.)
-            if (d.id === 'USA') {
-              // Later you’ll replace this with activateOverlay(USA_STATES_URL, d);
-              // For now we just zoom nicely into USA.
-            }
-          });
-
-        globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
-      }
-
-      async function boot(){
-        try{
-          const res = await fetch(WORLD_URL, { headers:{Accept:'application/json'} });
-          if (!res.ok) throw new Error(`HTTP ${res.status} for ${WORLD_URL}`);
-          const gj = await res.json();
-          worldFeatures = (gj.features||[]).map(f => {
-            const iso = f.properties?.iso_a3 || f.properties?.ISO_A3 || f.id || f.properties?.name;
-            return { ...f, id: iso };
-          });
-          if (!worldFeatures.length) throw new Error('No features in world file');
-          paintWorld(worldFeatures);
-          buildBudgets(worldFeatures);
-        } catch(e){
-          showError(`Could not load world boundaries.\n${e.message}\n\nCheck the file path:\n${WORLD_URL}`);
+  // Dev self-tests (non-throwing)
+  useEffect(() => {
+    try {
+      console.assert(
+        displayName({ id: "GBR", properties: { name: "England" } }) ===
+          "United Kingdom",
+        "GBR -> United Kingdom"
+      );
+      console.assert(
+        polygonLabelText({ id: "GBR", properties: { name: "England" } }) ===
+          "<b>United Kingdom</b>",
+        "Label is single-line"
+      );
+      const keys = Object.keys(BUDGET_OVERRIDES);
+      console.assert(new Set(keys).size === keys.length, "No duplicate keys");
+      Object.entries(BUDGET_OVERRIDES).forEach(([k, v]) => {
+        if (v.basis) {
+          console.assert(
+            typeof v.basis === "string" && !/\n/.test(v.basis),
+            "Basis single-line for " + k
+          );
         }
-      }
-
-      function buildBudgets(feats){
-        const gleedsFeats = feats.filter(f => GLEEDS_COUNTRIES.has(f.id));
-        const rows = gleedsFeats
-          .map(f => {
-            const code = f.id; const name = f.properties?.name || code;
-            const base = 25 + seededRandom(code) * 225;  // £25m .. £250m
-            const y1 = Math.round(base);
-            const y5 = Math.round(base * 5 * (0.98 + seededRandom(code+'5') * 0.1));
-            const y10= Math.round(base * 10 * (0.96 + seededRandom(code+'10')* 0.15));
-            return { code, name, y1, y5, y10 };
-          })
-          .sort((a,b)=> a.name.localeCompare(b.name));
-
-        $('#budgetRows').innerHTML = rows.map(r => `
-          <tr>
-            <td>${r.name}</td>
-            <td>${formatGBPMillions(r.y1)}</td>
-            <td>${formatGBPMillions(r.y5)}</td>
-            <td>${formatGBPMillions(r.y10)}</td>
-          </tr>
-        `).join('');
-      }
-
-      // UI hooks
-      $('#btnReset').addEventListener('click', ()=> globe.pointOfView({ lat:20, lng:0, altitude:2.2 }, 900));
-      $('#btnBudgets').addEventListener('click', ()=>{
-        const wrap = $('#budgetWrap');
-        const isOpen = wrap.style.display === 'block';
-        wrap.style.display = isOpen ? 'none' : 'block';
+        console.assert(
+          Number.isFinite(v.y1) && Number.isFinite(v.y5) && Number.isFinite(v.y10),
+          "Numeric budgets for " + k
+        );
       });
-      $('#btnCloseBudget').addEventListener('click', ()=> $('#budgetWrap').style.display='none');
+    } catch {}
+  }, []);
 
-      boot();
-    }
-  </script>
-</body>
-</html>
+  function getBudgets(iso) {
+    const key = iso && iso.toUpperCase ? iso.toUpperCase() : iso;
+    return (key && BUDGET_OVERRIDES[key]) || getBudgetsDemo(iso || "");
+  }
+
+  return (
+    <div className="w-full h-screen bg-black text-white">
+      {/* Top bar */}
+      <div className="fixed top-0 left-0 right-0 z-20 backdrop-blur bg-black/40 border-b border-white/10">
+        <div className="mx-auto px-4 py-2 flex items-center gap-4">
+          <div className="font-semibold">Interactive Globe</div>
+          <div className="ml-auto flex items-center gap-3 text-sm select-none">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoRotate}
+                onChange={(e) => setAutoRotate(e.target.checked)}
+              />
+              Auto-rotate
+            </label>
+            <button
+              className="px-2 py-1 rounded border border-white/20"
+              onClick={resetView}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Info panel */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20">
+        <div className="rounded-xl shadow-xl bg-white/10 backdrop-blur px-4 py-2 text-sm">
+          {activeCountry ? (
+            <div className="font-medium">{displayName(activeCountry)}</div>
+          ) : (
+            <div className="text-white/70">
+              Drag to spin • Scroll to zoom • Hover to highlight • Click a country to
+              focus
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Globe */}
+      <div className="absolute inset-0 top-10" ref={containerRef}>
+        {loading ? (
+          <div className="w-full h-full grid place-items-center text-white/80">
+            Loading world…
+          </div>
+        ) : error ? (
+          <div className="w-full h-full grid place-items-center text-red-400">
+            {error}
+          </div>
+        ) : (
+          <Globe
+            ref={globeRef}
+            width={dims.w}
+            height={dims.h}
+            backgroundColor="#000000"
+            globeImageUrl={GLOBE_IMG}
+            bumpImageUrl={BUMP_IMG}
+            showAtmosphere
+            atmosphereAltitude={0.12}
+            style={{ cursor: hovered ? "pointer" : "grab" }}
+            polygonsData={filteredFeatures}
+            polygonCapColor={(d) =>
+              GLEEDS_COUNTRIES.has(d.id) && d.properties?.name !== "French Guiana"
+                ? GLEEDS_YELLOW
+                : NON_GLEEDS_GREY
+            }
+            polygonSideColor={(d) =>
+              d === hovered ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.2)"
+            }
+            polygonStrokeColor={(d) =>
+              d === hovered ? HOVER_BORDER : DEFAULT_BORDER
+            }
+            polygonAltitude={(d) => (d === hovered ? 0.06 : 0.01)}
+            polygonsTransitionDuration={300}
+            polygonLabel={polygonLabelText}
+            onPolygonHover={(feat) => setHovered(feat)}
+            onPolygonClick={focusCountry}
+            onGlobeReady={() =>
+              globeRef.current?.pointOfView(
+                { lat: 20, lng: 0, altitude: 2.2 },
+                1200
+              )
+            }
+          />
+        )}
+      </div>
+
+      {/* Hover tooltip with animation */}
+      <AnimatePresence>
+        {hovered && GLEEDS_COUNTRIES.has(hovered.id) && (
+          <motion.div
+            key={hovered.id}
+            initial={{ opacity: 0, scale: 0.9, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 22 }}
+            className="fixed z-30 w-80 pointer-events-none"
+            style={{
+              left: Math.min(
+                mouse.x + 16,
+                (typeof window !== "undefined" ? window.innerWidth : dims.w || 1200) -
+                  340
+              ),
+              top: Math.min(
+                mouse.y + 16,
+                (typeof window !== "undefined" ? window.innerHeight : dims.h || 800) -
+                  180
+              ),
+            }}
+          >
+            <div className="rounded-2xl shadow-2xl border border-white/20 bg-black/70 backdrop-blur p-4">
+              <div className="text-xs uppercase tracking-wide text-white/60">
+                Budget projection (preview)
+              </div>
+              <div className="font-semibold -mt-1">
+                {displayName(hovered)}
+              </div>
+              {(() => {
+                const b = getBudgets(hovered.id);
+                const override = BUDGET_OVERRIDES[hovered.id];
+                const basis = override && override.basis;
+                return (
+                  <>
+                    <div className="mt-2 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>1 year</span>
+                        <span>{gbp.format(b.y1 * 1_000_000)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>5 years</span>
+                        <span>{gbp.format(b.y5 * 1_000_000)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>10 years</span>
+                        <span>{gbp.format(b.y10 * 1_000_000)}</span>
+                      </div>
+                    </div>
+                    {basis ? (
+                      <div className="text-[11px] text-white/60 mt-2 leading-tight">
+                        {basis}
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
