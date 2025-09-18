@@ -1,5 +1,4 @@
-// netlify/functions/update-tenders-background.mjs
-// Long-running background job (Netlify treats *-background functions specially)
+// Long-running background job
 import { runUpdate } from '../lib/update-runner.mjs';
 
 function json(status, body) {
