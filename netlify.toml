@@ -33,6 +33,9 @@
 [functions."mi-archive"]
   schedule = "5 1 * * *"
 
+[functions."frameworks-update-background"]
+  schedule = "15 2 * * *"
+
 ########################################
 # Redirects (API aliases)
 ########################################
