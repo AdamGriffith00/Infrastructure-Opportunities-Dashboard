@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <input id="fw-search" class="fw-input" placeholder="Search frameworks, clients…"/>
       <select id="fw-sector" class="fw-input">
         <option>All</option><option>Aviation</option><option>Utilities</option>
-        <option>Maritime & Ports</option><option>Highways</option><option>Rail</option>
+        <option>Maritime &amp; Ports</option><option>Highways</option><option>Rail</option>
       </select>
 
       <label class="fw-check"><input type="checkbox" id="fw-starred-only"/> Show starred only</label>
@@ -104,11 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
   drawerEl.addEventListener("click", (e)=>{ if (e.target.classList.contains("fw-drawer-backdrop")) closeDrawer(); });
 
   function openDrawer(fr){
-    const moneyText = (v) => v?.amount ? `£${Number(v.amount).toLocaleString()}${v.is_estimate?" (est.)":""}` : (v?.note||"—");
-    const fmt = (d) => d ? new Date((d.length>10?d:d+"T00:00:00Z")).toLocaleDateString() : "—";
+    const money = moneyText(fr.value, fr);
+    const fmt = (d) => d ? new Date((String(d).length>10?d:d+"T00:00:00Z")).toLocaleDateString() : "—";
 
     dwTitle.textContent = fr.name || "Framework";
-    dwSub.textContent = `${fr.client || "Client"} · ${fr.sector || ""} · ${fr.region || ""} · Budget: ${moneyText(fr.value)}`;
+    dwSub.textContent = `${fr.client || "Client"} · ${fr.sector || ""} · ${fr.region || ""} · Budget: ${money}`;
     dwBody.innerHTML = `
       <div class="fw-row">
         <div class="fw-section fw-card"><div class="fw-card-body">
@@ -171,7 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
           </ul>
         </div></div>
       </div>` : ""}
-
     `;
     drawerEl.hidden = false;
     drawerEl.classList.add("open");
@@ -370,16 +369,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- Data load ----------
+  function canonicalSector(ui) {
+    return ui === "Maritime & Ports" ? "Maritime" : ui;
+  }
+
   async function load() {
     const params = new URLSearchParams();
-    if (sectorSel.value && sectorSel.value !== "All") params.set("sector", sectorSel.value);
+    const sectorValue = canonicalSector(sectorSel.value);
+    if (sectorValue && sectorValue !== "All") params.set("sector", sectorValue);
     if (search.value) params.set("q", search.value);
+
     errorBox.style.display = "none"; errorBox.textContent = "";
     try {
-      const r = await fetch(`/.netlify/functions/frameworks?${params.toString()}`);
+      const r = await fetch(`/.netlify/functions/frameworks?${params.toString()}`, { cache: "no-store" });
       if (!r.ok) throw new Error(`frameworks returned ${r.status}`);
-      const rows = await r.json();
-      lastRef.textContent = new Date().toLocaleString();
+      const data = await r.json();
+
+      // Accept either array OR { updatedAt, items }
+      const rows = Array.isArray(data) ? data : (data.items || []);
+      const updatedAt = Array.isArray(data) ? null : (data.updatedAt || null);
+
+      lastRef.textContent = updatedAt
+        ? new Date(updatedAt).toLocaleString()
+        : new Date().toLocaleString();
+
       updateStarBadge(rows);
       renderTable(rows);
     } catch (e) {
@@ -390,12 +403,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function moneyText(v){
-    if (!v) return "—";
-    if (v.amount) return `£${Number(v.amount).toLocaleString()}${v.is_estimate ? " (est.)" : ""}`;
-    return v.note || "—";
+  function moneyText(v, row){
+    // Old shape: { amount, is_estimate, note }
+    if (v && typeof v === "object" && ("amount" in v || "note" in v)) {
+      if (v.amount) return `£${Number(v.amount).toLocaleString()}${v.is_estimate ? " (est.)" : ""}`;
+      return v.note || "—";
+    }
+    // Future shape: numeric bounds
+    const lo = typeof row?.valueLow === "number" ? row.valueLow : null;
+    const hi = typeof row?.valueHigh === "number" ? row.valueHigh : null;
+    if (lo !== null && hi !== null) return `£${lo.toLocaleString()} – £${hi.toLocaleString()}`;
+    if (hi !== null) return `up to £${hi.toLocaleString()}`;
+    if (lo !== null) return `£${lo.toLocaleString()}`;
+    return "—";
   }
-  function fmtDate(d){ return d ? new Date((d.length>10?d:d+"T00:00:00Z")).toLocaleDateString() : "—"; }
+  function fmtDate(d){ return d ? new Date((String(d).length>10?d:d+"T00:00:00Z")).toLocaleDateString() : "—"; }
 
   // ---------- Compact table renderer (with yellow star) ----------
   function renderTable(rows){
@@ -411,15 +433,16 @@ document.addEventListener("DOMContentLoaded", () => {
     filtered.forEach((r)=>{
       const tr = document.createElement("tr");
       const starred = !!starMap[r.id];
+      const money = moneyText(r.value, r);
       tr.innerHTML = `
         <td>
           <button class="fw-star ${starred ? "active" : ""}" aria-label="Star" title="Star" data-star="${r.id}">★</button>
           <span class="fw-name"><a href="#" data-open="${r.id}">${r.name}</a></span>
-          <div class="muted">${r.client || ""} · ${r.sector || ""} · ${r.region || ""} · ${moneyText(r.value)}</div>
+          <div class="muted">${r.client || ""} · ${r.sector || ""} · ${r.region || ""} · ${money}</div>
           ${r.source_url ? `<a class="muted" href="${r.source_url}" target="_blank" rel="noreferrer">Source</a>` : ""}
         </td>
         <td>${r.region || "—"}</td>
-        <td>${moneyText(r.value)}</td>
+        <td>${money}</td>
         <td><strong>${fmtDate(r.expected_award_date)}</strong></td>
         <td><button class="btn" data-analyse="${r.id}">Analyse</button></td>
       `;
