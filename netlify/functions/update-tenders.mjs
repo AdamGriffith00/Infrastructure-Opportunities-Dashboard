@@ -1,6 +1,4 @@
-// netlify/functions/update-tenders.mjs
 // Fast trigger: returns 202 immediately and kicks off the background worker.
-
 function json(status, body) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }
@@ -17,7 +15,6 @@ export async function handler(event) {
 
     // fire-and-forget
     fetch(url.toString()).catch(() => {});
-
     return json(202, { ok: true, queued: true, note: 'Background refresh started.' });
   } catch (err) {
     return json(500, { ok: false, error: err?.message || String(err) });
