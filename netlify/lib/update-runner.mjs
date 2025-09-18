@@ -14,6 +14,11 @@ const FTS_BATCH_MAX_FAST  = 1;
 const FTS_BATCH_MAX_FULL  = 6;
 const PCS_LIMIT_FAST      = 250;
 const PCS_LIMIT_FULL      = 2000;
+const S2W_MONTHS_FAST     = 2;   // how many months back to fetch
+const S2W_MONTHS_FULL     = 6;
+
+// Turn on if you want to keep per-source snapshots in blobs (useful for debugging)
+const STORE_PER_SOURCE = false;  // set true to write under tenders/sources/*.json
 
 // ── HTTP headers
 const HEADERS = {
@@ -162,7 +167,7 @@ async function safeFetchJSON(url, { timeout = 15000 } = {}) {
   }
 }
 
-// ── Adapters inline (CF/FTS) + PCS
+// ── CF (Contracts Finder)
 async function fetchCF(pagesMax) {
   const out = [];
   for (let page = 1; page <= pagesMax; page++) {
@@ -177,9 +182,8 @@ async function fetchCF(pagesMax) {
     for (const r of records) {
       const title = r?.tender?.title || r?.title || '';
       const buyer = findBuyerOCDS(r);
-      // quick early filter to skip obvious noise
       const quickBlob = `${title} ${buyer}`.toLowerCase();
-      if (!quickKeywordHit(quickBlob)) continue;
+      if (!quickKeywordHit(quickBlob)) continue; // early skip
 
       const deadline =
         r?.tender?.tenderPeriod?.endDate ||
@@ -208,6 +212,7 @@ async function fetchCF(pagesMax) {
   return out;
 }
 
+// ── FTS (Find a Tender Service)
 async function fetchFTS(batchesMax) {
   const out = [];
   const updatedTo = new Date().toISOString().slice(0, 19);
@@ -228,9 +233,8 @@ async function fetchFTS(batchesMax) {
     for (const r of releases) {
       const title = r?.tender?.title || r?.title || '';
       const buyer = findBuyerOCDS(r);
-      // quick early filter
       const quickBlob = `${title} ${buyer}`.toLowerCase();
-      if (!quickKeywordHit(quickBlob)) continue;
+      if (!quickKeywordHit(quickBlob)) continue; // early skip
 
       const deadline =
         r?.tender?.tenderPeriod?.endDate ||
@@ -275,16 +279,18 @@ export async function runUpdate({ fast = false } = {}) {
   const pagesMax   = fast ? CF_PAGES_MAX_FAST   : CF_PAGES_MAX_FULL;
   const batchesMax = fast ? FTS_BATCH_MAX_FAST  : FTS_BATCH_MAX_FULL;
   const pcsLimit   = fast ? PCS_LIMIT_FAST      : PCS_LIMIT_FULL;
+  const s2wMonths  = fast ? S2W_MONTHS_FAST     : S2W_MONTHS_FULL;
 
-  console.log(`[update] start; fast=${fast} (CF=${pagesMax}, FTS=${batchesMax}, PCS=${pcsLimit})`);
+  console.log(`[update] start; fast=${fast} (CF=${pagesMax}, FTS=${batchesMax}, PCS=${pcsLimit}, S2W=${s2wMonths}m)`);
 
-  const [cfItems, ftsItems, pcsItems] = await Promise.all([
+  const [cfItems, ftsItems, pcsItems, s2wItems] = await Promise.all([
     fetchCF(pagesMax).catch(e => { console.error('CF fetch error', e); return []; }),
     fetchFTS(batchesMax).catch(e => { console.error('FTS fetch error', e); return []; }),
-    fetchPCS({ limit: pcsLimit }).catch(e => { console.error('PCS fetch error', e); return []; })
+    fetchPCS({ limit: pcsLimit }).catch(e => { console.error('PCS fetch error', e); return []; }),
+    fetchS2W({ months: s2wMonths }).catch(e => { console.error('S2W fetch error', e); return []; }),
   ]);
 
-  const merged = dedupe([...cfItems, ...ftsItems, ...pcsItems]);
+  const merged = dedupe([...cfItems, ...ftsItems, ...pcsItems, ...s2wItems]);
   const now = Date.now();
 
   const relevant = merged
@@ -295,6 +301,17 @@ export async function runUpdate({ fast = false } = {}) {
     .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
   const store = getStore({ name: 'tenders', siteID: SITE_ID, token: TOKEN });
+
+  // Optional per-source snapshots for debugging
+  if (STORE_PER_SOURCE) {
+    await Promise.all([
+      store.setJSON('sources/cf.json',  cfItems),
+      store.setJSON('sources/fts.json', ftsItems),
+      store.setJSON('sources/pcs.json', pcsItems),
+      store.setJSON('sources/s2w.json', s2wItems),
+    ]);
+  }
+
   await store.setJSON('latest.json', {
     updatedAt: new Date().toISOString(),
     count: relevant.length,
@@ -302,5 +319,11 @@ export async function runUpdate({ fast = false } = {}) {
   });
 
   console.log(`[update] wrote ${relevant.length} items`);
-  return { cf: cfItems.length, fts: ftsItems.length, pcs: pcsItems.length, final: relevant.length };
+  return {
+    cf: cfItems.length,
+    fts: ftsItems.length,
+    pcs: pcsItems.length,
+    s2w: s2wItems.length,
+    final: relevant.length
+  };
 }
