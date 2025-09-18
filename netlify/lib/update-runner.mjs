@@ -1,6 +1,7 @@
 // netlify/lib/update-runner.mjs
 import { getStore } from '@netlify/blobs';
 import fetchPCS from '../functions/adapters/public-contracts-scotland.mjs';
+import fetchS2W from '../functions/adapters/sell2wales.mjs';
 
 // ── ENV
 const SITE_ID = process.env.BLOBS_SITE_ID;
