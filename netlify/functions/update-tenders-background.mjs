@@ -1,10 +1,19 @@
 // netlify/functions/update-tenders-background.mjs
-// Run the same code as update-tenders on a schedule.
-// This guarantees both manual and scheduled runs share the exact logic.
+// Long-running background job (Netlify treats *-background functions specially)
+import { runUpdate } from '../lib/update-runner.mjs';
 
-import { handler as runUpdate } from './update-tenders.mjs';
+function json(status, body) {
+  return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}
 
-export async function handler(event, context) {
-  // You can pass through ?fast=1 during manual tests:
-  return runUpdate(event, context);
+export async function handler(event) {
+  const fast = event?.queryStringParameters?.fast === '1';
+  try {
+    console.time(`[update] background ${fast ? 'fast' : 'full'}`);
+    const counts = await runUpdate({ fast });
+    console.timeEnd(`[update] background ${fast ? 'fast' : 'full'}`);
+    return json(200, { ok: true, mode: fast ? 'fast' : 'full', counts });
+  } catch (err) {
+    return json(500, { ok: false, error: err?.message || String(err) });
+  }
 }
