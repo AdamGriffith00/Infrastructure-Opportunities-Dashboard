@@ -1,22 +1,20 @@
 // netlify/lib/update-runner.mjs
 import { getStore } from '@netlify/blobs';
-import fetchPCS from '../functions/adapters/public-contracts-scotland.mjs'; // uses { limit }
+import fetchPCS from '../functions/adapters/public-contracts-scotland.mjs';
 
-// ───────────────────────────────────────────────────────────────────────────────
-// ENV
+// ── ENV
 const SITE_ID = process.env.BLOBS_SITE_ID;
 const TOKEN   = process.env.BLOBS_TOKEN;
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Tunables (paging/limits for sources)
+// ── Source tunables
 const CF_PAGES_MAX_FAST   = 2;
 const CF_PAGES_MAX_FULL   = 12;
 const FTS_BATCH_MAX_FAST  = 1;
 const FTS_BATCH_MAX_FULL  = 6;
-const PCS_LIMIT_FAST      = 250;   // PCS CSV rows to scan
+const PCS_LIMIT_FAST      = 250;
 const PCS_LIMIT_FULL      = 2000;
 
-// HTTP headers
+// ── HTTP headers
 const HEADERS = {
   headers: {
     Accept: 'application/json',
@@ -24,19 +22,11 @@ const HEADERS = {
   }
 };
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Business rules — tuned for a consultancy portfolio of smaller infra jobs.
-// Tweak freely to fit Gleeds Infrastructure focus.
-// Deadline horizon: only keep tenders within the next N days (unknown dates are dropped)
-const HORIZON_DAYS = 180;
-
-// Value floor: set to 10000 (10k) to avoid tiny micro-buys but still catch “smaller jobs”.
-const MIN_VALUE = 10000; // set to 0 to include everything; raise to 50000+ to tighten
-
-// Allowed sectors (based on our sector inference downstream)
+// ── Business rules (portfolio of smaller infra jobs)
+const HORIZON_DAYS = 180;           // keep deadlines within 6 months
+const MIN_VALUE    = 10000;         // floor for “small but meaningful” work
 const ALLOWED_SECTORS = new Set(['Highways','Rail','Aviation','Maritime','Utilities','Infrastructure']);
 
-// Noise blocklist — non-consultancy or soft-FM categories we don’t want
 const BLOCKLIST_WORDS = [
   /catering/i, /cleaning/i, /janitorial/i, /grounds?\s*maintenance/i, /landscap(ing|e)/i,
   /security\s+(services?|guard)/i, /parking\s+enforcement/i, /waste\s+collection/i,
@@ -46,32 +36,27 @@ const BLOCKLIST_WORDS = [
   /sport(ing)?\s+facilit(y|ies)/i, /leisure\s+centre/i, /cleaner/i, /window\s+clean/i
 ];
 
-// Relevance keywords — sector, service and likely infra clients/buyers
+// Relevance keywords
 const SECTOR_KEYWORDS = [
   // Highways
   'highway','highways','road','roads','trunk road','bridge','structures','maintenance',
   'pavement','resurfacing','carriageway','footway','roundabout','junction','signals',
   'traffic management','traffic signal','intelligent transport','its',
   // Rail
-  'rail','railway','track','signalling','elec traction','overhead line','ole','nrsa','possession',
-  'platform','station upgrade','depot','level crossing','network rail','hs2',
+  'rail','railway','track','signalling','signal','overhead line','ole','platform','station upgrade','depot','level crossing','network rail','hs2',
   // Aviation
-  'airport','aviation','runway','taxiway','apron','airfield lighting','a-gl','papi','ils',
-  'heathrow','gatwick','manchester airport','mag','luton','london city','bristol airport',
-  // Utilities (water, power, gas)
-  'utility','utilities','water','wastewater','sewer','sewers','treatment works','wtw','stw',
-  'pipelines','trunk main','potable','flood defence','reservoir','dam',
-  'electric','electricity','substation','overhead line','underground cable','renewable','solar','wind',
-  'gas','district heating',
+  'airport','aviation','runway','taxiway','apron','airfield lighting','a-gl','papi','ils','heathrow','gatwick','manchester airport','mag','luton','london city','bristol airport',
+  // Utilities
+  'utility','utilities','water','wastewater','sewer','treatment works','wtw','stw','pipelines','trunk main','potable','flood defence','reservoir','dam',
+  'electric','electricity','substation','overhead line','underground cable','renewable','solar','wind','gas','district heating',
   // Maritime
   'maritime','port','harbour','harbor','dock','quay','berth','breakwater','lock gate'
 ];
 
 const SERVICE_KEYWORDS = [
-  // Core consultancy services
   'project management','programme management','program management','pm support',
   'contract administration','nec supervisor','nec project manager','nec pm',
-  'quantity surveying','qs','cost management','commercial management','employer\'s agent',
+  'quantity surveying','qs','cost management','commercial management',"employer's agent",
   'project controls','schedule','scheduling','planning','primavera','p6','risk management',
   'estimating','benchmarking','assurance','strategic advice','business case','feasibility',
   'procurement','tender support','cost estimate','cost plan','value management','value engineering',
@@ -79,31 +64,30 @@ const SERVICE_KEYWORDS = [
 ];
 
 const CLIENT_KEYWORDS = [
-  // Highways & transport bodies
   'national highways','highways england','transport for london','tfl',
   'transport for greater manchester','tfgm','west midlands combined authority','wmca',
   'department for transport','dft','local highways authority','county council',
-  // Rail
   'network rail','hs2','great british railways','gbr',
-  // Water/utilities
   'scottish water','thames water','united utilities','anglian water','yorkshire water',
   'severn trent','welsh water','northern ireland water','southern water',
   'national grid','uk power networks','ssent','ssen','sse','scottish power','northern powergrid',
-  // Aviation
   'heathrow','gatwick','manchester airport','mag','london luton airport','lla','london city airport',
-  // Defence & nuclear (often infra-heavy)
   'defence infrastructure organisation','dio','mod',
   'nuclear decommissioning authority','nda','sellafield','hinkley','sizewell'
 ];
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Helper functions
+// ── Helpers
+function quickKeywordHit(blob) {
+  return (
+    SECTOR_KEYWORDS.some(k => blob.includes(k)) ||
+    SERVICE_KEYWORDS.some(k => blob.includes(k)) ||
+    CLIENT_KEYWORDS.some(k => blob.includes(k))
+  );
+}
+
 function looksRelevant(it) {
   const blob = `${it.title || ''} ${it.organisation || ''}`.toLowerCase();
-  const sectorHit  = SECTOR_KEYWORDS.some(k => blob.includes(k));
-  const serviceHit = SERVICE_KEYWORDS.some(k => blob.includes(k));
-  const clientHit  = CLIENT_KEYWORDS.some(k => blob.includes(k));
-  return sectorHit || serviceHit || clientHit;
+  return quickKeywordHit(blob);
 }
 
 function withinHorizon(deadline) {
@@ -115,20 +99,12 @@ function withinHorizon(deadline) {
 }
 
 function passesBusinessRules(it) {
-  // sector allowlist (set by our inference below)
   if (!ALLOWED_SECTORS.has(it.sector)) return false;
-
-  // value floor (aim for smaller but meaningful consultancy jobs)
   const v = it.valueHigh ?? it.valueLow ?? 0;
   if (v < MIN_VALUE) return false;
-
-  // drop non-consultancy/soft-FM items
   const hay = `${it.title || ''} ${it.organisation || ''}`;
   if (BLOCKLIST_WORDS.some(rx => rx.test(hay))) return false;
-
-  // within horizon
   if (!withinHorizon(it.deadline)) return false;
-
   return true;
 }
 
@@ -185,8 +161,7 @@ async function safeFetchJSON(url, { timeout = 15000 } = {}) {
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Source adapters (CF and FTS inline; PCS via your adapter)
+// ── Adapters inline (CF/FTS) + PCS
 async function fetchCF(pagesMax) {
   const out = [];
   for (let page = 1; page <= pagesMax; page++) {
@@ -201,6 +176,10 @@ async function fetchCF(pagesMax) {
     for (const r of records) {
       const title = r?.tender?.title || r?.title || '';
       const buyer = findBuyerOCDS(r);
+      // quick early filter to skip obvious noise
+      const quickBlob = `${title} ${buyer}`.toLowerCase();
+      if (!quickKeywordHit(quickBlob)) continue;
+
       const deadline =
         r?.tender?.tenderPeriod?.endDate ||
         r?.tender?.enquiryPeriod?.endDate || '';
@@ -248,6 +227,10 @@ async function fetchFTS(batchesMax) {
     for (const r of releases) {
       const title = r?.tender?.title || r?.title || '';
       const buyer = findBuyerOCDS(r);
+      // quick early filter
+      const quickBlob = `${title} ${buyer}`.toLowerCase();
+      if (!quickKeywordHit(quickBlob)) continue;
+
       const deadline =
         r?.tender?.tenderPeriod?.endDate ||
         r?.tender?.enquiryPeriod?.endDate || '';
@@ -282,8 +265,7 @@ async function fetchFTS(batchesMax) {
   return out;
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Shared runner
+// ── Shared runner
 export async function runUpdate({ fast = false } = {}) {
   if (!SITE_ID || !TOKEN) {
     throw new Error('Blobs not configured. Set BLOBS_SITE_ID and BLOBS_TOKEN in env.');
@@ -319,10 +301,5 @@ export async function runUpdate({ fast = false } = {}) {
   });
 
   console.log(`[update] wrote ${relevant.length} items`);
-  return {
-    cf: cfItems.length,
-    fts: ftsItems.length,
-    pcs: pcsItems.length,
-    final: relevant.length
-  };
+  return { cf: cfItems.length, fts: ftsItems.length, pcs: pcsItems.length, final: relevant.length };
 }
