@@ -1,214 +1,111 @@
-// netlify/functions/adapters/public-contracts-scotland.mjs
-//
-// Public Contracts Scotland adapter (CSV export).
-// - Set PCS_CSV_URL in Netlify env to a CSV export link from a saved PCS search
-//   filtered to "Open" opportunities (date/status filters as you prefer).
-// - This adapter fetches the CSV, parses it, normalises to your standard item shape,
-//   and applies light sector inference.
-//
-// Expected columns in CSV (PCS usually provides similar headers; we handle variants):
-//   "Notice Title", "Organisation Name", "Deadline Date", "Published Date",
-//   "Estimated Value (GBP)", "Contact Details" / "Buyer Address", "Main site or location of works",
-//   "CPV Description" / "Category", "Notice URL", "Reference number"
-//
-// If your export uses slightly different headers, the flexible header mapping below
-// will still find them where possible.
-
-const PCS_CSV_URL = process.env.PCS_CSV_URL; // REQUIRED
-
-export default async function fetchPCS({ limit = 500 } = {}) {
-  if (!PCS_CSV_URL) {
-    console.warn('[PCS] PCS_CSV_URL not set; skipping PCS adapter.');
-    return [];
+const HEADERS = {
+  headers: {
+    Accept: 'application/json',
+    'User-Agent': 'Infrastructure Opportunities Dashboard (Netlify Function)'
   }
+};
 
-  const res = await fetch(PCS_CSV_URL, {
-    headers: {
-      'Accept': 'text/csv,application/octet-stream,application/vnd.ms-excel;q=0.9,*/*;q=0.8',
-      'User-Agent': 'Gleeds Infra Portal (Netlify Function)'
-    }
-  });
-
-  if (!res.ok) {
-    console.error(`[PCS] CSV fetch failed ${res.status}`);
-    return [];
-  }
-
-  const csvText = await res.text();
-  const rows = parseCSV(csvText);
-  if (!rows.length) return [];
-
-  // Map CSV headers to canonical fields with a flexible finder
-  const H = headerIndex(rows[0]);
-
-  const items = [];
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r || !r.length) continue;
-
-    const title = pick(r, H, ['Notice Title', 'Title']) || '';
-    const org   = pick(r, H, ['Organisation Name', 'Buyer', 'Contracting Authority']) || '';
-    const url   = pick(r, H, ['Notice URL', 'URL', 'Link']) || '';
-    const region= pick(r, H, [
-      'Main site or location of works',
-      'Region',
-      'Place of performance',
-      'Location'
-    ]) || '';
-
-    const deadlineRaw = pick(r, H, ['Deadline Date', 'Submission Deadline', 'End Date']) || '';
-    const publishedRaw= pick(r, H, ['Published Date', 'Publication Date', 'Date Published']) || '';
-
-    // Values may appear in one combined column or separate—handle simply
-    const valueStr = pick(r, H, [
-      'Estimated Value (GBP)',
-      'Estimated value (GBP)',
-      'Estimated total value',
-      'Value',
-      'Contract Value'
-    ]) || '';
-
-    // Normalise
-    const deadlineISO  = toISO(deadlineRaw);
-    const publishedISO = toISO(publishedRaw);
-    const value = parseGBP(valueStr);
-
-    // Skip where no title or no URL (usually not actionable)
-    if (!title || !url) continue;
-
-    items.push({
-      source: 'PCS',
-      title,
-      organisation: org,
-      region,
-      deadline: deadlineISO || null,
-      published: publishedISO || null,
-      url,
-      valueLow: value,     // we only have a single estimate; map to Low
-      valueHigh: null,
-      sector: inferSector(title, org, region)
-    });
-
-    if (items.length >= limit) break;
-  }
-
-  return items;
-}
-
-/* -------------------- helpers -------------------- */
-
-function parseCSV(text) {
-  // Minimal CSV parser (handles quoted fields, commas, newlines, and double quotes)
-  const rows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        const peek = text[i + 1];
-        if (peek === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += c;
-      }
-    } else {
-      if (c === '"') {
-        inQuotes = true;
-      } else if (c === ',') {
-        row.push(field);
-        field = '';
-      } else if (c === '\n') {
-        row.push(field);
-        rows.push(row);
-        row = [];
-        field = '';
-      } else if (c === '\r') {
-        // ignore CR; handle CRLF
-      } else {
-        field += c;
-      }
-    }
-  }
-  // push last field/row
-  if (field.length || inQuotes || row.length) {
-    row.push(field);
-    rows.push(row);
-  }
-  // trim BOM on first cell if present
-  if (rows.length && rows[0].length) {
-    rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
-  }
-  return rows;
-}
-
-function headerIndex(headerRow) {
-  const map = {};
-  for (let i = 0; i < headerRow.length; i++) {
-    const h = (headerRow[i] || '').toString().trim().toLowerCase();
-    if (!h) continue;
-    map[h] = i;
-  }
-  return map;
-}
-
-function pick(row, H, candidates) {
-  for (const c of candidates) {
-    const idx = H[(c || '').toString().trim().toLowerCase()];
-    if (idx != null && row[idx] != null && row[idx] !== '') {
-      return row[idx];
-    }
-  }
-  return '';
-}
-
-function toISO(s) {
-  if (!s) return '';
-  // Try common UK formats: "dd/MM/yyyy", "dd/MM/yyyy HH:mm", or ISO already
-  const t = s.toString().trim();
-  if (!t) return '';
-  // If already ISO-ish:
-  if (/^\d{4}-\d{2}-\d{2}T/.test(t) || /^\d{4}-\d{2}-\d{2}$/.test(t)) {
-    const d = new Date(t);
-    return isNaN(d) ? '' : d.toISOString();
-  }
-  // dd/MM/yyyy [HH:mm]
-  const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
-  if (m) {
-    const [ , dd, mm, yyyy, HH='00', MM='00' ] = m;
-    const iso = new Date(
-      Number(yyyy),
-      Number(mm) - 1,
-      Number(dd),
-      Number(HH),
-      Number(MM)
-    );
-    return isNaN(iso) ? '' : iso.toISOString();
-  }
-  // Fallback parse:
-  const d = new Date(t);
-  return isNaN(d) ? '' : d.toISOString();
-}
-
-function parseGBP(s) {
-  if (!s) return null;
-  const t = s.toString().replace(/[,£\s]/g, '');
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
-}
-
-function inferSector(title, org, region) {
-  const blob = `${title || ''} ${org || ''} ${region || ''}`.toLowerCase();
-  if (/\brail|network rail|hs2\b/.test(blob)) return 'Rail';
-  if (/\bairport|aviation|runway|heathrow|gatwick|mag|luton\b/.test(blob)) return 'Aviation';
-  if (/\broad|highway|trunk road|national highways\b/.test(blob)) return 'Highways';
-  if (/\bwater|sewer|wastewater|utilities|electric|power|gas|scottish water|united utilities|anglian water|thames water\b/.test(blob)) return 'Utilities';
-  if (/\bport|harbour|harbor|maritime|dock\b/.test(blob)) return 'Maritime';
+function inferSector(title, buyer) {
+  const txt = `${title || ''} ${buyer || ''}`.toLowerCase();
+  if (/(rail|network rail|hs2|station|platform)/i.test(txt)) return 'Rail';
+  if (/(airport|aviation|runway|taxiway|heathrow|gatwick|mag|luton|london city|bristol)/i.test(txt)) return 'Aviation';
+  if (/(road|highway|national highways|carriageway|footway|junction|bridge|resurfac)/i.test(txt)) return 'Highways';
+  if (/(water|sewer|wastewater|treatment works|utilities|electric|substation|power|gas|district heating|reservoir|dam)/i.test(txt)) return 'Utilities';
+  if (/(port|harbour|harbor|maritime|dock|quay|berth|breakwater|lock gate)/i.test(txt)) return 'Maritime';
   return 'Infrastructure';
+}
+
+function findBuyerOCDS(r) {
+  const party = (r?.parties || []).find(p => (p.roles || []).includes('buyer'));
+  return party?.name || r?.buyer?.name || r?.buyerName || '';
+}
+function pickValue(r, which) {
+  const v = r?.tender?.value || {};
+  if (which === 'min') return v.minimum ?? v.amount ?? null;
+  if (which === 'max') return v.maximum ?? v.amount ?? null;
+  return v.amount ?? null;
+}
+
+async function safeFetchJSON(url, { timeout = 15000 } = {}) {
+  const ac = new AbortController();
+  const id = setTimeout(() => ac.abort(), timeout);
+  try {
+    const res = await fetch(url, { headers: HEADERS.headers, signal: ac.signal });
+    const type = res.headers.get('content-type') || '';
+    const text = await res.text();
+    if (!type.includes('application/json')) return null;
+    try { return JSON.parse(text); } catch { return null; }
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+function mmYYYY(date) {
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = String(date.getFullYear());
+  return `${m}-${y}`;
+}
+
+function buildUrl({ monthFrom }) {
+  // Example pattern used by devolved portals for OCDS JSON.
+  // Change if PCS updates parameters.
+  const base = 'https://api.publiccontractsscotland.gov.uk/v1/Notices';
+  const qs = new URLSearchParams({
+    noticeType: '2',   // tenders
+    outputType: '0',   // OCDS JSON
+    dateFrom: monthFrom
+  });
+  return `${base}?${qs.toString()}`;
+}
+
+export default async function fetchPCS({ months = 3, limit = 2000 } = {}) {
+  const out = [];
+  const today = new Date();
+  let count = 0;
+
+  for (let i = 0; i < months; i++) {
+    if (count >= limit) break;
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const url = buildUrl({ monthFrom: mmYYYY(d) });
+
+    const data = await safeFetchJSON(url);
+    if (!data) continue;
+
+    const releases = Array.isArray(data?.releases) ? data.releases
+      : Array.isArray(data?.records) ? data.records
+      : Array.isArray(data?.results) ? data.results
+      : [];
+
+    for (const r of releases) {
+      if (count >= limit) break;
+
+      const title = r?.tender?.title || r?.title || '';
+      const buyer = findBuyerOCDS(r);
+      const deadline =
+        r?.tender?.tenderPeriod?.endDate ||
+        r?.tender?.enquiryPeriod?.endDate || '';
+      const region =
+        r?.tender?.deliveryLocations?.[0]?.nuts ||
+        r?.tender?.deliveryAddresses?.[0]?.region || '';
+      const id = r?.ocid || r?.id || '';
+      const urlNotice = r?.url ||
+        (id ? `https://www.publiccontractsscotland.gov.uk/search/show/search_view.aspx?ID=${encodeURIComponent(id)}` : '');
+
+      out.push({
+        source: 'PCS',
+        title,
+        organisation: buyer,
+        region,
+        deadline,
+        url: urlNotice,
+        valueLow: pickValue(r, 'min'),
+        valueHigh: pickValue(r, 'max'),
+        sector: inferSector(title, buyer),
+      });
+
+      count += 1;
+    }
+  }
+
+  return out;
 }
