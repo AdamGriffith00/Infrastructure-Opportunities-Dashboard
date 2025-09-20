@@ -1,12 +1,13 @@
 // netlify/functions/lib/frameworks-runner.mjs
 import { getStore } from "@netlify/blobs";
 
+// Adapters (keep these filenames as you have them)
 import fetchCCS    from "../adapters/frameworks-ccs.mjs";
 import fetchYORhub from "../adapters/frameworks-yorhub.mjs";
 import fetchESPO   from "../adapters/frameworks-espo.mjs";
 import fetchNEPO   from "../adapters/frameworks-nepo.mjs";
 
-// ---- Blobs env
+// ---- ENV
 const SITE_ID = process.env.BLOBS_SITE_ID;
 const TOKEN   = process.env.BLOBS_TOKEN;
 
@@ -35,43 +36,61 @@ function dedupe(items) {
   });
 }
 
-// ---- MAIN (no filters)
-export async function runFrameworksUpdate() {
-  if (!SITE_ID || !TOKEN) {
-    throw new Error("Blobs not configured (BLOBS_SITE_ID / BLOBS_TOKEN).");
-  }
+function withTimeout(promise, ms, label = "task") {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      setTimeout(() => {
+        console.warn(`[runner] ${label} timed out after ${ms}ms`);
+        resolve([]); // treat timeout as empty
+      }, ms);
+    }),
+  ]);
+}
 
-  // 1) Fetch from all adapters
+async function safeAdapter(fn, label, ms) {
+  try {
+    const res = await withTimeout(fn(), ms, label);
+    return Array.isArray(res) ? res : [];
+  } catch (e) {
+    console.error(`[runner] ${label} error:`, e);
+    return [];
+  }
+}
+
+// ---- MAIN (no filters, resilient)
+export async function runFrameworksUpdate({ fast = false } = {}) {
+  if (!SITE_ID || !TOKEN) throw new Error("Blobs not configured (BLOBS_SITE_ID / BLOBS_TOKEN).");
+
+  // Faster timeouts in fast mode
+  const T_FAST = 8000;
+  const T_FULL = 16000;
+  const T = fast ? T_FAST : T_FULL;
+
+  // Fetch in parallel, each with its own timeout + catch
   const [ccs, espo, yorhub, nepo] = await Promise.all([
-    fetchCCS().catch(() => []),
-    fetchESPO().catch(() => []),
-    fetchYORhub().catch(() => []),
-    fetchNEPO().catch(() => []),
+    safeAdapter(fetchCCS,    "CCS",    T),
+    safeAdapter(fetchESPO,   "ESPO",   T),
+    safeAdapter(fetchYORhub, "YORhub", T),
+    safeAdapter(fetchNEPO,   "NEPO",   T),
   ]);
 
-  // 2) Merge, dedupe, light normalisation only
-  const merged = dedupe([...(ccs || []), ...(espo || []), ...(yorhub || []), ...(nepo || [])])
-    .map((fr) => ({ ...fr, sector: canonSector(fr.sector) }));
+  const merged = dedupe([...(ccs||[]), ...(espo||[]), ...(yorhub||[]), ...(nepo||[])])
+    .map(fr => ({ ...fr, sector: canonSector(fr.sector) }));
 
-  // 3) Write straight to blobs (no filtering)
   const store = getStore({ name: "frameworks", siteID: SITE_ID, token: TOKEN });
   const nowIso = new Date().toISOString();
 
-  await store.setJSON("latest.json", {
-    updatedAt: nowIso,
-    count: merged.length,
-    items: merged,
-  });
+  // write even if empty — avoids UI polling “hang”
+  const payload = { updatedAt: nowIso, count: merged.length, items: merged };
+  await store.setJSON("latest.json", payload);
 
-  // (optional) keep a raw snapshot too
-  await store.setJSON("latest-raw.json", {
-    updatedAt: nowIso,
-    count: merged.length,
-    items: merged,
-  });
+  // optional: keep a raw snapshot too
+  await store.setJSON("latest-raw.json", payload);
 
   return {
     ok: true,
+    fast,
     sources: { ccs: ccs.length, espo: espo.length, yorhub: yorhub.length, nepo: nepo.length },
     final: merged.length,
   };
