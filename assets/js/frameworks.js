@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <label class="fw-check"><input type="checkbox" id="fw-starred-only"/> Show starred only</label>
       <span class="fw-star-count" id="fw-star-count">⭐ 0</span>
 
+      <button id="fw-refresh" class="btn">🔄 Refresh</button>
       <span class="fw-time">Last refreshed: <span id="fw-lastref">—</span></span>
     </div>
 
@@ -74,13 +75,67 @@ document.addEventListener("DOMContentLoaded", () => {
   `;
 
   const $ = (id) => document.getElementById(id);
-  const tbody = $("fw-tbody");
-  const search = $("fw-search");
-  const sectorSel = $("fw-sector");
-  const starredOnly = $("fw-starred-only");
-  const starCount = $("fw-star-count");
-  const errorBox = $("fw-error");
-  const lastRef = $("fw-lastref");
+  const tbody      = $("fw-tbody");
+  const search     = $("fw-search");
+  const sectorSel  = $("fw-sector");
+  const starredOnly= $("fw-starred-only");
+  const starCount  = $("fw-star-count");
+  const errorBox   = $("fw-error");
+  const lastRef    = $("fw-lastref");
+
+  // ---------- Refresh (background update + polling) ----------
+  const refreshBtn = document.getElementById("fw-refresh");
+
+  async function getPayload() {
+    const r = await fetch("/.netlify/functions/frameworks", { cache: "no-store" });
+    if (!r.ok) throw new Error(`frameworks returned ${r.status}`);
+    return r.json();
+  }
+
+  async function waitForNewUpdatedAt(prev, timeoutMs = 60000, intervalMs = 3000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, intervalMs));
+      try {
+        const data = await getPayload();
+        const updatedAt = data?.updatedAt || null;
+        if (!prev || (updatedAt && updatedAt !== prev)) return data;
+      } catch { /* keep polling */ }
+    }
+    return null;
+  }
+
+  refreshBtn?.addEventListener("click", async () => {
+    // snapshot current updatedAt
+    let prevUpdatedAt = null;
+    try {
+      const cur = await getPayload();
+      prevUpdatedAt = cur?.updatedAt || null;
+    } catch {}
+
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Refreshing…";
+
+    // kick off background job (returns 202 quickly)
+    try { await fetch("/.netlify/functions/frameworks-update", { method: "POST" }); } catch {}
+
+    // poll until cache flips
+    const data = await waitForNewUpdatedAt(prevUpdatedAt);
+
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "🔄 Refresh";
+
+    if (data && data.items) {
+      lastRef.textContent = data.updatedAt
+        ? new Date(data.updatedAt).toLocaleString()
+        : new Date().toLocaleString();
+      updateStarBadge(data.items);
+      renderTable(data.items);
+    } else {
+      // fallback: just reload with current filters
+      load();
+    }
+  });
 
   // ---------- Stars ----------
   const STAR_KEY = "fw_starred";
@@ -178,16 +233,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function closeDrawer(){ drawerEl.hidden = true; drawerEl.classList.remove("open"); }
 
   // ---------- Wizard ----------
-  const modalEl = $("fw-modal");
-  const wizTitle   = $("wiz-title");
-  const wizKicker  = $("wiz-kicker");
-  const wizSteps   = $("wiz-steps");
-  const wizResults = $("wiz-results");
-  const wizBack    = $("wiz-back");
-  const wizNext    = $("wiz-next");
-  const wizGen     = $("wiz-generate");
-  const wizProg    = $("wiz-progress");
-  const wizStepper = $("wiz-stepper");
+  const modalEl   = $("fw-modal");
+  const wizTitle  = $("wiz-title");
+  const wizKicker = $("wiz-kicker");
+  const wizSteps  = $("wiz-steps");
+  const wizResults= $("wiz-results");
+  const wizBack   = $("wiz-back");
+  const wizNext   = $("wiz-next");
+  const wizGen    = $("wiz-generate");
+  const wizProg   = $("wiz-progress");
+  const wizStepper= $("wiz-stepper");
   $("wiz-close").onclick = () => closeWizard();
   modalEl.addEventListener("click", (e)=>{ if (e.target.id === "fw-modal") closeWizard(); });
   document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeWizard(); });
