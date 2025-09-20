@@ -1,25 +1,23 @@
 // netlify/lib/frameworks-runner.mjs
-// Build a live Frameworks list -> write to Netlify Blobs (frameworks/latest.json)
-// Sources today: your repo file + any adapters you import (e.g., CCS). Everything
-// goes through the SAME Gleeds-relevance rules used for Live Opportunities.
-
 import { getStore } from '@netlify/blobs';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// ---- Add adapters here as you create them:
-import fetchCCSFrameworks from '../functions/adapters/frameworks-ccs.mjs'; // optional; keep if present
+// Adapters (add/remove as you like)
+import fetchCCSFrameworks  from '../functions/adapters/frameworks-ccs.mjs';
+import fetchYORhubFrameworks from '../functions/adapters/frameworks-yorhub.mjs';
+import fetchESPOFrameworks from '../functions/adapters/frameworks-espo.mjs';
+import fetchNEPOFrameworks from '../functions/adapters/frameworks-nepo.mjs';
 
 // ---- ENV
 const SITE_ID = process.env.BLOBS_SITE_ID;
 const TOKEN   = process.env.BLOBS_TOKEN;
 
 // ---- Tunables
-const DROP_EXPIRED_BEFORE_DAYS = 365; // hide frameworks that ended > 1yr ago
+const DROP_EXPIRED_BEFORE_DAYS = 365;
 
-// ---- Relevance rules (mirrors Live Opportunities)
+// ---- Relevance rules (same as opportunities)
 const ALLOWED_SECTORS = new Set(['Highways','Rail','Aviation','Maritime','Utilities','Infrastructure']);
-
 const BLOCKLIST_WORDS = [
   /catering/i, /cleaning/i, /janitorial/i, /grounds?\s*maintenance/i, /landscap(ing|e)/i,
   /security\s+(services?|guard)/i, /parking\s+enforcement/i, /waste\s+collection/i,
@@ -28,26 +26,19 @@ const BLOCKLIST_WORDS = [
   /social\s+care/i, /care\s+home/i, /teaching\s+services?/i, /agency\s+staff/i, /recruit(ment|ing)/i,
   /sport(ing)?\s+facilit(y|ies)/i, /leisure\s+centre/i, /cleaner/i, /window\s+clean/i
 ];
-
 const SECTOR_KEYWORDS = [
-  // Highways
   'highway','highways','road','roads','trunk road','bridge','structures','maintenance',
   'pavement','resurfacing','carriageway','footway','roundabout','junction','signals',
   'traffic management','traffic signal','intelligent transport','its',
-  // Rail
   'rail','railway','track','signalling','signal','overhead line','ole','platform','station upgrade',
   'depot','level crossing','network rail','hs2',
-  // Aviation
   'airport','aviation','runway','taxiway','apron','airfield lighting','a-gl','papi','ils',
   'heathrow','gatwick','manchester airport','mag','luton','london city','bristol airport',
-  // Utilities
   'utility','utilities','water','wastewater','sewer','treatment works','wtw','stw','pipelines',
   'trunk main','potable','flood defence','reservoir','dam','electric','electricity','substation',
   'overhead line','underground cable','renewable','solar','wind','gas','district heating',
-  // Maritime
   'maritime','port','harbour','harbor','dock','quay','berth','breakwater','lock gate'
 ];
-
 const SERVICE_KEYWORDS = [
   'project management','programme management','program management','pm support',
   'contract administration','nec supervisor','nec project manager','nec pm',
@@ -57,7 +48,6 @@ const SERVICE_KEYWORDS = [
   'procurement','tender support','cost estimate','cost plan','value management','value engineering',
   'cdm advisor','cdm adviser','client side project management'
 ];
-
 const CLIENT_KEYWORDS = [
   'national highways','highways england','transport for london','tfl',
   'transport for greater manchester','tfgm','west midlands combined authority','wmca',
@@ -71,7 +61,7 @@ const CLIENT_KEYWORDS = [
   'nuclear decommissioning authority','nda','sellafield','hinkley','sizewell'
 ];
 
-// ---- Helpers (same style as tenders)
+// ---- Helpers
 function quickKeywordHit(blob) {
   return (
     SECTOR_KEYWORDS.some(k => blob.includes(k)) ||
@@ -79,7 +69,6 @@ function quickKeywordHit(blob) {
     CLIENT_KEYWORDS.some(k => blob.includes(k))
   );
 }
-
 function inferSector(title, client) {
   const txt = `${title || ''} ${client || ''}`.toLowerCase();
   if (/(rail|network rail|hs2|station|platform)/.test(txt)) return 'Rail';
@@ -89,25 +78,21 @@ function inferSector(title, client) {
   if (/(port|harbour|harbor|maritime|dock|quay|berth|breakwater|lock gate)/.test(txt)) return 'Maritime';
   return 'Infrastructure';
 }
-
 function toISO(d) {
   if (!d) return null;
   const s = String(d);
   return s.length === 10 ? `${s}T00:00:00Z` : s;
 }
-
 function normalise(rec) {
   const name   = rec.name || rec.title || '';
   const client = rec.client || rec.authority || '';
   const sector = rec.sector || inferSector(name, client);
-
   return {
     id: rec.id || rec.ref || `${name.trim()}|${client.trim()}`,
     name,
     client,
     sector,
     region: Array.isArray(rec.regions) ? rec.regions.join(' · ') : (rec.region || 'UK'),
-    // keep your UI's current value shape; also include numeric bounds if you add them later
     value: rec.value && typeof rec.value === 'object' ? rec.value : null,
     valueLow: typeof rec.valueLow === 'number' ? rec.valueLow : null,
     valueHigh: typeof rec.valueHigh === 'number' ? rec.valueHigh : null,
@@ -119,7 +104,6 @@ function normalise(rec) {
     source_url: rec.source_url || rec.url || ''
   };
 }
-
 function inferStatus(r) {
   const now = Date.now();
   const start = r.start_date ? +new Date(r.start_date) : null;
@@ -130,7 +114,6 @@ function inferStatus(r) {
   if (exp && exp > now) return 'Upcoming';
   return 'Open';
 }
-
 function dedupe(items) {
   const seen = new Set();
   return items.filter(x => {
@@ -140,7 +123,6 @@ function dedupe(items) {
     return true;
   });
 }
-
 function dropVeryOldExpired(items) {
   const cutoff = Date.now() - DROP_EXPIRED_BEFORE_DAYS * 24 * 60 * 60 * 1000;
   return items.filter(x => {
@@ -150,29 +132,18 @@ function dropVeryOldExpired(items) {
     return end >= cutoff;
   });
 }
-
-// --- The business filter (Gleeds relevance)
 function passesBusinessRules(fr) {
-  // Sector allowlist
   if (!ALLOWED_SECTORS.has(fr.sector)) return false;
-
-  // Blocklist
   const hay = `${fr.name || ''} ${fr.client || ''}`.toLowerCase();
   if (BLOCKLIST_WORDS.some(rx => rx.test(hay))) return false;
-
-  // Must hit at least one of our relevance keyword groups
   if (!quickKeywordHit(hay)) return false;
-
   return true;
 }
-
-// ---- Sources
 async function loadFromRepoFile() {
   const p = path.join(process.cwd(), 'data', 'frameworks.json');
   if (!fs.existsSync(p)) return [];
   const raw = fs.readFileSync(p, 'utf8');
-  const rows = JSON.parse(raw);
-  return rows.map(normalise);
+  return JSON.parse(raw);
 }
 
 // ---- Runner
@@ -181,30 +152,31 @@ export async function runFrameworksUpdate() {
     throw new Error('Blobs not configured. Set BLOBS_SITE_ID and BLOBS_TOKEN.');
   }
 
-  // Add/Remove sources as needed:
-  const [fromFile, fromCCS] = await Promise.all([
+  const [fromFileRaw, ccs, yorhub, espo, nepo] = await Promise.all([
     loadFromRepoFile().catch(() => []),
-    (typeof fetchCCSFrameworks === 'function'
-      ? fetchCCSFrameworks().catch(() => [])
-      : Promise.resolve([]))
+    fetchCCSFrameworks().catch(() => []),
+    fetchYORhubFrameworks().catch(() => []),
+    fetchESPOFrameworks().catch(() => []),
+    fetchNEPOFrameworks().catch(() => []),
   ]);
 
-  // Normalise again in case adapters already normalised; safe to double-run
   let items = dedupe([
-    ...fromFile.map(normalise),
-    ...fromCCS.map(normalise)
+    ...fromFileRaw.map(normalise),
+    ...ccs.map(normalise),
+    ...yorhub.map(normalise),
+    ...espo.map(normalise),
+    ...nepo.map(normalise),
   ]);
 
-  // Apply business relevance rules
   items = items.filter(passesBusinessRules);
-
-  // Housekeeping
   items = dropVeryOldExpired(items);
 
-  // Store
   const store = getStore({ name: 'frameworks', siteID: SITE_ID, token: TOKEN });
   const payload = { updatedAt: new Date().toISOString(), count: items.length, items };
   await store.set('latest.json', JSON.stringify(payload));
 
-  return { count: items.length, file: fromFile.length, ccs: fromCCS.length };
+  return {
+    count: items.length,
+    sources: { file: fromFileRaw.length, ccs: ccs.length, yorhub: yorhub.length, espo: espo.length, nepo: nepo.length }
+  };
 }
