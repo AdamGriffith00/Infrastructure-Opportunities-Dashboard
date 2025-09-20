@@ -1,18 +1,95 @@
 // netlify/lib/frameworks-runner.mjs
-// Merges framework records (from your repo JSON today; adapters later)
-// → normalises → dedupes → writes to Netlify Blobs at frameworks/latest.json
+// Build a live Frameworks list -> write to Netlify Blobs (frameworks/latest.json)
+// Sources today: your repo file + any adapters you import (e.g., CCS). Everything
+// goes through the SAME Gleeds-relevance rules used for Live Opportunities.
 
 import { getStore } from '@netlify/blobs';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// ---- Add adapters here as you create them:
+import fetchCCSFrameworks from '../functions/adapters/frameworks-ccs.mjs'; // optional; keep if present
+
+// ---- ENV
 const SITE_ID = process.env.BLOBS_SITE_ID;
 const TOKEN   = process.env.BLOBS_TOKEN;
 
-// ── Tunables (adjust later if you want server-side filtering)
-const DROP_EXPIRED_BEFORE_DAYS = 365;  // drop frameworks that expired > 1yr ago
+// ---- Tunables
+const DROP_EXPIRED_BEFORE_DAYS = 365; // hide frameworks that ended > 1yr ago
 
-// --- Helpers
+// ---- Relevance rules (mirrors Live Opportunities)
+const ALLOWED_SECTORS = new Set(['Highways','Rail','Aviation','Maritime','Utilities','Infrastructure']);
+
+const BLOCKLIST_WORDS = [
+  /catering/i, /cleaning/i, /janitorial/i, /grounds?\s*maintenance/i, /landscap(ing|e)/i,
+  /security\s+(services?|guard)/i, /parking\s+enforcement/i, /waste\s+collection/i,
+  /laundry/i, /uniform/i, /workwear/i, /printing?|photocop(ier|y)/i, /stationer(y|ies)/i,
+  /food\s+suppl(y|ies)/i, /school\s+meals?/i, /bus( |-)services?/i, /courier/i, /postal/i,
+  /social\s+care/i, /care\s+home/i, /teaching\s+services?/i, /agency\s+staff/i, /recruit(ment|ing)/i,
+  /sport(ing)?\s+facilit(y|ies)/i, /leisure\s+centre/i, /cleaner/i, /window\s+clean/i
+];
+
+const SECTOR_KEYWORDS = [
+  // Highways
+  'highway','highways','road','roads','trunk road','bridge','structures','maintenance',
+  'pavement','resurfacing','carriageway','footway','roundabout','junction','signals',
+  'traffic management','traffic signal','intelligent transport','its',
+  // Rail
+  'rail','railway','track','signalling','signal','overhead line','ole','platform','station upgrade',
+  'depot','level crossing','network rail','hs2',
+  // Aviation
+  'airport','aviation','runway','taxiway','apron','airfield lighting','a-gl','papi','ils',
+  'heathrow','gatwick','manchester airport','mag','luton','london city','bristol airport',
+  // Utilities
+  'utility','utilities','water','wastewater','sewer','treatment works','wtw','stw','pipelines',
+  'trunk main','potable','flood defence','reservoir','dam','electric','electricity','substation',
+  'overhead line','underground cable','renewable','solar','wind','gas','district heating',
+  // Maritime
+  'maritime','port','harbour','harbor','dock','quay','berth','breakwater','lock gate'
+];
+
+const SERVICE_KEYWORDS = [
+  'project management','programme management','program management','pm support',
+  'contract administration','nec supervisor','nec project manager','nec pm',
+  'quantity surveying','qs','cost management','commercial management',"employer's agent",
+  'project controls','schedule','scheduling','planning','primavera','p6','risk management',
+  'estimating','benchmarking','assurance','strategic advice','business case','feasibility',
+  'procurement','tender support','cost estimate','cost plan','value management','value engineering',
+  'cdm advisor','cdm adviser','client side project management'
+];
+
+const CLIENT_KEYWORDS = [
+  'national highways','highways england','transport for london','tfl',
+  'transport for greater manchester','tfgm','west midlands combined authority','wmca',
+  'department for transport','dft','local highways authority','county council',
+  'network rail','hs2','great british railways','gbr',
+  'scottish water','thames water','united utilities','anglian water','yorkshire water',
+  'severn trent','welsh water','northern ireland water','southern water',
+  'national grid','uk power networks','ssent','ssen','sse','scottish power','northern powergrid',
+  'heathrow','gatwick','manchester airport','mag','london luton airport','lla','london city airport',
+  'defence infrastructure organisation','dio','mod',
+  'nuclear decommissioning authority','nda','sellafield','hinkley','sizewell'
+];
+
+// ---- Helpers (same style as tenders)
+function quickKeywordHit(blob) {
+  return (
+    SECTOR_KEYWORDS.some(k => blob.includes(k)) ||
+    SERVICE_KEYWORDS.some(k => blob.includes(k)) ||
+    CLIENT_KEYWORDS.some(k => blob.includes(k))
+  );
+}
+
+function inferSector(title, client) {
+  const txt = `${title || ''} ${client || ''}`.toLowerCase();
+  if (/(rail|network rail|hs2|station|platform)/.test(txt)) return 'Rail';
+  if (/(airport|aviation|runway|taxiway|heathrow|gatwick|mag|luton|london city|bristol)/.test(txt)) return 'Aviation';
+  if (/(road|highway|national highways|carriageway|footway|junction|bridge|resurfac)/.test(txt)) return 'Highways';
+  if (/(water|sewer|wastewater|treatment works|utilities|electric|substation|power|gas|district heating|reservoir|dam)/.test(txt)) return 'Utilities';
+  if (/(port|harbour|harbor|maritime|dock|quay|berth|breakwater|lock gate)/.test(txt)) return 'Maritime';
+  return 'Infrastructure';
+}
+
 function toISO(d) {
   if (!d) return null;
   const s = String(d);
@@ -20,24 +97,18 @@ function toISO(d) {
 }
 
 function normalise(rec) {
-  // Keep your current frontend expectations: id, name, client, sector, region(string), value(object), expected_award_date, url
-  const valueObj =
-    rec.value && typeof rec.value === 'object'
-      ? rec.value
-      : (typeof rec.value === 'number'
-          ? { amount: rec.value }
-          : (rec.valueHigh || rec.valueLow)
-            ? undefined
-            : null);
+  const name   = rec.name || rec.title || '';
+  const client = rec.client || rec.authority || '';
+  const sector = rec.sector || inferSector(name, client);
 
   return {
-    id: rec.id || rec.ref || `${(rec.name||'').trim()}|${(rec.client||'').trim()}`,
-    name: rec.name || rec.title || '',
-    client: rec.client || rec.authority || '',
-    sector: rec.sector || 'Infrastructure',
-    region: Array.isArray(rec.regions) ? rec.regions.join(' · ') : (rec.region || ''),
-    // keep old value shape for your UI; also include numeric bounds for future use
-    value: valueObj || (rec.valueHigh || rec.valueLow ? null : null),
+    id: rec.id || rec.ref || `${name.trim()}|${client.trim()}`,
+    name,
+    client,
+    sector,
+    region: Array.isArray(rec.regions) ? rec.regions.join(' · ') : (rec.region || 'UK'),
+    // keep your UI's current value shape; also include numeric bounds if you add them later
+    value: rec.value && typeof rec.value === 'object' ? rec.value : null,
     valueLow: typeof rec.valueLow === 'number' ? rec.valueLow : null,
     valueHigh: typeof rec.valueHigh === 'number' ? rec.valueHigh : null,
     expected_award_date: toISO(rec.expected_award_date || rec.awardDate),
@@ -45,15 +116,7 @@ function normalise(rec) {
     end_date: toISO(rec.end_date || rec.endDate),
     status: rec.status || inferStatus(rec),
     url: rec.url || rec.link || rec.source_url || '',
-    source_url: rec.source_url || rec.url || '',
-    // optional extras your drawer supports
-    position: rec.position || null,
-    key_dates: rec.key_dates || [],
-    incumbents: rec.incumbents || [],
-    competition_watch: rec.competition_watch || [],
-    competition_notes: rec.competition_notes || '',
-    recruitment: rec.recruitment || [],
-    bid_insights: rec.bid_insights || [],
+    source_url: rec.source_url || rec.url || ''
   };
 }
 
@@ -71,7 +134,7 @@ function inferStatus(r) {
 function dedupe(items) {
   const seen = new Set();
   return items.filter(x => {
-    const key = (x.id || `${x.name}|${x.client}|${x.expected_award_date||''}`).toLowerCase();
+    const key = (x.id || `${x.name}|${x.client}|${x.expected_award_date || ''}`).toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -88,6 +151,22 @@ function dropVeryOldExpired(items) {
   });
 }
 
+// --- The business filter (Gleeds relevance)
+function passesBusinessRules(fr) {
+  // Sector allowlist
+  if (!ALLOWED_SECTORS.has(fr.sector)) return false;
+
+  // Blocklist
+  const hay = `${fr.name || ''} ${fr.client || ''}`.toLowerCase();
+  if (BLOCKLIST_WORDS.some(rx => rx.test(hay))) return false;
+
+  // Must hit at least one of our relevance keyword groups
+  if (!quickKeywordHit(hay)) return false;
+
+  return true;
+}
+
+// ---- Sources
 async function loadFromRepoFile() {
   const p = path.join(process.cwd(), 'data', 'frameworks.json');
   if (!fs.existsSync(p)) return [];
@@ -96,21 +175,36 @@ async function loadFromRepoFile() {
   return rows.map(normalise);
 }
 
+// ---- Runner
 export async function runFrameworksUpdate() {
   if (!SITE_ID || !TOKEN) {
     throw new Error('Blobs not configured. Set BLOBS_SITE_ID and BLOBS_TOKEN.');
   }
 
-  // TODO: when you add adapters, import and merge them here (like tenders)
-  // const [ccs, espo, nepo] = await Promise.all([ fetchCCS(), fetchESPO(), fetchNEPO() ]);
+  // Add/Remove sources as needed:
+  const [fromFile, fromCCS] = await Promise.all([
+    loadFromRepoFile().catch(() => []),
+    (typeof fetchCCSFrameworks === 'function'
+      ? fetchCCSFrameworks().catch(() => [])
+      : Promise.resolve([]))
+  ]);
 
-  const fromFile = await loadFromRepoFile();
-  let items = dedupe(fromFile);
+  // Normalise again in case adapters already normalised; safe to double-run
+  let items = dedupe([
+    ...fromFile.map(normalise),
+    ...fromCCS.map(normalise)
+  ]);
+
+  // Apply business relevance rules
+  items = items.filter(passesBusinessRules);
+
+  // Housekeeping
   items = dropVeryOldExpired(items);
 
+  // Store
   const store = getStore({ name: 'frameworks', siteID: SITE_ID, token: TOKEN });
   const payload = { updatedAt: new Date().toISOString(), count: items.length, items };
   await store.set('latest.json', JSON.stringify(payload));
 
-  return { count: items.length };
+  return { count: items.length, file: fromFile.length, ccs: fromCCS.length };
 }
