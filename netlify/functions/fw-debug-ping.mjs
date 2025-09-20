@@ -1,3 +1,4 @@
+// netlify/functions/fw-debug-ping.mjs
 export async function handler() {
   return {
     statusCode: 200,
