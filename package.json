@@ -8,7 +8,6 @@
    "preview:globe": "vite preview --config globe-react/vite.config.js"
  },
  "dependencies": {
-   "@netlify/blobs": "^6.0.0",
    "@netlify/blobs": "^8.1.0"
    "docx": "^8.1.3",
    "react": "^18.2.0",
