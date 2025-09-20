@@ -36,6 +36,9 @@
 [functions."frameworks-update-background"]
   schedule = "15 2 * * *"
 
+[functions]
+  node_bundler = "none"
+
 ########################################
 # Redirects (API aliases)
 ########################################
