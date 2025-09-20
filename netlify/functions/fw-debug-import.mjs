@@ -1,6 +1,7 @@
+// netlify/functions/fw-debug-import.mjs
 export async function handler() {
   try {
-    const mod = await import("../lib/frameworks-runner.mjs");
+    const mod = await import("./lib/frameworks-runner.mjs");
     const hasRun = !!mod?.runFrameworksUpdate;
     return {
       statusCode: 200,
@@ -11,7 +12,11 @@ export async function handler() {
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ok: false, error: String(err), stack: err?.stack || null }),
+      body: JSON.stringify({
+        ok: false,
+        error: String(err),
+        stack: err?.stack || null,
+      }),
     };
   }
 }
