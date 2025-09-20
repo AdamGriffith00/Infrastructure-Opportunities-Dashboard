@@ -37,7 +37,12 @@
   schedule = "15 2 * * *"
 
 [functions]
-  node_bundler = "none"
+  node_bundler = "esbuild"
+  included_files = [
+    "netlify/functions/lib/**",
+    "netlify/functions/adapters/**"
+  ]
+  external_node_modules = []
 
 ########################################
 # Redirects (API aliases)
