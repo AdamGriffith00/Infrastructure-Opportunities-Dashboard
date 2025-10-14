@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>United Kingdom – Rail Cheat Sheet (v5)</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">United Kingdom – Rail Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Budgets — Where is the Money? (Sub-sectors)</h2>
+        <div id="budgets"></div>
+        <div class="note small">High sub-sectors are flagged (≥20%). Replace with your own percentages to auto-update.</div>
+      </div>
+
+      <div class="card">
+        <h2>Regional Budgets — Where to Focus</h2>
+        <div id="regionBudgets"></div>
+        <div class="note small">High regions are flagged (≥12%). Use these to steer pursuit focus and resourcing.</div>
+      </div>
+
+      <div class="kpi">
+        <div class="card"><div class="k">1-Year Spend (est)</div><div class="v" id="kpi1">£8–10bn (renewals + enhancements)</div></div>
+        <div class="card"><div class="k">5-Year Spend (est)</div><div class="v" id="kpi5">~£44bn (NR CP7 2024–29, indicative)</div></div>
+        <div class="card"><div class="k">10-Year Spend (est)</div><div class="v" id="kpi10">£80–90bn (CP7/8, mass transit, digital)</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-sector Split (indicative)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (Framework Access)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates</h2>
+        <table id="keyDates"></table>
+      </div>
+      
+      <div class="card">
+        <h2>Contacts</h2>
+        <div id="contacts"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">How to use: Duplicate per sector (e.g., <code>sectors/uk-rail.html</code>). Replace the <code>DATA</code> constant during your annual refresh. No external libraries.</div>
+</div>
+
+<script>
+const DATA = {
+  UK_RAIL: {
+    id: 'UK_RAIL',
+    name: 'United Kingdom – Rail',
+    headlines: [
+      'CP7 in flight: steady renewals; selective enhancements; digital signalling growth.',
+      'Devolved authorities (TfL, Scotland, Wales, city regions) provide multiple access points.',
+      'Alliancing & programme controls remain heavily weighted in evaluations.'
+    ],
+    win_themes: [
+      'Programme controls and commercial assurance for multi-year renewals.',
+      'Read-across from major programmes (HS2/transit) to CP7 delivery.',
+      'Safety credentials embedded (RISQS/NR Passport).',
+      'Digital-first PMO: cost/schedule/carbon analytics.'
+    ],
+    routes_to_market: [
+      'Network Rail CP7 regional frameworks with rolling call-offs.',
+      'TfL engineering & project delivery frameworks (stations/systems).',
+      'Transport Scotland / ScotRail; Sell2Wales for TfW.',
+      'City region call-offs (WYCA mass transit, TfGM, Nexus, WMCA).'
+    ],
+    spend: {
+      y1_total_gbp_bn: '£8–10bn',
+      y5_total_gbp_bn: '£44bn (indicative)',
+      y10_total_gbp_bn: '£80–90bn (indicative)',
+      sector_split_pct: {
+        'Renewals (Track/Civils/Power)': 45,
+        'Enhancements/Capacity': 15,
+        'Signalling & Digital (ETCS)': 15,
+        'Stations & Property': 15,
+        'Rolling Stock/Depots': 10
+      },
+      region_budget_pct: {
+        'London & South East': 28,
+        'North West': 12,
+        'Midlands': 12,
+        'North East & Yorkshire': 10,
+        'East & Anglia': 10,
+        'Scotland': 10,
+        'South West': 8,
+        'Wales': 6,
+        'Northern Ireland': 4
+      }
+    },
+    frameworks_expected: [
+      { title: 'NR CP7 Professional Services Frameworks', authority: 'Network Rail Regions', sector: 'multi-discipline', est_value_gbp_bn: 'multi-bn call-offs', duration_years: 5, status: 'active', due_qtr: 'rolling', link: '' },
+      { title: 'TfL Engineering & Project Delivery', authority: 'Transport for London', sector: 'multi-discipline', est_value_gbp_bn: 'multi-year', duration_years: 4, status: 'active', due_qtr: 'as issued', link: '' },
+      { title: 'Transport Scotland Rail Consultancy', authority: 'Transport Scotland', sector: 'consultancy', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'active', due_qtr: 'as issued', link: '' },
+      { title: 'Transport for Wales Professional Services', authority: 'Transport for Wales', sector: 'consultancy', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'active', due_qtr: 'as issued', link: '' },
+      { title: 'HS2 Professional Services Call-offs', authority: 'HS2 Ltd', sector: 'major projects', est_value_gbp_bn: 'framework-dependent', duration_years: 8, status: 'active', due_qtr: 'as issued', link: '' },
+      { title: 'East West Rail – Consultancy Lots', authority: 'EWR Co.', sector: 'programme support', est_value_gbp_bn: 'multi-year', duration_years: 4, status: 'active/pipeline', due_qtr: 'as issued', link: '' },
+      { title: 'City Region Mass Transit (e.g., WYCA)', authority: 'Combined Authorities', sector: 'mass transit', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'pipeline', due_qtr: 'various', link: '' }
+    ],
+    key_clients: [
+      { name: 'Network Rail – Regions (Eastern, NW&C, W&W, Southern, Scotland)', sectors: ['renewals','enhancements','digital'], portal: '', est_annual_capex_gbp_bn: 'majority of rail CAPEX' },
+      { name: 'Transport for London (LU/LO)', sectors: ['metro','stations','signalling'], portal: '', est_annual_capex_gbp_bn: 'multi-bn programme' },
+      { name: 'HS2 Ltd (legacy/remaining works)', sectors: ['major projects'], portal: '', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'Transport for Wales', sectors: ['metro','renewals'], portal: '', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'Transport Scotland / ScotRail', sectors: ['renewals','electrification'], portal: '', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'Translink (NI)', sectors: ['renewals','stations'], portal: '', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'City Regions (TfGM, WYCA, Nexus, WMCA)', sectors: ['mass transit','stations'], portal: '', est_annual_capex_gbp_bn: 'programme-based' }
+    ]
+,
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Strong in NR & programme controls; major hub presence' },
+      { name: 'Arcadis', presence: 'Signalling/rail civils design + cost; national coverage' },
+      { name: 'AECOM', presence: 'Design & PM across CP7; strong devolved authority footprint' },
+      { name: 'WSP', presence: 'Multi-discipline design/PM; strong TfL/metro' },
+      { name: 'AtkinsRéalis (incl. F+G)', presence: 'ETCS/digital; PM/QS through F+G; national frameworks' },
+      { name: 'Jacobs', presence: 'Major programme delivery; systems & stations' },
+      { name: 'Mott MacDonald', presence: 'Heavy rail design; decarbonisation & electrification' },
+      { name: 'SYSTRA', presence: 'Rail systems/signalling; metro upgrades' },
+      { name: 'Rider Levett Bucknall (RLB)', presence: 'Cost consultancy on select rail programmes' },
+      { name: 'Gleeds', presence: 'Cost & commercial adviser across client-side rail' }
+    ]
+,
+    pricing: {
+      day_rates_gbp: {
+        PM_senior: '£750–1,100/day',
+        QS_senior: '£700–1,000/day',
+        Controls_lead: '£650–950/day',
+        Consultant_mid: '£450–650/day'
+      },
+      notes: 'Indicative UK rail rates; validate per framework and location.'
+    },
+    key_dates: [
+      { date: 'Each Nov', item: 'Autumn Statement', impact: 'CAPEX envelopes for transport & rail' },
+      { date: 'Feb–Apr (annual)', item: 'NR Business Planning Windows', impact: 'workbank confirmations' },
+      { date: '2029', item: 'Start of CP8', impact: 're-procurement & pipeline reshape' }
+    ],
+    contacts: [
+      { label: 'Network Rail', value: 'Corporate Site', url: 'https://www.networkrail.co.uk' },
+      { label: 'DfT', value: 'Policy & funding', url: 'https://www.gov.uk/government/organisations/department-for-transport' },
+      { label: 'Transport for London', value: 'Authority site', url: 'https://tfl.gov.uk' },
+      { label: 'Transport Scotland', value: 'Authority site', url: 'https://www.transport.gov.scot' },
+      { label: 'Transport for Wales', value: 'Authority site', url: 'https://trc.cymru' },
+      { label: 'Translink (NI)', value: 'Authority site', url: 'https://www.translink.co.uk' }
+    ]
+    ,
+    meta: {}
+,
+    regions: [
+      { region: 'Scotland', opportunities: 'Decarbonisation & electrification, renewals (structures, geotech), station accessibility', buyer: 'Transport Scotland / Network Rail Scotland', status: 'active/pipeline' },
+      { region: 'North East & Yorkshire', opportunities: 'TRU east, ETCS ECML, West Yorkshire Mass Transit (planning)', buyer: 'NR Eastern / WYCA', status: 'active/pipeline' },
+      { region: 'North West', opportunities: 'TRU west, Manchester area capacity, Metrolink renewals', buyer: 'NR NW&C / TfGM', status: 'active/pipeline' },
+      { region: 'Midlands', opportunities: 'Midlands Rail Hub (development), Birmingham stations upgrades, HS2 legacy interfaces', buyer: 'NR / WMCA / Midlands Connect', status: 'pipeline' },
+      { region: 'East & Anglia', opportunities: 'Ely Area Capacity, ETCS Anglia, level crossing safety upgrades', buyer: 'NR Eastern', status: 'active/pipeline' },
+      { region: 'London & South East', opportunities: 'LU renewals & stations, Southern renewals, ETCS (Thameslink/SE routes)', buyer: 'TfL / NR Southern', status: 'active' },
+      { region: 'South West', opportunities: 'Route resilience (Dawlish), Bristol area renewals, stations accessibility', buyer: 'NR Wales & Western', status: 'active/pipeline' },
+      { region: 'Wales', opportunities: 'Core Valley Lines renewals, stations, Cardiff cross-city concepts', buyer: 'TfW / NR Wales & Western', status: 'active/pipeline' },
+      { region: 'Northern Ireland', opportunities: 'Belfast Transport Hub environs, track renewals, Enterprise upgrade planning', buyer: 'Translink', status: 'active/pipeline' }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'regions', label: 'Regional Opportunities' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSector(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = `${d.name}`;
+
+  // Budget bars
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 20);
+  renderBudgetBars('#regionBudgets', d.spend.region_budget_pct, 12);
+
+  // KPIs
+  el('#kpi1').textContent = d.spend.y1_total_gbp_bn || d.spend.y1_total_eur_bn || '–';
+  el('#kpi5').textContent = d.spend.y5_total_gbp_bn || d.spend.y5_total_eur_bn || '–';
+  el('#kpi10').textContent = d.spend.y10_total_gbp_bn || d.spend.y10_total_eur_bn || '–';
+
+  // Sub-sector split chips
+  const sectors = d.spend.sector_split_pct;
+  el('#sectorSplit').innerHTML = Object.keys(sectors).map(k=>pctPill(k, sectors[k])).join(' ');
+
+  // Tabs
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  // Sidebar lists
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  // Key dates
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  // Portals
+  el('#portals').innerHTML = (d.meta?.procurement_portals||[]).map(p=>`<a class="chip" href="${p.url}" target="_blank">${p.name}</a>`).join(' ');
+
+  // Contacts
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`<div class="row"><span class="k">${c.label}</span><a href="${c.url}" target="_blank">${c.value}</a></div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework','Authority','Scope','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        linkOrText(f.title,f.link), f.authority, f.sector, f.est_value_gbp_bn||f.est_value_eur_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Portal','Est. Annual Capex'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), linkOrText('link', cl.portal), cl.est_annual_capex_gbp_bn||cl.est_annual_capex_eur_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence'], (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||d.pricing?.day_rates_eur||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  } else if(tabId==='regions'){
+    c.innerHTML = tableHtml(['Region','Opportunities (examples)','Likely Buyer','Status'],
+      (d.regions||[]).map(r=>[r.region, r.opportunities, r.buyer, r.status]));
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')}</table>`;
+}
+function linkOrText(text, url){ return url ? `<a href="${url}" target="_blank">${text}</a>` : text; }
+
+(function(){
+  function init(){ renderSector('UK_RAIL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
