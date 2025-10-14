@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>United Kingdom – Highways Cheat Sheet (v1)</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">United Kingdom – Highways Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Budgets — Where is the Money? (Sub-sectors)</h2>
+        <div id="budgets"></div>
+        <div class="note small">High sub-sectors are flagged (≥20%). Replace with your own percentages to auto-update.</div>
+      </div>
+
+      <div class="card">
+        <h2>Regional Budgets — Where to Focus</h2>
+        <div id="regionBudgets"></div>
+        <div class="note small">High regions are flagged (≥12%). Use these to steer pursuit focus and resourcing.</div>
+      </div>
+
+      <div class="kpi">
+        <div class="card"><div class="k">1-Year Spend (est)</div><div class="v" id="kpi1">£11–13bn (NH + devolved + LA)</div></div>
+        <div class="card"><div class="k">5-Year Spend (est)</div><div class="v" id="kpi5">£35–40bn (indicative, RIS3 era)</div></div>
+        <div class="card"><div class="k">10-Year Spend (est)</div><div class="v" id="kpi10">£70–85bn (indicative)</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-sector Split (indicative)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (Framework Access)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates</h2>
+        <table id="keyDates"></table>
+      </div>
+      <div class="card">
+        <h2>Procurement Portals</h2>
+        <div id="portals" class="row"></div>
+      </div>
+      <div class="card">
+        <h2>Contacts</h2>
+        <div id="contacts"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">How to use: Duplicate per sector (e.g., <code>sectors/uk-highways.html</code>). Replace the <code>DATA</code> constant during your annual refresh. No external libraries.</div>
+</div>
+
+<script>
+const DATA = {
+  UK_HIGHWAYS: {
+    id: 'UK_HIGHWAYS',
+    name: 'United Kingdom – Highways',
+    headlines: [
+      'RIS3 (2025–2030): steady renewals, safety and resilience; targeted enhancements.',
+      'Devolved trunk roads (Scotland, Wales, NI) + Local Authority networks create diverse access points.',
+      'Digital roads, carbon reduction, and whole-life value are increasingly weighted in evaluations.'
+    ],
+    win_themes: [
+      'Programme controls & commercial assurance for multi-year maintenance/renewals.',
+      'Safety-by-design, carbon and cost analytics embedded in PMO.',
+      'Rapid mobilization on regional improvement schemes and incident management upgrades.',
+      'Data-led asset management (structures, pavements), EV charging corridors & ITS integration.'
+    ],
+    routes_to_market: [
+      'National Highways professional services/design frameworks with rolling call-offs.',
+      'Local Authority consultancy via SCAPE, Crown Commercial Service (CCS), Pagabo, NEPO, YORtender.',
+      'Transport Scotland trunk road frameworks; Sell2Wales (Welsh Government); eTendersNI (DfI Roads).',
+      'Alliance and programme vehicles tied to major enhancements and safety programmes.'
+    ],
+    spend: {
+      y1_total_gbp_bn: '£11–13bn',
+      y5_total_gbp_bn: '£35–40bn (indicative)',
+      y10_total_gbp_bn: '£70–85bn (indicative)',
+      sector_split_pct: {
+        'Maintenance & Renewals (pavement/structures)': 40,
+        'Major Projects & Enhancements': 25,
+        'Regional Improvement & Pinch Points': 12,
+        'Safety & Network Operations': 10,
+        'Structures & Geotechnical': 8,
+        'Digital Roads & ITS': 5
+      },
+      region_budget_pct: {
+        'London & South East': 22,
+        'Midlands': 14,
+        'North West': 13,
+        'North East & Yorkshire': 11,
+        'South West': 11,
+        'East & Anglia': 10,
+        'Scotland': 9,
+        'Wales': 6,
+        'Northern Ireland': 4
+      }
+    },
+    frameworks_expected: [
+      { title: 'National Highways – Professional Services (Design/PM/Commercial)', authority: 'National Highways', sector: 'multi-discipline consultancy', est_value_gbp_bn: 'multi-year', duration_years: 4, status: 'active', due_qtr: 'rolling', link: '' },
+      { title: 'National Highways – Scheme Delivery (regional call-offs)', authority: 'National Highways', sector: 'design support / delivery support', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'active', due_qtr: 'as issued', link: '' },
+      { title: 'Transport Scotland – Trunk Road Consultancy', authority: 'Transport Scotland', sector: 'consultancy', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'active', due_qtr: 'as issued', link: '' },
+      { title: 'Welsh Government – Trunk Road Professional Services', authority: 'Welsh Government', sector: 'consultancy', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'active/pipeline', due_qtr: 'as issued', link: '' },
+      { title: 'DfI Roads – Northern Ireland Frameworks', authority: 'DfI NI', sector: 'consultancy', est_value_gbp_bn: 'programme-based', duration_years: 4, status: 'active/pipeline', due_qtr: 'as issued', link: '' },
+      { title: 'Local Authorities – Consultancy Lots (SCAPE/CCS/Pagabo/NEPO/YOR)', authority: 'Multiple LAs & consortia', sector: 'highways maintenance/design/PM', est_value_gbp_bn: 'various', duration_years: 4, status: 'active/pipeline', due_qtr: 'various', link: '' }
+    ],
+    key_clients: [
+      { name: 'National Highways (Regions: SE, SW, Midlands, NW, NE/Yorks, East)', sectors: ['renewals','enhancements','safety','digital'], portal: 'https://www.find-tender.service.gov.uk', est_annual_capex_gbp_bn: 'largest highways CAPEX' },
+      { name: 'Transport Scotland – Trunk Roads', sectors: ['renewals','enhancements','safety'], portal: 'https://www.publiccontractsscotland.gov.uk', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'Welsh Government – Trunk Road Agents', sectors: ['renewals','network ops','safety'], portal: 'https://www.sell2wales.gov.wales', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'DfI Roads (Northern Ireland)', sectors: ['renewals','structures','safety'], portal: 'https://etendersni.gov.uk', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'Combined & Local Authorities', sectors: ['maintenance','local enhancements','active travel'], portal: 'https://www.contractsfinder.service.gov.uk', est_annual_capex_gbp_bn: 'varies by LA' }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Programme controls & cost across National Highways and LAs' },
+      { name: 'Arcadis', presence: 'Highways design/cost; national LA footprint' },
+      { name: 'AECOM', presence: 'Major highways design/PM; devolved government strength' },
+      { name: 'WSP', presence: 'Network planning, design & PM across UK' },
+      { name: 'AtkinsRéalis (incl. F+G)', presence: 'Design/ETCS-like ITS; cost & PM via F+G' },
+      { name: 'Jacobs', presence: 'Major programmes, strategic road upgrades' },
+      { name: 'Mott MacDonald', presence: 'Highways and structures; asset management' },
+      { name: 'Arup', presence: 'Concept to detailed design; sustainability leadership' },
+      { name: 'Rider Levett Bucknall (RLB)', presence: 'Cost consultancy for select highways programmes' },
+      { name: 'Gleeds', presence: 'Client-side cost & commercial adviser; programme controls' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        PM_senior: '£725–1,050/day',
+        QS_senior: '£700–1,000/day',
+        Controls_lead: '£650–950/day',
+        Consultant_mid: '£425–625/day'
+      },
+      notes: 'Indicative UK highways rates; validate by region/framework (LA vs NH vs devolved).'
+    },
+    key_dates: [
+      { date: 'Each Nov', item: 'Autumn Statement', impact: 'Transport & highways CAPEX envelopes' },
+      { date: '2025–2030', item: 'RIS3 delivery window', impact: 'Workbank for strategic roads' },
+      { date: '2028–2030', item: 'RIS4 development', impact: 'Re-procurement preparation' }
+    ],
+    contacts: [
+      { label: 'National Highways', value: 'Corporate Site', url: 'https://nationalhighways.co.uk' },
+      { label: 'Department for Transport', value: 'Policy & funding', url: 'https://www.gov.uk/government/organisations/department-for-transport' },
+      { label: 'Transport Scotland', value: 'Authority site', url: 'https://www.transport.gov.scot' },
+      { label: 'Welsh Government', value: 'Transport', url: 'https://www.gov.wales/transport' },
+      { label: 'DfI Roads (NI)', value: 'Authority site', url: 'https://www.infrastructure-ni.gov.uk/topics/roads-and-bridges' },
+      { label: 'Local Government Association', value: 'LGA', url: 'https://www.local.gov.uk' }
+    ],
+    meta: {
+      procurement_portals: [
+        { name: 'Find a Tender (UK)', url: 'https://www.find-tender.service.gov.uk' },
+        { name: 'Contracts Finder (England)', url: 'https://www.contractsfinder.service.gov.uk' },
+        { name: 'Public Contracts Scotland', url: 'https://www.publiccontractsscotland.gov.uk' },
+        { name: 'Sell2Wales', url: 'https://www.sell2wales.gov.wales' },
+        { name: 'eTendersNI', url: 'https://etendersni.gov.uk' },
+        { name: 'NEPO Portal', url: 'https://www.nepo.org' },
+        { name: 'YORtender', url: 'https://yortender.eu-supply.com' },
+        { name: 'CCS Procurement', url: 'https://www.crowncommercial.gov.uk' }
+      ]
+    },
+    regions: [
+      { region: 'Scotland', opportunities: 'Trunk road renewals, structures & resilience, safety camera upgrades', buyer: 'Transport Scotland', status: 'active/pipeline' },
+      { region: 'North East & Yorkshire', opportunities: 'Regional improvement, junction upgrades, bridge refurbishments', buyer: 'National Highways / LAs / NEPO / YOR', status: 'active/pipeline' },
+      { region: 'North West', opportunities: 'Renewals, structures strengthening, incident management upgrades', buyer: 'National Highways / LAs', status: 'active' },
+      { region: 'Midlands', opportunities: 'Capacity enhancements, smart corridor upgrades, asset renewals', buyer: 'National Highways / MHA+', status: 'active/pipeline' },
+      { region: 'East & Anglia', opportunities: 'Pavement renewals, safety and EV corridor works', buyer: 'National Highways / LAs', status: 'active/pipeline' },
+      { region: 'London & South East', opportunities: 'High traffic renewals, tunnels & structures, incident support', buyer: 'National Highways / TfL / LAs', status: 'active' },
+      { region: 'South West', opportunities: 'Resilience (weather), coastal structures, pavement renewals', buyer: 'National Highways / LAs', status: 'active/pipeline' },
+      { region: 'Wales', opportunities: 'Trunk road renewals & safety, active travel interfaces', buyer: 'Welsh Government / SWTRA/NMWTRA', status: 'active/pipeline' },
+      { region: 'Northern Ireland', opportunities: 'Trunk road upgrades & maintenance, bridges', buyer: 'DfI Roads', status: 'active/pipeline' }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'regions', label: 'Regional Opportunities' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSector(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = `${d.name}`;
+
+  // Budget bars
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 20);
+  renderBudgetBars('#regionBudgets', d.spend.region_budget_pct, 12);
+
+  // KPIs
+  el('#kpi1').textContent = d.spend.y1_total_gbp_bn || d.spend.y1_total_eur_bn || '–';
+  el('#kpi5').textContent = d.spend.y5_total_gbp_bn || d.spend.y5_total_eur_bn || '–';
+  el('#kpi10').textContent = d.spend.y10_total_gbp_bn || d.spend.y10_total_eur_bn || '–';
+
+  // Sub-sector split chips
+  const sectors = d.spend.sector_split_pct;
+  el('#sectorSplit').innerHTML = Object.keys(sectors).map(k=>pctPill(k, sectors[k])).join(' ');
+
+  // Tabs
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  // Sidebar lists
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  // Key dates
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  // Portals
+  const portalsHost = el('#portals');
+  if (portalsHost) {
+    portalsHost.innerHTML = (d.meta?.procurement_portals||[]).map(p=>`<a class="chip" href="${p.url}" target="_blank">${p.name}</a>`).join(' ');
+  }
+
+  // Contacts
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`<div class="row"><span class="k">${c.label}</span><a href="${c.url}" target="_blank">${c.value}</a></div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework','Authority','Scope','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        linkOrText(f.title,f.link), f.authority, f.sector, f.est_value_gbp_bn||f.est_value_eur_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Portal','Est. Annual Capex'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), linkOrText('link', cl.portal), cl.est_annual_capex_gbp_bn||cl.est_annual_capex_eur_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence'], (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||d.pricing?.day_rates_eur||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  } else if(tabId==='regions'){
+    c.innerHTML = tableHtml(['Region','Opportunities (examples)','Likely Buyer','Status'],
+      (d.regions||[]).map(r=>[r.region, r.opportunities, r.buyer, r.status]));
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')}</table>`;
+}
+function linkOrText(text, url){ return url ? `<a href="${url}" target="_blank">${text}</a>` : text; }
+
+(function(){
+  function init(){ renderSector('UK_HIGHWAYS'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
