@@ -36,142 +36,92 @@
             font-size: 2.5rem;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             letter-spacing: 1px;
         }
 
+        /* NAVIGATION: single row under the title */
         .navigation-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            max-width: 800px;
+            flex-direction: row;
+            gap: 1rem;
             width: 100%;
+            max-width: 820px;
             padding: 0 2rem;
-        }
-
-        .top-row {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: space-between;
-        }
-
-        .bottom-row {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: space-between;
-        }
-
-        .top-row .nav-button,
-        .bottom-row .nav-button {
-            flex: 1;
-            max-width: 180px;
-            min-width: 180px;
-            height: 80px;
+            justify-content: center;
+            align-items: center;
         }
 
         .nav-button {
-            background-color: rgb(218, 79, 39);
+            background-color: rgb(120, 120, 120); /* grey for now */
             color: white;
-            padding: 1rem 2rem;
+            padding: 1rem 1.25rem;
             border: none;
             border-radius: 8px;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: bold;
-            cursor: pointer;
+            cursor: not-allowed; /* until links are added */
             text-decoration: none;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            min-width: 160px;
+            height: 64px;
             line-height: 1.2;
+            opacity: 0.9;
         }
 
         .nav-button:hover {
-            background-color: rgb(180, 60, 25);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            transform: translateY(-1px);
         }
 
-        .nav-button.disabled {
-            background-color: rgb(120, 120, 120);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
+        /* Keep hover visual subtle but don't change color (stays grey) */
         .nav-button.disabled:hover {
-            background-color: rgb(120, 120, 120);
-            transform: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transform: translateY(-1px);
         }
 
         @media (max-width: 768px) {
-            .logo {
-                max-width: 250px;
-            }
-            
-            .title {
-                font-size: 2rem;
-                margin-bottom: 2rem;
-            }
+            .logo { max-width: 250px; }
+            .title { font-size: 2rem; margin-bottom: 1.25rem; }
 
-            .top-row {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .bottom-row {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .top-row .nav-button,
-            .bottom-row .nav-button {
-                flex: 1 1 calc(50% - 0.75rem);
-                max-width: none;
-                min-width: 120px;
+            .navigation-buttons {
+                flex-wrap: wrap; /* wrap on small screens */
+                gap: 0.75rem;
+                padding: 0 1rem;
             }
 
             .nav-button {
-                padding: 0.8rem 1.5rem;
+                min-width: 140px;
+                height: 56px;
                 font-size: 1rem;
+                padding: 0.8rem 1rem;
             }
         }
 
         @media (max-width: 480px) {
-            .logo {
-                max-width: 200px;
-            }
-            
-            .title {
-                font-size: 1.5rem;
-                padding: 0 1rem;
-            }
+            .logo { max-width: 200px; }
+            .title { font-size: 1.5rem; padding: 0 1rem; }
+            .nav-button { min-width: 120px; }
         }
     </style>
 </head>
 <body>
     <div class="logo-container">
-        <!-- Gleeds logo embedded as base64 -->
+        <!-- Gleeds logo embedded as base64 (unchanged) -->
         <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDM1MCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSAiZ2xlZWRzIiB0ZXh0IGluIHdoaXRlIC0tPgogIDx0ZXh0IHg9IjIwIiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjgwIiBmb250LXdlaWdodD0ibm9ybWFsIiBmaWxsPSJ3aGl0ZSI+Z2xlZWRzPC90ZXh0PgogIDwhLS0gWWVsbG93IGNpcmNsZSB3aXRoIHdoaXRlIEcgLSBjbG9zZXIgdG8gdGV4dCAtLT4KICA8Y2lyY2xlIGN4PSIyOTAiIGN5PSIzMCIgcj0iMjIiIGZpbGw9IiNGN0M0MDAiLz4KICA8dGV4dCB4PSIyOTAiIHk9IjM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjYiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSI+RzwvdGV4dD4KPC9zdmc+" alt="Gleeds Logo" class="logo">
     </div>
 
     <h1 class="title">Infrastructure Opportunities and Budget Dashboard</h1>
 
+    <!-- Single row of grey buttons under the title -->
     <div class="navigation-buttons">
-        <div class="top-row">
-            <a href="Overall.html" class="nav-button">Overall</a>
-            <a href="Hub.html" class="nav-button">Hub</a>
-            <button class="nav-button disabled">Sectors</button>
-            <button class="nav-button disabled">International</button>
-        </div>
-        <div class="bottom-row">
-            <a href="Cost-Management.html" class="nav-button">Cost<br>Management</a>
-            <a href="Project-Management.html" class="nav-button">Project<br>Management</a>
-            <a href="Project-Controls.html" class="nav-button">Project<br>Controls</a>
-            <button class="nav-button disabled">Programme<br>Advisory</button>
-        </div>
+        <button class="nav-button disabled" aria-disabled="true" title="Coming soon">Overall</button>
+        <button class="nav-button disabled" aria-disabled="true" title="Coming soon">Sectors</button>
+        <button class="nav-button disabled" aria-disabled="true" title="Coming soon">Regions</button>
+        <button class="nav-button disabled" aria-disabled="true" title="Coming soon">Disciplines</button>
     </div>
 </body>
 </html>
