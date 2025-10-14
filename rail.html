@@ -23,7 +23,7 @@
       grid-template-rows: auto 1fr auto; /* utility bar, content, footer */
     }
 
-    /* Top utility bar with back buttons and last updated */
+    /* Utility bar */
     .utility-bar {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
@@ -35,7 +35,7 @@
     }
     .utility-left, .utility-right { display: flex; gap: 10px; align-items: center; }
     .utility-left { justify-content: flex-start; }
-    .utility-center { text-align: center; font-weight: 800; letter-spacing: 0.4px; }
+    .utility-center { text-align: center; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
     .utility-right { justify-content: flex-end; }
     .back-btn {
       text-decoration: none;
@@ -59,7 +59,7 @@
       display: inline-block;
     }
 
-    /* Tabs container now fills remaining viewport height */
+    /* Tabs container fills viewport */
     .tabs {
       width: min(1400px, 96vw);
       margin: 14px auto;
@@ -70,9 +70,8 @@
       overflow: hidden;
       display: grid;
       grid-template-rows: auto 1fr;
-      height: calc(100vh - 140px); /* fills gap & most of page (utility bar + footer spacing) */
+      height: calc(100vh - 140px); /* adjusts to viewport */
     }
-
     .tablist {
       display: flex;
       gap: 6px;
@@ -81,7 +80,6 @@
       border-bottom: 1px solid var(--border);
     }
     .tab-btn {
-      -webkit-appearance: none;
       appearance: none;
       border: 1px solid var(--border);
       background: #3A3A3A;
@@ -107,7 +105,6 @@
       padding: 0;
       display: none;
       background: #1f1f1f;
-      /* panel fills all available space in tabs container */
     }
     .panel[aria-hidden="false"] { display: block; }
 
@@ -116,19 +113,6 @@
       height: 100%;
       border: 0;
       background: #121212;
-    }
-
-    .placeholder {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: var(--gleeds-light);
-      opacity: 0.85;
-      text-align: center;
-      padding: 16px;
-      pointer-events: none;
-      font-size: 0.95rem;
     }
 
     footer {
@@ -156,8 +140,6 @@
     </div>
   </div>
 
-  <!-- Header removed to eliminate gap -->
-
   <section class="tabs" role="region" aria-label="Rail content">
     <div role="tablist" class="tablist" aria-label="Rail tabs">
       <button id="tab-map" class="tab-btn" role="tab" aria-controls="panel-map" aria-selected="true">Map</button>
@@ -166,19 +148,16 @@
 
     <div id="panel-map" class="panel" role="tabpanel" aria-labelledby="tab-map" aria-hidden="false">
       <iframe class="embed" src="RailMap.html" title="Rail Map"></iframe>
-      <div class="placeholder" aria-hidden="true">If the map does not appear, ensure <strong>RailMap.html</strong> exists in the same folder.</div>
     </div>
 
     <div id="panel-cheat" class="panel" role="tabpanel" aria-labelledby="tab-cheat" aria-hidden="true">
       <iframe class="embed" src="RailCheatSheet.html" title="Rail Cheat Sheet"></iframe>
-      <div class="placeholder" aria-hidden="true">If the cheat sheet does not appear, ensure <strong>RailCheatSheet.html</strong> exists in the same folder.</div>
     </div>
   </section>
 
   <footer>Infrastructure Opportunities and Budget Dashboard • Gleeds</footer>
 
   <script>
-    // Accessible tabs
     const tabs = Array.from(document.querySelectorAll('.tab-btn'));
     const panels = Array.from(document.querySelectorAll('.panel'));
     function activateTab(nextId) {
