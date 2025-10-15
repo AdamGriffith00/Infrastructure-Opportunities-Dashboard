@@ -1,100 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Infrastructure Opportunities and Budget Dashboard</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background-color: rgb(60, 60, 60);
-      color: rgb(247, 196, 0);
-      font-family: Arial, Helvetica, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+    :root{
+      --gleeds-yellow:#F7C400;
+      --gleeds-dark:#3C3C3C;
+      --gleeds-light:#F5F5F5;
+      --card:#2F2F2F;
+      --border:#4A4A4A;
+      --active:#DA4F27; /* Copper Orange */
+      --inactive:#3A3A3A;
     }
-    .logo-container { margin-bottom: 2rem; margin-left: 45px; }
-    .logo { max-width: 300px; height: auto; }
-    .title {
-      font-size: 2.5rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 2rem;
-      letter-spacing: 1px;
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--gleeds-dark);
+      color: var(--gleeds-yellow);
+      min-height:100vh;
+      display:grid; grid-template-rows:auto 1fr auto;
     }
-    .navigation-buttons {
-      display: flex;
-      flex-direction: row;
-      gap: 1rem;
-      width: 100%;
-      max-width: 820px;
-      padding: 0 2rem;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .nav-button {
-      background-color: rgb(120, 120, 120);
-      color: white;
-      padding: 1rem 1.25rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.05rem;
-      font-weight: bold;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      min-width: 160px;
-      height: 64px;
-      line-height: 1.2;
-      opacity: 0.9;
-      cursor: not-allowed; /* default = disabled look */
-    }
-    .nav-button:hover { transform: translateY(-1px); }
+    header{padding:18px 16px 8px; text-align:center}
+    .title{font-size: clamp(1.6rem, 2.6vw, 2.2rem); letter-spacing:.6px; font-weight:800}
+    .subtitle{color:var(--gleeds-light); opacity:.85; font-size:.95rem; margin-top:6px}
 
-    /* Enabled / primary state (Copper Orange #DA4F27) */
-    .nav-button--primary {
-      background-color: #DA4F27;
-      color: #ffffff;
-      cursor: pointer;
-      filter: saturate(1.02);
+    .nav{
+      display:flex; gap:10px; justify-content:center; align-items:center;
+      padding:14px 16px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+      background:#2b2b2b;
     }
-    .nav-button--primary:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      min-width:140px; padding:12px 16px; border-radius:12px; text-decoration:none; cursor:default;
+      font-weight:800; letter-spacing:.3px; border:1px solid var(--border);
+      background: var(--inactive); color:#fff; transition: transform .14s ease, border-color .14s ease, background .14s ease;
+      pointer-events:none;
     }
-
-    @media (max-width: 768px) {
-      .logo { max-width: 250px; }
-      .title { font-size: 2rem; margin-bottom: 1.25rem; }
-      .navigation-buttons { gap: 0.75rem; padding: 0 1rem; }
-      .nav-button { min-width: 140px; height: 56px; font-size: 1rem; padding: 0.8rem 1rem; }
+    .btn.active{
+      background: var(--active);
+      border-color: var(--active);
+      color:#000; cursor:pointer; pointer-events:auto;
     }
-    @media (max-width: 480px) {
-      .logo { max-width: 200px; }
-      .title { font-size: 1.5rem; padding: 0 1rem; }
-      .nav-button { min-width: 120px; }
+    .btn.active:hover{ transform: translateY(-1px); }
+    main{display:grid; place-items:center; padding:24px 16px}
+    .card{
+      width:min(960px, 94vw); background:var(--card); border:1px solid var(--border); border-radius:14px;
+      padding:18px; color:var(--gleeds-light); text-align:center; box-shadow:0 10px 24px rgba(0,0,0,.35);
     }
+    footer{padding:12px 16px 18px; text-align:center; color:var(--gleeds-light); opacity:.75; font-size:.9rem}
   </style>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDM1MCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHRleHQgeD0iMjAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZpbGw9IndoaXRlIj5nbGVlZHM8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMjkwIiBjeT0iMzAiIHI9IjIyIiBmaWxsPSIjRjdDNDAwIi8+CiAgPHRleHQgeD0iMjkwIiB5PSIzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiPkc8L3RleHQ+Cjwvc3ZnPg==" alt="Gleeds Logo" class="logo">
-  </div>
+  <header>
+    <div class="title">Infrastructure Opportunities and Budget Dashboard</div>
+    <div class="subtitle">Gleeds • Internal View</div>
+  </header>
 
-  <h1 class="title">Infrastructure Opportunities and Budget Dashboard</h1>
+  <nav class="nav" aria-label="Primary">
+    <span class="btn" aria-disabled="true">Overall</span>
+    <a class="btn active" href="sectors.html">Sectors</a>
+    <a class="btn active" href="regions.html">Regions</a>
+    <a class="btn active" href="disciplines.html">Disciplines</a>
+  </nav>
 
-  <div class="navigation-buttons">
-    <span class="nav-button" aria-disabled="true" title="Coming soon">Overall</span>
-    <a class="nav-button nav-button--primary" href="sectors.html" title="Open Sectors">Sectors</a>
-    <span class="nav-button" aria-disabled="true" title="Coming soon">Regions</span>
-    <a class="nav-button nav-button--primary" href="disciplines.html" title="Open Disciplines">Disciplines</a>
-  </div>
+  <main>
+    <div class="card">
+      <p>Use the navigation above to access each area. We’ll enable new sections as they’re ready.</p>
+    </div>
+  </main>
+
+  <footer>© Gleeds • Last Updated Q4 2025</footer>
 </body>
 </html>
