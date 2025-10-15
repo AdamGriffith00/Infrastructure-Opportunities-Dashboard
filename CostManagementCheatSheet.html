@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>United Kingdom – Cost Management (Infrastructure) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">United Kingdom – Cost Management (Infrastructure) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Budgets — Where is the Work? (By Infrastructure Sector)</h2>
+        <div id="budgets"></div>
+        <div class="note small">High sectors are flagged (≥25%). Replace with your own percentages to auto-update.</div>
+      </div>
+
+      <div class="card">
+        <h2>Regional Focus — Where to Aim</h2>
+        <div id="regionBudgets"></div>
+        <div class="note small">High regions are flagged (≥12%). Use to steer pursuit focus and resourcing.</div>
+      </div>
+
+      <div class="kpi">
+        <div class="card"><div class="k">1-Year CM Demand (est)</div><div class="v" id="kpi1">Strong across rail, highways & utilities</div></div>
+        <div class="card"><div class="k">5-Year CM Demand (est)</div><div class="v" id="kpi5">Stable growth via renewals & resilience</div></div>
+        <div class="card"><div class="k">10-Year CM Demand (est)</div><div class="v" id="kpi10">Sustained by net zero & grid upgrades</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Discipline Split (typical)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (Framework Access)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates</h2>
+        <table id="keyDates"></table>
+      </div>
+      
+      <div class="card">
+        <h2>Contacts</h2>
+        <div id="contacts"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">How to use: Duplicate per discipline (e.g., <code>disciplines/uk-cost-management.html</code>). Replace the <code>DATA</code> constants during refresh. No external libraries.</div>
+</div>
+
+<script>
+const DATA = {
+  UK_COST_MGMT_INFRA: {
+    id: 'UK_COST_MGMT_INFRA',
+    name: 'United Kingdom – Cost Management (Infrastructure)',
+    headlines: [
+      'Infrastructure CM demand is anchored in multi‑year renewals for rail, highways and utilities.',
+      'Energy transition (grid reinforcement, connections, storage) is a long‑run cost driver.',
+      'Clients expect NEC4, target‑cost & alliancing commercial models with robust P50/P80 risk.'
+    ],
+    win_themes: [
+      'Should‑cost models & production‑rate benchmarks for civils, M&E and rail systems.',
+      'NEC4 target cost, pain/gain share and compensation event mastery with live indexation.',
+      'Integrated cost/schedule risk (QRA) and probabilistic estimating aligned to governance.',
+      'Value engineering for OPEX/CAPEX trade‑offs; carbon & whole‑life cost embedded.'
+    ],
+    routes_to_market: [
+      'National Highways capital delivery & renewals frameworks (scheme delivery/programme).',
+      'Network Rail CP7 renewals/enhancements frameworks and route call‑offs.',
+      'Water company AMP‑cycle alliances and consulting frameworks.',
+      'Electricity transmission & distribution (RIIO) commercial frameworks.',
+      'Airport & port capital works panels and operator procurements.'
+    ],
+    spend: {
+      // Share of cost management workload by infrastructure sector (indicative)
+      sector_split_pct: {
+        'Utilities – Water': 28,
+        'Utilities – Energy/Power': 27,
+        'Rail': 20,
+        'Highways': 18,
+        'Airports': 4,
+        'Ports & Maritime': 3
+      },
+      // Indicative regional focus for infrastructure CM opportunities
+      region_budget_pct: {
+        'London & South East': 22,
+        'Midlands': 14,
+        'North West': 13,
+        'North East & Yorkshire': 12,
+        'East of England': 11,
+        'South West': 9,
+        'Scotland': 10,
+        'Wales': 6,
+        'Northern Ireland': 3
+      }
+    },
+    frameworks_expected: [
+      { title: 'National Highways Capital Delivery / Renewals', authority: 'National Highways', sector: 'highways', est_value_gbp_bn: 'programme-based', duration_years: 5, status: 'active/rolling', due_qtr: 'various', link: '' },
+      { title: 'Network Rail CP7 – Renewals / Enhancements', authority: 'Network Rail', sector: 'rail', est_value_gbp_bn: 'call-offs', duration_years: 5, status: 'active', due_qtr: 'rolling', link: '' },
+      { title: 'Water CAPEX (AMP cycle) Alliances', authority: 'UK Water Companies', sector: 'water', est_value_gbp_bn: 'multi-year', duration_years: 5, status: 'active/pipeline', due_qtr: 'various', link: '' },
+      { title: 'Electricity T&D (RIIO) Frameworks', authority: 'Transmission & DNOs', sector: 'power networks', est_value_gbp_bn: 'programme-based', duration_years: 5, status: 'active/pipeline', due_qtr: 'various', link: '' },
+      { title: 'Airport / Port Capital Works Panels', authority: 'Airport & Port Operators', sector: 'aviation/ports', est_value_gbp_bn: 'call-offs', duration_years: 4, status: 'as issued', due_qtr: 'various', link: '' }
+    ],
+    key_clients: [
+      { name: 'National Highways', sectors: ['renewals','enhancements','maintenance delivery'], portal: '', est_annual_capex_gbp_bn: 'programme-based' },
+      { name: 'Network Rail', sectors: ['track','civils','signalling','stations'], portal: '', est_annual_capex_gbp_bn: 'multi-year' },
+      { name: 'Water Companies (UK)', sectors: ['networks','treatment','resilience'], portal: '', est_annual_capex_gbp_bn: 'multi-year' },
+      { name: 'National Grid & DNOs', sectors: ['transmission','distribution','connections'], portal: '', est_annual_capex_gbp_bn: 'multi-year' },
+      { name: 'Airport & Port Operators', sectors: ['airfield','piers','berths','estate enabling'], portal: '', est_annual_capex_gbp_bn: 'programme-based' }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Major programmes, highways, rail & utilities' },
+      { name: 'Arcadis', presence: 'Utilities, highways & rail commercial' },
+      { name: 'AECOM', presence: 'Civils cost & PMO across transport/energy' },
+      { name: 'Faithful+Gould (AtkinsRéalis)', presence: 'National infrastructure QS/PMO' },
+      { name: 'RLB', presence: 'QS across civils & transport' },
+      { name: 'Mace Consult', presence: 'Major programmes & PMO in transport/energy' },
+      { name: 'Gleeds', presence: 'Client-side cost & commercial across infrastructure' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        Director: '£900–1,300/day',
+        Associate: '£700–1,000/day',
+        Senior_QS: '£600–850/day',
+        QS: '£450–600/day',
+        Assistant_QS: '£300–450/day'
+      },
+      notes: 'Indicative infrastructure rates; confirm per framework, region and role scope.'
+    },
+    key_dates: [
+      { date: 'Annual (Q4)', item: 'Fiscal updates & budgets', impact: 'Funding envelopes for transport & utilities' },
+      { date: 'Cycle-based', item: 'Water AMP / Energy RIIO cycles', impact: 'Framework recompetes & workload swing' },
+      { date: 'Ongoing', item: 'Route/region procurement waves', impact: 'Mini-competitions & call-offs' }
+    ],
+    contacts: [
+      { label: 'Find a Tender (FTS)', value: 'UK public procurement notices', url: '' },
+      { label: 'Contracts Finder', value: 'Central gov opportunities', url: '' },
+      { label: 'Client Portals', value: 'National Highways / Network Rail / Utilities', url: '' }
+    ],
+    regions: [
+      { region: 'London & South East', opportunities: 'Airports, rail routes, power grid reinforcement', buyer: 'Airport operators, NR routes, National Grid', status: 'active' },
+      { region: 'Midlands', opportunities: 'Highways renewals, rail route works, substations', buyer: 'National Highways, NR, DNOs', status: 'active/pipeline' },
+      { region: 'North West', opportunities: 'Water networks, rail/civils renewals', buyer: 'Water Cos, NR', status: 'active' },
+      { region: 'North East & Yorkshire', opportunities: 'Highways, rail and distribution networks', buyer: 'National Highways, NR, DNOs', status: 'active/pipeline' },
+      { region: 'East of England', opportunities: 'Grid/energy connections & water resilience', buyer: 'National Grid, Water Cos', status: 'active/pipeline' },
+      { region: 'South West', opportunities: 'Ports, highways renewals, energy connections', buyer: 'Port ops, National Highways, DNOs', status: 'active/pipeline' },
+      { region: 'Scotland', opportunities: 'Rail/civils renewals & energy transition assets', buyer: 'Transport bodies, Transmission owners', status: 'active' },
+      { region: 'Wales', opportunities: 'Highways & water programmes', buyer: 'Welsh Gov entities, Water Cos', status: 'active/pipeline' },
+      { region: 'Northern Ireland', opportunities: 'Water & transport estates', buyer: 'NI departments, agencies', status: 'pipeline' }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'regions', label: 'Regional Opportunities' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = `${d.name}`;
+
+  // Budget bars
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 25);
+  renderBudgetBars('#regionBudgets', d.spend.region_budget_pct, 12);
+
+  // KPIs
+  el('#kpi1').textContent = 'Strong across rail, highways & utilities';
+  el('#kpi5').textContent = 'Stable growth via renewals & resilience';
+  el('#kpi10').textContent = 'Sustained by net zero & grid upgrades';
+
+  // Discipline split chips (infra CM activities)
+  const split = {
+    'Estimating & Benchmarking (Civils/M&E)': 30,
+    'Cost Planning / VE (NEC4)': 30,
+    'Commercial & Contracts (Target Cost)': 25,
+    'Cost Assurance / Audit': 15
+  };
+  el('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  // Tabs
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  // Sidebar lists
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  // Key dates
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  // Contacts
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`<div class="row"><span class="k">${c.label}</span><span class="muted"> — ${c.value}</span></div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework','Authority','Scope','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Portal','Est. Annual Capex'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), '–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence'], (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  } else if(tabId==='regions'){
+    c.innerHTML = tableHtml(['Region','Opportunities (examples)','Likely Buyer','Status'],
+      (d.regions||[]).map(r=>[r.region, r.opportunities, r.buyer, r.status]));
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')}</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('UK_COST_MGMT_INFRA'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
