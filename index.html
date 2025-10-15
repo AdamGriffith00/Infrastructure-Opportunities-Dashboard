@@ -34,6 +34,7 @@
       padding: 0 2rem;
       justify-content: center;
       align-items: center;
+      flex-wrap: wrap;
     }
     .nav-button {
       background-color: rgb(120, 120, 120);
@@ -57,9 +58,9 @@
     }
     .nav-button:hover { transform: translateY(-1px); }
 
-    /* Enabled / primary state for Sectors using Copper Orange (RGB 218,79,39) */
+    /* Enabled / primary state (Copper Orange #DA4F27) */
     .nav-button--primary {
-      background-color: #DA4F27; /* Copper Orange */
+      background-color: #DA4F27;
       color: #ffffff;
       cursor: pointer;
       filter: saturate(1.02);
@@ -72,7 +73,7 @@
     @media (max-width: 768px) {
       .logo { max-width: 250px; }
       .title { font-size: 2rem; margin-bottom: 1.25rem; }
-      .navigation-buttons { flex-wrap: wrap; gap: 0.75rem; padding: 0 1rem; }
+      .navigation-buttons { gap: 0.75rem; padding: 0 1rem; }
       .nav-button { min-width: 140px; height: 56px; font-size: 1rem; padding: 0.8rem 1rem; }
     }
     @media (max-width: 480px) {
@@ -93,7 +94,7 @@
     <span class="nav-button" aria-disabled="true" title="Coming soon">Overall</span>
     <a class="nav-button nav-button--primary" href="sectors.html" title="Open Sectors">Sectors</a>
     <span class="nav-button" aria-disabled="true" title="Coming soon">Regions</span>
-    <span class="nav-button" aria-disabled="true" title="Coming soon">Disciplines</span>
+    <a class="nav-button nav-button--primary" href="disciplines.html" title="Open Disciplines">Disciplines</a>
   </div>
 </body>
 </html>
