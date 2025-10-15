@@ -28,7 +28,7 @@
 
     /* Slim toolbar */
     .toolbar { display:flex; gap:8px; align-items:center; justify-content:center; background:#262626; border-bottom:1px solid var(--border); padding:8px 10px; }
-    .tool-btn { appearance:none; border:1px solid var(--border); background:#3A3A3A; color:white; font-weight:800; letter-spacing:.2px; padding:8px 12px; border-radius:10px; cursor:pointer; transition: transform .14s ease, background .14s ease, border-color .14s ease; }
+    .tool-btn { appearance:none; border:1px solid var(--border); background:#3A3A3A; color:white; font-weight:800; letter-spacing:.2px; padding:8px 12px; border-radius:10px; cursor:pointer; transition: transform .14s ease, background .14s ease, border-color .14s ease; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
     .tool-btn:hover { transform: translateY(-1px); }
     .tool-btn[aria-pressed="true"] { background: var(--gleeds-yellow); color: var(--gleeds-dark); border-color: var(--gleeds-yellow); }
 
@@ -41,21 +41,17 @@
 
     .panel { position:relative; padding:0; display:none; background:#1f1f1f; }
     .panel[aria-hidden="false"] { display:block; }
-
-    /* Fill container */
-    .panel-fill { width:100%; height:100%; position:relative; overflow:hidden; }
     .embed { width:100%; height:100%; border:0; background:#121212; }
 
-    /* Zoom overlay (map only) */
-    .zoom-wrap { width:100%; height:100%; display:grid; place-items:center; overflow:hidden; }
-    .zoom-target { width:100%; height:100%; transform-origin:center center; }
-    .zoom-controls { position:absolute; bottom:14px; right:14px; display:flex; gap:6px; }
-    .zoom-btn { appearance:none; border:1px solid var(--border); background:#3A3A3A; color:white; font-weight:800; padding:8px 10px; border-radius:10px; cursor:pointer; }
-    .zoom-btn:hover { transform: translateY(-1px); }
-    .zoom-indicator { position:absolute; bottom:16px; left:16px; background:rgba(0,0,0,.45); color:white; padding:6px 10px; border-radius:999px; font-size:.85rem; }
-
     footer { text-align:center; padding:10px 12px 18px; color:var(--gleeds-light); opacity:.8; font-size:.9rem; }
-    @media (max-width:600px){ .tabs { height: calc(100vh - 200px); } }
+
+    /* Fullscreen mode tweaks: hide utility bar & footer, grow tab height */
+    body.fullscreen .utility-bar, body.fullscreen footer { display:none; }
+    body.fullscreen { grid-template-rows: auto 1fr; }
+    body.fullscreen .tabs { height: calc(100vh - 58px); width: 100vw; margin: 0; border-radius: 0; }
+    body.fullscreen .toolbar { position: sticky; top: 0; z-index: 5; }
+
+    @media (max-width:600px){ .tabs { height: calc(100vh - 200px); } body.fullscreen .tabs { height: calc(100vh - 58px); } }
   </style>
 </head>
 <body>
@@ -71,7 +67,7 @@
   <!-- Minimal toolbar: Full screen + Open map -->
   <div class="toolbar" role="toolbar" aria-label="View controls">
     <button id="btn-fullscreen" class="tool-btn" aria-pressed="false" title="Enter/exit fullscreen">Full screen</button>
-    <a id="btn-open" class="tool-btn" href="CostManagementMap.html" target="_blank" rel="noopener">Open map in new tab</a>
+    <a class="tool-btn" href="CostManagementMap.html" target="_blank" rel="noopener">Open map in new tab</a>
   </div>
 
   <section class="tabs" role="region" aria-label="Cost Management content">
@@ -81,25 +77,11 @@
     </div>
 
     <div id="panel-map" class="panel" role="tabpanel" aria-labelledby="tab-map" aria-hidden="false">
-      <div class="panel-fill">
-        <div class="zoom-wrap">
-          <div id="zoomTarget" class="zoom-target">
-            <iframe class="embed" src="CostManagementMap.html" title="Cost Management Map"></iframe>
-          </div>
-          <div class="zoom-indicator" id="zoomIndicator">100%</div>
-          <div class="zoom-controls">
-            <button class="zoom-btn" id="zoomOut" title="Zoom out (−)">−</button>
-            <button class="zoom-btn" id="zoomReset" title="Reset zoom (0)">100%</button>
-            <button class="zoom-btn" id="zoomIn" title="Zoom in (+)">+</button>
-          </div>
-        </div>
-      </div>
+      <iframe class="embed" src="CostManagementMap.html" title="Cost Management Map"></iframe>
     </div>
 
     <div id="panel-cheat" class="panel" role="tabpanel" aria-labelledby="tab-cheat" aria-hidden="true">
-      <div class="panel-fill">
-        <iframe class="embed" src="CostManagementCheatSheet.html" title="Cost Management Cheat Sheet"></iframe>
-      </div>
+      <iframe class="embed" src="CostManagementCheatSheet.html" title="Cost Management Cheat Sheet"></iframe>
     </div>
   </section>
 
@@ -131,51 +113,20 @@
     function syncFromHash() { if (location.hash === '#cheat') activateTab('tab-cheat'); else activateTab('tab-map'); }
     window.addEventListener('hashchange', syncFromHash); syncFromHash();
 
-    // Fullscreen
+    // Fullscreen + hide utility bar/footer while in FS
     const btnFs = document.getElementById('btn-fullscreen');
     function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
     function enterFs(){ const el=document.documentElement; return el.requestFullscreen? el.requestFullscreen(): el.webkitRequestFullscreen? el.webkitRequestFullscreen(): null; }
     function exitFs(){ return document.exitFullscreen? document.exitFullscreen(): document.webkitExitFullscreen? document.webkitExitFullscreen(): null; }
-    function updateFsBtn(){ btnFs.setAttribute('aria-pressed', String(isFs())); }
-    btnFs.addEventListener('click', async () => { try{ isFs()? await exitFs(): await enterFs(); } catch(e){ console.warn(e); } finally{ updateFsBtn(); } });
-    document.addEventListener('fullscreenchange', updateFsBtn);
-    document.addEventListener('webkitfullscreenchange', updateFsBtn);
-
-    // Zoom controls (map panel only)
-    const zoomTarget = document.getElementById('zoomTarget');
-    const zoomIndicator = document.getElementById('zoomIndicator');
-    let zoom = 1.0; // 100%
-    const MIN_ZOOM = 0.5;
-    const MAX_ZOOM = 2.0;
-    const STEP = 0.1;
-
-    function renderZoom(){
-      zoomTarget.style.transform = `scale(${zoom})`;
-      zoomIndicator.textContent = Math.round(zoom*100) + '%';
+    function updateFsState(){
+      document.body.classList.toggle('fullscreen', isFs());
+      btnFs.setAttribute('aria-pressed', String(isFs()));
     }
-    function clamp(val, min, max){ return Math.max(min, Math.min(max, val)); }
-    document.getElementById('zoomIn').addEventListener('click', () => { zoom = clamp(zoom + STEP, MIN_ZOOM, MAX_ZOOM); renderZoom(); });
-    document.getElementById('zoomOut').addEventListener('click', () => { zoom = clamp(zoom - STEP, MIN_ZOOM, MAX_ZOOM); renderZoom(); });
-    document.getElementById('zoomReset').addEventListener('click', () => { zoom = 1.0; renderZoom(); });
-
-    // Keyboard shortcuts: + / - / 0
-    window.addEventListener('keydown', (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.ctrlKey || e.metaKey)) return;
-      if (e.key === '+' || e.key === '=') { e.preventDefault(); zoom = clamp(zoom + STEP, MIN_ZOOM, MAX_ZOOM); renderZoom(); }
-      if (e.key === '-' || e.key === '_') { e.preventDefault(); zoom = clamp(zoom - STEP, MIN_ZOOM, MAX_ZOOM); renderZoom(); }
-      if (e.key === '0') { e.preventDefault(); zoom = 1.0; renderZoom(); }
+    btnFs.addEventListener('click', async () => {
+      try{ isFs()? await exitFs(): await enterFs(); } catch(e){ console.warn(e); } finally{ updateFsState(); }
     });
-
-    // Optional: ctrl + wheel zoom
-    document.querySelector('.zoom-wrap').addEventListener('wheel', (e) => {
-      if (!e.ctrlKey) return;
-      e.preventDefault();
-      zoom = clamp(zoom + (e.deltaY < 0 ? STEP : -STEP), MIN_ZOOM, MAX_ZOOM);
-      renderZoom();
-    }, { passive:false });
-
-    // Initial render
-    renderZoom();
+    document.addEventListener('fullscreenchange', updateFsState);
+    document.addEventListener('webkitfullscreenchange', updateFsState);
   </script>
 </body>
 </html>
