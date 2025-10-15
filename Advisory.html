@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advisory • Infrastructure Opportunities and Budget Dashboard</title>
+  <style>
+    :root { --gleeds-yellow:#F7C400; --gleeds-dark:#3C3C3C; --gleeds-dark-2:#2F2F2F; --gleeds-light:#F5F5F5; --border:#4A4A4A; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--gleeds-dark); color:var(--gleeds-yellow);
+           min-height:100vh; display:grid; grid-template-rows:auto 1fr auto; }
+    .utility-bar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; padding:12px 16px; background:#2b2b2b; border-bottom:1px solid var(--border); }
+    .utility-left, .utility-right { display:flex; gap:10px; align-items:center; }
+    .utility-left { justify-content:flex-start; } .utility-center { text-align:center; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    .utility-right { justify-content:flex-end; }
+    .back-btn { text-decoration:none; background:#3A3A3A; color:white; border:1px solid var(--border); padding:10px 14px; border-radius:10px; font-weight:700; letter-spacing:.3px; transition: transform .14s ease, border-color .14s ease, background .14s ease; }
+    .back-btn:hover { transform: translateY(-1px); border-color:#5a5a5a; }
+    .last-updated { color:var(--gleeds-dark); background:var(--gleeds-yellow); padding:6px 10px; border-radius:999px; font-size:.85rem; font-weight:800; display:inline-block; }
+    .tabs { width:min(1400px,96vw); margin:14px auto; background:var(--gleeds-dark-2); border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 24px rgba(0,0,0,.35); overflow:hidden; display:grid; grid-template-rows:auto 1fr; height:calc(100vh - 140px); }
+    .tablist { display:flex; gap:6px; padding:10px; background:linear-gradient(0deg,rgba(0,0,0,.15),rgba(0,0,0,.15)); border-bottom:1px solid var(--border); }
+    .tab-btn { appearance:none; border:1px solid var(--border); background:#3A3A3A; color:white; font-weight:800; letter-spacing:.3px; padding:12px 16px; border-radius:10px; cursor:pointer; transition: transform .14s ease, background .14s ease, border-color .14s ease; outline:none; }
+    .tab-btn[aria-selected="true"] { background: var(--gleeds-yellow); color: var(--gleeds-dark); border-color: var(--gleeds-yellow); transform: translateY(-1px); }
+    .tab-btn:hover { transform: translateY(-1px); }
+    .panel { position:relative; padding:0; display:none; background:#1f1f1f; }
+    .panel[aria-hidden="false"] { display:block; }
+    .embed { width:100%; height:100%; border:0; background:#121212; }
+    footer { text-align:center; padding:10px 12px 18px; color:var(--gleeds-light); opacity:.8; font-size:.9rem; }
+    @media (max-width:600px){ .tabs { height: calc(100vh - 160px); } }
+  </style>
+</head>
+<body>
+  <div class="utility-bar">
+    <div class="utility-left">
+      <a class="back-btn" href="disciplines.html">← Back to Disciplines</a>
+      <a class="back-btn" href="index.html">← Back to Home Page</a>
+    </div>
+    <div class="utility-center">Advisory</div>
+    <div class="utility-right"><span class="last-updated">Last Updated Q4 2025</span></div>
+  </div>
+
+  <section class="tabs" role="region" aria-label="Advisory content">
+    <div role="tablist" class="tablist" aria-label="Advisory tabs">
+      <button id="tab-map" class="tab-btn" role="tab" aria-controls="panel-map" aria-selected="true">Map</button>
+      <button id="tab-cheat" class="tab-btn" role="tab" aria-controls="panel-cheat" aria-selected="false">Cheat Sheet</button>
+    </div>
+    <div id="panel-map" class="panel" role="tabpanel" aria-labelledby="tab-map" aria-hidden="false">
+      <iframe class="embed" src="AdvisoryMap.html" title="Advisory Map"></iframe>
+    </div>
+    <div id="panel-cheat" class="panel" role="tabpanel" aria-labelledby="tab-cheat" aria-hidden="true">
+      <iframe class="embed" src="AdvisoryCheatSheet.html" title="Advisory Cheat Sheet"></iframe>
+    </div>
+  </section>
+
+  <footer>Infrastructure Opportunities and Budget Dashboard • Gleeds</footer>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    const panels = Array.from(document.querySelectorAll('.panel'));
+    function activateTab(nextId) {{
+      tabs.forEach(btn => {{
+        const selected = btn.id === nextId;
+        btn.setAttribute('aria-selected', selected);
+        btn.tabIndex = selected ? 0 : -1;
+      }});
+      panels.forEach(panel => {{
+        const isActive = panel.getAttribute('aria-labelledby') === nextId;
+        panel.setAttribute('aria-hidden', (!isActive).toString());
+      }});
+    }}
+    tabs.forEach(btn => {{
+      btn.addEventListener('click', () => activateTab(btn.id));
+      btn.addEventListener('keydown', (e) => {{
+        const i = tabs.indexOf(btn);
+        if (e.key === 'ArrowRight') {{ const next = tabs[(i + 1) % tabs.length]; next.focus(); activateTab(next.id); }}
+        else if (e.key === 'ArrowLeft') {{ const prev = tabs[(i - 1 + tabs.length) % tabs.length]; prev.focus(); activateTab(prev.id); }}
+      }});
+    }});
+    function syncFromHash() {{
+      if (location.hash === '#cheat') activateTab('tab-cheat');
+      else activateTab('tab-map');
+    }}
+    window.addEventListener('hashchange', syncFromHash);
+    syncFromHash();
+  </script>
+</body>
+</html>
