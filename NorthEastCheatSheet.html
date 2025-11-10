@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>North East England – Infrastructure (All Services) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:#ffd700}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">North East England – Infrastructure (All Services) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Infra Budgets – Where is the Work? (Next 12 Months, est.)</h2>
+        <div id="budgets"></div>
+        <div class="note small">
+          Indicative share of <b>North East</b> infrastructure opportunity for the next year 
+          across sectors. Replace with your intel each refresh.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Service-Line Mix – How We Play</h2>
+        <div id="serviceMix"></div>
+        <div class="note small">
+          Split of <b>Cost Management, Project Management, Project Controls and Advisory</b> demand on North East infrastructure.
+          Use to shape recruitment and pursuit teams.
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="card">
+          <div class="k">1-Year Demand</div>
+          <div class="v" id="kpi1">Building</div>
+          <div class="small muted">
+            Transport, freeport/ports, energy and regeneration work picking up across the region.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">5-Year Trajectory</div>
+          <div class="v" id="kpi5">Upward</div>
+          <div class="small muted">
+            Freeport, battery/EV, offshore wind and regeneration programmes drive sustained demand.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">10-Year View</div>
+          <div class="v" id="kpi10">Strategic</div>
+          <div class="small muted">
+            Energy transition, advanced manufacturing and improved connectivity underpin long-run investment.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Discipline Split (Typical North East Infra Commission)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (North East Access Points)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates – Next 12–18 Months</h2>
+        <table id="keyDates"></table>
+      </div>
+
+      <div class="card">
+        <h2>Key Clients & Warm Doors</h2>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-Regional Growth Playbooks</h2>
+        <p class="small muted">
+          One-page guides for how to grow our infrastructure footprint in each key North East area.
+          Keep these alongside this cheat sheet and refresh annually.
+        </p>
+        <ul class="small">
+          <li><a href="NE_Tyne_Wear_Growth_Playbook.html" target="_blank">Tyne &amp; Wear – Growth Playbook</a></li>
+          <li><a href="NE_Tees_Valley_Growth_Playbook.html" target="_blank">Tees Valley – Growth Playbook</a></li>
+          <li><a href="NE_Northumberland_Borders_Growth_Playbook.html" target="_blank">Northumberland &amp; Borders – Growth Playbook</a></li>
+          <li><a href="NE_Durham_Darlington_Growth_Playbook.html" target="_blank">County Durham &amp; Darlington – Growth Playbook</a></li>
+        </ul>
+        <div class="note small" style="margin-top:6px">
+          Tip: link these from your internal SharePoint / dashboard so regional leads can download and annotate.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">
+    How to use: duplicate per UK region / service-line combination (e.g. <code>regions/north-east-infra-all.html</code>).
+    Replace the <code>DATA</code> constants during refresh. No external libraries.
+  </div>
+</div>
+
+<script>
+const DATA = {
+  NE_INFRA_ALL: {
+    id: 'NE_INFRA_ALL',
+    name: 'North East England – Infrastructure (Cost, PM, Controls & Advisory)',
+    headlines: [
+      'North East infrastructure is shaped by freeport/port investments, energy transition, advanced manufacturing and regional transport upgrades.',
+      'Strong opportunity for advisory, Cost, PM and Controls support on complex, multi-funder regeneration and industrial cluster programmes.',
+      'Key focus areas include ports and logistics, rail and road connectivity, town and city-centre regeneration and enabling works for energy and innovation sites.'
+    ],
+    win_themes: [
+      'Position Gleeds as a trusted advisor for freeport, port and energy-cluster infrastructure by offering integrated Cost, PM, Controls and Advisory.',
+      'Lead with benchmark-backed should-cost modelling and commercial challenge for major industrial and infrastructure schemes.',
+      'Offer programme-level PMO and controls for growth deals, regeneration portfolios and transport investment packages.',
+      'Show our ability to integrate carbon, social value and whole-life thinking into options and business cases.',
+      'Provide embedded roles and small multi-disciplinary pods (Cost + PM + Controls) to help clients stand up new programmes quickly.',
+      'Use digital dashboards and CEMAR intelligence to provide live visibility of cost, risk and performance across regional portfolios.'
+    ],
+    routes_to_market: [
+      'Freeport and port-related infrastructure – enabling works, logistics, access and utilities for designated sites.',
+      'Energy transition and advanced manufacturing clusters – battery/EV, hydrogen and low-carbon industrial hubs.',
+      'Rail and strategic road upgrades – improving connectivity across the North East and linking to neighbouring regions.',
+      'Town and city-centre regeneration – housing, commercial, public realm and transport integration projects.',
+      'Local authority and combined authority programmes – transport, place-making and public estate.'
+    ],
+    spend: {
+      sector_split_pct: {
+        'Ports, Freeport & Logistics': 22,
+        'Energy / Industrial Clusters & Grid': 18,
+        'Strategic Roads & Highways': 18,
+        'Rail & Stations': 14,
+        'Urban Regeneration & Town/City Centres': 18,
+        'Public Estate (Health, Education, Civic)': 10
+      },
+      service_mix_pct: {
+        'Cost Management': 35,
+        'Project Management': 25,
+        'Project Controls / PMO': 25,
+        'Advisory (strategy, business cases, assurance)': 15
+      }
+    },
+    discipline_split_pct: {
+      'Cost Management – estimating, cost planning, change & audit': 30,
+      'Project Management – sponsor support, governance, stakeholder mgmt.': 25,
+      'Project Controls – planning, risk/QRA, reporting, PMO': 25,
+      'Advisory – options appraisal, business cases, commercial strategy': 20
+    },
+    frameworks_expected: [
+      { 
+        title: 'Freeport / Port & Logistics Infrastructure Professional Services', 
+        authority: 'Freeport authorities, ports & local partners', 
+        sector: 'Ports, logistics, enabling works', 
+        est_value_gbp_bn: 'Programme-based', 
+        duration_years: 4, 
+        status: 'Active / pipeline', 
+        due_qtr: 'Rolling over next 1–3 years' 
+      },
+      { 
+        title: 'Regional Transport Professional Services (Roads & Rail)', 
+        authority: 'National and regional transport bodies', 
+        sector: 'Road & rail infrastructure', 
+        est_value_gbp_bn: 'Programme-based', 
+        duration_years: 5, 
+        status: 'Active / ongoing call-offs', 
+        due_qtr: 'Ongoing' 
+      },
+      { 
+        title: 'Energy / Industrial Cluster Infrastructure Professional Services', 
+        authority: 'Energy and industrial clients', 
+        sector: 'Energy transition, industrial & grid enabling works', 
+        est_value_gbp_bn: 'Project & programme based', 
+        duration_years: 5, 
+        status: 'Active / pipeline', 
+        due_qtr: '2025–2030' 
+      },
+      { 
+        title: 'Local Authority / Combined Authority Built Environment Frameworks', 
+        authority: 'North East councils & combined authorities', 
+        sector: 'Transport, regeneration, public estate', 
+        est_value_gbp_bn: 'Programme-level', 
+        duration_years: 4, 
+        status: 'As issued', 
+        due_qtr: 'Ad-hoc through the year' 
+      }
+    ],
+    key_clients: [
+      { 
+        name: 'Freeport & Port Authorities', 
+        sectors: ['Ports','Logistics','Freeport sites','Industrial hubs'], 
+        portal: 'Freeport/port procurement and partner frameworks', 
+        est_annual_capex_gbp_bn: 'Programme-driven' 
+      },
+      { 
+        name: 'Energy & Industrial Cluster Developers', 
+        sectors: ['Energy transition','Industrial estates','Grid connections'], 
+        portal: 'Direct appointments and frameworks', 
+        est_annual_capex_gbp_bn: 'Project-based' 
+      },
+      { 
+        name: 'National / Regional Transport Bodies', 
+        sectors: ['Rail','Stations','Strategic roads','Local transport'], 
+        portal: 'National / regional procurement portals', 
+        est_annual_capex_gbp_bn: 'Multi-year programmes' 
+      },
+      { 
+        name: 'Local Authorities & Combined Authorities', 
+        sectors: ['Highways','Urban realm','Regeneration','Public buildings'], 
+        portal: 'FTS / Contracts Finder / regional portals', 
+        est_annual_capex_gbp_bn: 'Programme-based' 
+      }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Strong in major programmes, ports and energy clusters.' },
+      { name: 'Arcadis', presence: 'Transport, regeneration and advisory across the region.' },
+      { name: 'AECOM', presence: 'Ports, transport and multi-disciplinary infrastructure.' },
+      { name: 'AtkinsRéalis / Faithful+Gould', presence: 'QS/PM and controls on national/regional frameworks.' },
+      { name: 'Mace Consult', presence: 'Programme management for large regeneration and infrastructure schemes.' },
+      { name: 'Local/regional QS & PM practices', presence: 'Well placed on smaller regen and building projects.' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        'Director (All Services)': '£900–1,250/day',
+        'Associate Director / Project Director': '£750–1,000/day',
+        'Executive / Senior PM / Senior QS': '£625–875/day',
+        'Professional QS / PM / Planner': '£475–675/day',
+        'Assistant / Graduate (CM, PM, Controls)': '£300–450/day'
+      },
+      notes: 'Indicative North East infrastructure rates; flex by framework caps, sector (public vs private), duration and blend of Cost/PM/Controls/Advisory.'
+    },
+    key_dates: [
+      { 
+        date: 'Q1–Q2 (each FY)', 
+        item: 'Regional and local authority budget decisions and confirmation of capital programmes.', 
+        impact: 'Clarifies near-term pipeline and priorities for transport, regeneration and estates.' 
+      },
+      { 
+        date: 'Freeport & cluster investment milestones', 
+        item: 'Key approvals and funding decisions for freeport, battery/EV and energy transition projects.', 
+        impact: 'Trigger enabling works, infra packages and advisory/commercial commissions.' 
+      },
+      { 
+        date: 'Ongoing (monthly/quarterly)', 
+        item: 'FTS / Contracts Finder and client portal releases – North East-tagged infra and professional services notices.', 
+        impact: 'Maintain rolling watchlist for opportunities and mini-comps across our services.' 
+      }
+    ],
+    contacts: [
+      { 
+        label: 'Find a Tender (FTS)', 
+        value: 'Filter for North East authorities and infra CPV codes.', 
+        url: '' 
+      },
+      { 
+        label: 'Contracts Finder', 
+        value: 'Smaller LA and regeneration opportunities – filter by regional keywords.', 
+        url: '' 
+      },
+      { 
+        label: 'Client Portals', 
+        value: 'Freeport authorities, ports, energy/industrial clients, transport bodies and councils.', 
+        url: '' 
+      },
+      { 
+        label: 'Internal Contact Map', 
+        value: 'Overlay of Gleeds relationships in the North East (clients, partners, alumni). Refresh quarterly.', 
+        url: '' 
+      }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderServiceMix(hostSel, obj){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=30;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">Core</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = d.name;
+
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 22);
+  renderServiceMix('#serviceMix', d.spend.service_mix_pct);
+  const split = d.discipline_split_pct || {};
+  el('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`
+    <div class="row">
+      <span class="k">${c.label}</span>
+      <span class="muted"> — ${c.value}</span>
+    </div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework / Vehicle','Authority','Scope (relevance)','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Entry Route','Est. Annual Capex (share)'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), cl.portal||'–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence in North East infra'],
+      (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate (North East infra)'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${
+    rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')
+  }</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('NE_INFRA_ALL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
