@@ -28,9 +28,15 @@
     .subtitle{color:var(--gleeds-light); opacity:.85; font-size:.95rem; margin-top:6px}
 
     .nav{
-      display:flex; gap:10px; justify-content:center; align-items:center;
-      padding:14px 16px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      align-items:center;
+      padding:14px 16px;
+      border-top:1px solid var(--border);
+      border-bottom:1px solid var(--border);
       background:#2b2b2b;
+      flex-wrap:wrap; /* helps keep buttons centred on smaller screens */
     }
     .btn{
       display:inline-flex; align-items:center; justify-content:center;
@@ -64,6 +70,7 @@
     <a class="btn active" href="sectors.html">Sectors</a>
     <a class="btn active" href="regions.html">Regions</a>
     <a class="btn active" href="disciplines.html">Disciplines</a>
+    <a class="btn active" href="liveprojects.html">Current Projects</a>
   </nav>
 
   <main>
