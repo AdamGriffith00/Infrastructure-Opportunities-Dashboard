@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>East Midlands – Infrastructure (All Services) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">East Midlands – Infrastructure (All Services) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Infra Budgets – Where is the Work? (Next 12 Months, est.)</h2>
+        <div id="budgets"></div>
+        <div class="note small">
+          Indicative share of <b>Yorkshire & the Humber</b> infrastructure opportunity for the next year 
+          across sectors. Replace with your intel each refresh.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Service-Line Mix – How We Play</h2>
+        <div id="serviceMix"></div>
+        <div class="note small">
+          Split of <b>Cost Management, Project Management, Project Controls and Advisory</b> demand across the region.
+          Use to shape recruitment and pursuit teams.
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="card">
+          <div class="k">1-Year Demand</div>
+          <div class="v" id="kpi1">Strong & building</div>
+          <div class="small muted">
+            AMP8 (Yorkshire Water), rail renewals and regional highways sustain immediate demand.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">5-Year Trajectory</div>
+          <div class="v" id="kpi5">Accelerating</div>
+          <div class="small muted">
+            Freeport/ports investment, energy transition and urban transit upgrades expand workloads.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">10-Year View</div>
+          <div class="v" id="kpi10">Structural growth</div>
+          <div class="small muted">
+            Carbon capture, hydrogen, offshore wind O&M and grid upgrades create long-run programmes.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Discipline Split (Typical Regional Infra Commission)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (Regional Access Points)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates – Next 12–18 Months</h2>
+        <table id="keyDates"></table>
+      </div>
+
+      <div class="card">
+        <h2>Key Clients & Warm Doors</h2>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-Regional Growth Playbooks</h2>
+        <p class="small muted">
+          One-page guides for how to grow our infrastructure footprint across Yorkshire & the Humber.
+          Keep these alongside this cheat sheet and refresh annually.
+        </p>
+        <ul class="small">
+          <li><a href="EM_Nottinghamshire_Growth_Playbook.html" target="_blank">Nottinghamshire – Growth Playbook</a></li>
+          <li><a href="EM_Derbyshire_Growth_Playbook.html" target="_blank">Derbyshire – Growth Playbook</a></li>
+          <li><a href="EM_Leicestershire_Growth_Playbook.html" target="_blank">Leicestershire – Growth Playbook</a></li>
+          <li><a href="EM_Lincolnshire_Growth_Playbook.html" target="_blank">Lincolnshire – Growth Playbook</a></li>
+          <li><a href="EM_Rutland_Northants_Growth_Playbook.html" target="_blank">Rutland & North Northamptonshire – Growth Playbook</a></li>
+        </ul>
+        <div class="note small" style="margin-top:6px">
+          Tip: link these from your internal SharePoint / dashboard so regional leads can download and annotate.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">
+    How to use: duplicate per UK region / service-line combination (e.g. <code>regions/east-midlands-infra-all.html</code>).
+    Replace the <code>DATA</code> constants during refresh. No external libraries.
+  </div>
+</div>
+
+<script>
+const DATA = {
+  EM_INFRA_ALL: {
+    id: 'EM_INFRA_ALL',
+    name: 'East Midlands – Infrastructure (Cost, PM, Controls & Advisory)',
+    headlines: [
+      'AMP8 investment from Severn Trent and Anglian Water underpins near-term delivery in the East Midlands, focused on resilience, water quality and environmental outcomes.',
+      'Midland Main Line electrification, rail renewals and station upgrades across Nottingham, Derby and Leicester sustain steady Cost/PM/Controls demand.',
+      'Logistics/manufacturing corridors (M1/A50/A46), East Midlands Freeport and grid reinforcements linked to renewables drive advisory and PMO opportunities.'
+    ],
+    win_themes: [
+      'Present as an integrated partner across water, transport, energy and regeneration with blended Cost/PM/Controls teams.',
+      'Deploy should-cost benchmarks for civils, treatment works, stations and highways to challenge pricing and secure value.',
+      'Stand up programme controls and governance (risk/QRA, schedule–cost integration, portfolio reporting) aligned to local stage-gates and HM Treasury cases.',
+      'Optimise whole-life cost and carbon across water/environment, transport and energy schemes; embed asset information requirements early.',
+      'Rapid mobilisation pods (1–2 Cost + 1 PM + 1 Controls) to initiate mini‑PMOs for new investment packages (Freeport zones, rail, water).',
+      'Leverage digital reporting (dashboards, portfolio trackers, CEMAR insights) for live commercial visibility.'
+    ],
+    routes_to_market: [
+      'AMP8 – Severn Trent and Anglian Water professional services/capital delivery frameworks.',
+      'Strategic and local highways renewals & improvements – via National Highways (Midlands) and local authorities.',
+      'Rail renewals/enhancements – East Midlands Route including Midland Main Line and stations.',
+      'Electricity network reinforcements and connections – substations, overhead lines, grid modernisation (transmission & distribution).',
+      'East Midlands Freeport/logistics & industrial sites – enabling works, utilities and access infrastructure.'
+    ],
+    spend: {
+      sector_split_pct: {
+        'Water & Wastewater': 28,
+        'Highways & Local Roads': 22,
+        'Rail (renewals / stations)': 16,
+        'Energy / Power & Grid': 16,
+        'Urban Transport & Regeneration': 12,
+        'Logistics, Freeport & Employment Sites': 5,
+        'Airports & Surface Access': 1
+      },
+      service_mix_pct: {
+        'Cost Management': 33,
+        'Project Management': 27,
+        'Project Controls / PMO': 25,
+        'Advisory (strategy, business cases, assurance)': 15
+      }
+    },
+    discipline_split_pct: {
+      'Cost Management – estimating, cost planning, change & audit': 30,
+      'Project Management – sponsor support, governance, stakeholder mgmt.': 25,
+      'Project Controls – planning, risk/QRA, reporting, PMO': 25,
+      'Advisory – options appraisal, business cases, commercial strategy': 20
+    },
+    frameworks_expected: [
+      {
+        title: 'AMP8 Professional Services / Capital Delivery',
+        authority: 'Severn Trent / Anglian Water',
+        sector: 'Water & Wastewater',
+        est_value_gbp_bn: 'Multi‑bn (2025–30, region share)',
+        duration_years: 5,
+        status: 'Mobilising / call‑offs',
+        due_qtr: 'Rolling call‑offs from 2025'
+      },
+      {
+        title: 'Regional Highways Delivery & Renewals (Midlands & LAs)',
+        authority: 'National Highways & Local Authorities',
+        sector: 'Highways & Local Roads',
+        est_value_gbp_bn: 'Programme‑based',
+        duration_years: 5,
+        status: 'Active / pipeline schemes',
+        due_qtr: 'Rolling competitions'
+      },
+      {
+        title: 'Rail CP Programmes – East Midlands Route Professional Services',
+        authority: 'Network Rail (East Midlands Route)',
+        sector: 'Rail Renewals / Enhancements',
+        est_value_gbp_bn: 'Multi‑year call‑offs',
+        duration_years: 5,
+        status: 'Active / ongoing procurements',
+        due_qtr: 'Ongoing'
+      },
+      {
+        title: 'Electricity Networks – Substations & Connections (Region)',
+        authority: 'Transmission / Distribution Operators',
+        sector: 'Energy Networks',
+        est_value_gbp_bn: 'Part of GB‑wide investment plans',
+        duration_years: 5,
+        status: 'Active / pipeline',
+        due_qtr: '2025–2030'
+      },
+      {
+        title: 'East Midlands Freeport & Industrial Enabling Works',
+        authority: 'Local Authorities / Freeport / Developers',
+        sector: 'Ports/Logistics/Industrial Infrastructure',
+        est_value_gbp_bn: 'Programme‑level',
+        duration_years: 4,
+        status: 'As issued',
+        due_qtr: 'Ad‑hoc through the year'
+      }
+    ],
+    key_clients: [
+      {
+        name: 'Severn Trent Water',
+        sectors: ['Networks','Treatment works','Environmental / WFD','Resilience'],
+        portal: 'Client / alliance portals',
+        est_annual_capex_gbp_bn: 'Share of AMP8 (region)'
+      },
+      {
+        name: 'Anglian Water',
+        sectors: ['Networks','Treatment works','Growth / nutrient neutrality'],
+        portal: 'Client / alliance portals',
+        est_annual_capex_gbp_bn: 'Share of AMP8 (region)'
+      },
+      {
+        name: 'National Highways – Midlands',
+        sectors: ['SRN renewals','Junction upgrades','Safety / technology'],
+        portal: 'National procurement portals',
+        est_annual_capex_gbp_bn: 'Share of RIS portfolio'
+      },
+      {
+        name: 'Network Rail – East Midlands Route',
+        sectors: ['Track & structures','Stations','Electrification','Signalling'],
+        portal: 'Rail procurement portals',
+        est_annual_capex_gbp_bn: 'Multi‑year CP renewals/enhancements'
+      },
+      {
+        name: 'National Grid (ET & ED) / DNOs',
+        sectors: ['Substations','Reinforcements','Connections','Grid modernisation'],
+        portal: 'Utility / framework portals',
+        est_annual_capex_gbp_bn: 'Part of GB grid upgrades'
+      },
+      {
+        name: 'Combined & Local Authorities (Notts, Derbyshire, Leics, Lincs, city councils)',
+        sectors: ['Local transport','Active travel','Town‑centre regen','Net‑zero estates'],
+        portal: 'FTS / Contracts Finder / regional portals',
+        est_annual_capex_gbp_bn: 'Programme‑driven'
+      }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Strong across water, rail and major programmes' },
+      { name: 'Arcadis', presence: 'Water, highways and advisory across Midlands' },
+      { name: 'AECOM', presence: 'Civils design, PM & PMO on transport/energy' },
+      { name: 'Faithful+Gould (AtkinsRéalis)', presence: 'QS/PM and controls on national frameworks' },
+      { name: 'Mace Consult', presence: 'Major programme and PMO roles in city regions' },
+      { name: 'Local/regional QS & PM firms', presence: 'Price‑competitive on single‑asset schemes' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        'Director (All Services)': '£900–1,300/day',
+        'Associate Director / Project Director': '£775–1,025/day',
+        'Executive / Senior PM / Senior QS': '£625–875/day',
+        'Professional QS / PM / Planner': '£475–675/day',
+        'Assistant / Graduate (CM, PM, Controls)': '£300–450/day'
+      },
+      notes: 'Indicative regional rates; flex by framework caps, geography, duration, and blend of Cost/PM/Controls/Advisory.'
+    },
+    key_dates: [
+      {
+        date: 'Q1–Q2 (each FY)',
+        item: 'LA/Combined Authority budget setting and transport allocations',
+        impact: 'Confirms pipeline for local highways, active travel and regeneration.'
+      },
+      {
+        date: '2025–26 start (investment windows)',
+        item: 'AMP8 and energy programme delivery mobilisation',
+        impact: 'Peak positioning window for cost, PM, controls and assurance roles.'
+      },
+      {
+        date: 'Ongoing (monthly/quarterly)',
+        item: 'FTS / Contracts Finder / client portal releases – region‑tagged notices',
+        impact: 'Maintain rolling watchlist of professional services tenders and mini‑comps.'
+      }
+    ],
+    contacts: [
+      { label: 'Find a Tender (FTS)', value: 'Major utilities and broader public notices (set East Midlands filters).', url: '' },
+      { label: 'Contracts Finder', value: 'Smaller LA/regeneration opportunities (regional keyword filters).', url: '' },
+      { label: 'Client Portals', value: 'Severn Trent, Anglian Water, Network Rail, National Highways.', url: '' },
+      { label: 'Regional Portals', value: 'East Midlands Combined County Authority (EMCCA) and local authority portals.', url: '' },
+      { label: 'Internal Contact Map', value: 'Overlay of who we know where (clients, partners, alumni). Refresh quarterly.', url: '' }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderServiceMix(hostSel, obj){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=30;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">Core</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = d.name;
+
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 22);
+  renderServiceMix('#serviceMix', d.spend.service_mix_pct);
+  const split = d.discipline_split_pct || {};
+  el('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`
+    <div class="row">
+      <span class="k">${c.label}</span>
+      <span class="muted"> — ${c.value}</span>
+    </div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework / Vehicle','Authority','Scope (relevance)','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Entry Route','Est. Annual Capex (share)'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), cl.portal||'–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence in regional infra'],
+      (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate (regional infra)'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${
+    rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')
+  }</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('EM_INFRA_ALL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
