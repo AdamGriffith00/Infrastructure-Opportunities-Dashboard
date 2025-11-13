@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>London – Infrastructure (All Services) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">London – Infrastructure (All Services) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Infra Budgets – Where is the Work? (Next 12 Months, est.)</h2>
+        <div id="budgets"></div>
+        <div class="note small">
+          Indicative share of <b>London</b> infrastructure opportunity for the next year 
+          across sectors. Replace with your intel each refresh.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Service-Line Mix – How We Play</h2>
+        <div id="serviceMix"></div>
+        <div class="note small">
+          Split of <b>Cost Management, Project Management, Project Controls and Advisory</b> demand on London infrastructure.
+          Use to shape recruitment and pursuit teams.
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="card">
+          <div class="k">1-Year Demand</div>
+          <div class="v" id="kpi1">High & multi-client</div>
+          <div class="small muted">
+            Driven by TfL renewals/enhancements, Thames Water AMP8, London Power Tunnels & UKPN works, and borough-led transport & regen.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">5-Year Trajectory</div>
+          <div class="v" id="kpi5">Accelerating</div>
+          <div class="small muted">
+            Major programmes (Silvertown opening & ops bedding-in, Old Oak Common, station/line upgrades) plus resilience and net-zero estates.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">10-Year View</div>
+          <div class="v" id="kpi10">Structural growth</div>
+          <div class="small muted">
+            Urban growth, decarbonisation, water/environment and grid modernisation maintain long-run demand.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Discipline Split (Typical London Infra Commission)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (London Access Points)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates – Next 12–18 Months</h2>
+        <table id="keyDates"></table>
+      </div>
+
+      <div class="card">
+        <h2>Key Clients & Warm Doors</h2>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-Regional Growth Playbooks</h2>
+        <p class="small muted">
+          One-page guides for how to grow our infrastructure footprint across London sub-regions.
+          Keep these alongside this cheat sheet and refresh annually.
+        </p>
+        <ul class="small">
+          <li><a href="LDN_Central_City_Westminster_Growth_Playbook.html" target="_blank">Central &amp; City – Growth Playbook</a></li>
+          <li><a href="LDN_West_Heathrow_OOC_Growth_Playbook.html" target="_blank">West London (Heathrow &amp; OOC) – Growth Playbook</a></li>
+          <li><a href="LDN_East_Thames_Gateway_Growth_Playbook.html" target="_blank">East London &amp; Thames Gateway – Growth Playbook</a></li>
+          <li><a href="LDN_North_Growth_Playbook.html" target="_blank">North London – Growth Playbook</a></li>
+          <li><a href="LDN_South_Growth_Playbook.html" target="_blank">South London – Growth Playbook</a></li>
+        </ul>
+        <div class="note small" style="margin-top:6px">
+          Tip: link these from your internal SharePoint / dashboard so regional leads can download and annotate.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">
+    How to use: duplicate per UK region / service-line combination (e.g. <code>regions/london-infra-all.html</code>).
+    Replace the <code>DATA</code> constants during refresh. No external libraries.
+  </div>
+</div>
+
+<script>
+const DATA = {
+  LDN_INFRA_ALL: {
+    id: 'LDN_INFRA_ALL',
+    name: 'London – Infrastructure (Cost, PM, Controls & Advisory)',
+    headlines: [
+      'London’s infrastructure pipeline is broad and multi-client: TfL renewals/enhancements, Thames Water AMP8, and grid programmes dominate near term.',
+      'Energy & grid: National Grid’s London Power Tunnels, UKPN reinforcement, and decarbonisation of estates drive sustained PMO/controls demand.',
+      'Place-based transport & regeneration: borough-led corridors, station-led regeneration and active travel programmes across London’s sub-regions.'
+    ],
+    win_themes: [
+      'Deploy integrated Cost + PM + Controls teams with deep brownfield and live-operations experience for stations, tunnels and urban highways.',
+      'Use should-cost/benchmark models for station upgrades, civils M&E packages and utility diversions to challenge supply-chain pricing.',
+      'Programme-level PMO: cost–schedule integration, risk/QRA, benefits and carbon tracking aligned to TfL/GLA and HMT gateways.',
+      'Sequencing around live operations: night/weekend possessions, bus priority phasing, and temporary works strategies to minimise disruption.',
+      'Digital delivery & commercial insight: CEMAR analytics, live dashboards, and earned value for high-volume renewals/minors.',
+      'Carbon–cost optimisation: traction power and building decarbonisation, low-carbon materials, nature-based urban drainage (SuDS).' 
+    ],
+    routes_to_market: [
+      'TfL & subsidiaries – stations, track, civils/M&E, signalling/controls, bus priority, active travel and asset renewals.',
+      'Thames Water AMP8 – treatment works upgrades, CSO/river improvements, network resilience and environmental schemes.',
+      'National Grid & UK Power Networks (London) – London Power Tunnels, substations, reinforcements and connections.',
+      'Network Rail (London Routes) – stations, structures and access interfaces with TfL/borough schemes.',
+      'GLA/borough transport & regeneration – corridor upgrades, town-centre regen, estate decarbonisation and resilience.',
+      'River/Ports – Tideway legacy interfaces, Port of London Authority enabling and river transport infrastructure.',
+      'Airports & surface access – Heathrow & London City related access and resilience works.'
+    ],
+    spend: {
+      sector_split_pct: {
+        'Urban Transport (TfL & Boroughs)': 28,
+        'Water & Wastewater (Thames Water)': 22,
+        'Energy / Power & Grid (NG/UKPN)': 20,
+        'Rail (NR / TfL interfaces)': 12,
+        'Urban Regeneration & Place': 12,
+        'Airports & Surface Access': 4,
+        'Ports & River Infrastructure': 2
+      },
+      service_mix_pct: {
+        'Cost Management': 33,
+        'Project Management': 27,
+        'Project Controls / PMO': 26,
+        'Advisory (strategy, business cases, assurance)': 14
+      }
+    },
+    discipline_split_pct: {
+      'Cost Management – estimating, cost planning, change & audit': 33,
+      'Project Management – sponsor support, governance, stakeholder mgmt.': 27,
+      'Project Controls – planning, risk/QRA, reporting, PMO': 26,
+      'Advisory – options appraisal, business cases, commercial strategy': 14
+    },
+    frameworks_expected: [
+      { 
+        title: 'TfL Professional Services / Project Delivery Panels', 
+        authority: 'Transport for London', 
+        sector: 'Urban Transport & Rail', 
+        est_value_gbp_bn: 'Programme-level', 
+        duration_years: 4, 
+        status: 'Active / rolling call-offs', 
+        due_qtr: 'As issued' 
+      },
+      { 
+        title: 'Thames Water – AMP8 Professional Services / Delivery Alliances', 
+        authority: 'Thames Water', 
+        sector: 'Water & Wastewater', 
+        est_value_gbp_bn: 'Multi-bn (2025–30)', 
+        duration_years: 5, 
+        status: 'Mobilising / rolling call-offs', 
+        due_qtr: 'From 2025' 
+      },
+      { 
+        title: 'National Grid – London Power Tunnels & Substations', 
+        authority: 'National Grid', 
+        sector: 'Energy Networks', 
+        est_value_gbp_bn: 'Programme-based', 
+        duration_years: 5, 
+        status: 'Active / pipeline', 
+        due_qtr: '2025–2030' 
+      },
+      { 
+        title: 'UK Power Networks (London) – Reinforcements & Connections', 
+        authority: 'UK Power Networks', 
+        sector: 'Distribution Network', 
+        est_value_gbp_bn: 'Programme-based', 
+        duration_years: 5, 
+        status: 'Active / pipeline', 
+        due_qtr: 'Rolling' 
+      },
+      { 
+        title: 'Borough/GLA Transport & Regeneration Professional Services', 
+        authority: 'GLA & London Boroughs', 
+        sector: 'Local Transport & Regeneration', 
+        est_value_gbp_bn: 'Programme-level', 
+        duration_years: 4, 
+        status: 'As issued', 
+        due_qtr: 'Ad-hoc through the year' 
+      },
+      { 
+        title: 'Network Rail – London Routes Professional Services', 
+        authority: 'Network Rail', 
+        sector: 'Rail Renewals / Enhancements', 
+        est_value_gbp_bn: 'Multi-year call-offs', 
+        duration_years: 5, 
+        status: 'Active / ongoing procurements', 
+        due_qtr: 'Ongoing' 
+      }
+    ],
+    key_clients: [
+      { 
+        name: 'Transport for London (TfL)', 
+        sectors: ['Stations & lines','Civils/M&E','Buses & active travel','Asset renewals'], 
+        portal: 'TfL procurement portals', 
+        est_annual_capex_gbp_bn: 'Programme-driven' 
+      },
+      { 
+        name: 'Thames Water', 
+        sectors: ['Networks','Treatment','Environmental / WFD','Resilience'], 
+        portal: 'Client / alliance portals', 
+        est_annual_capex_gbp_bn: 'Share of AMP8 (regional)' 
+      },
+      { 
+        name: 'National Grid – London Power Tunnels', 
+        sectors: ['Tunnels','Substations','Cables','Connections'], 
+        portal: 'Utility procurement portals', 
+        est_annual_capex_gbp_bn: 'Programme-based' 
+      },
+      { 
+        name: 'UK Power Networks (London)', 
+        sectors: ['Substations','Reinforcements','Connections','Grid modernisation'], 
+        portal: 'Utility / framework portals', 
+        est_annual_capex_gbp_bn: 'Programme-based' 
+      },
+      { 
+        name: 'Network Rail (London Routes)', 
+        sectors: ['Stations','Structures','Access interfaces','Signalling'], 
+        portal: 'Rail procurement portals', 
+        est_annual_capex_gbp_bn: 'Multi-year CP renewals/enhancements' 
+      },
+      { 
+        name: 'GLA & London Boroughs (various)', 
+        sectors: ['Local transport','Active travel','Town-centre regen','Net-zero estates'], 
+        portal: 'FTS / Contracts Finder / local portals', 
+        est_annual_capex_gbp_bn: 'Programme-driven' 
+      },
+      { 
+        name: 'Airports & Surface Access (Heathrow, London City)', 
+        sectors: ['Access works','Resilience','Sustainability upgrades'], 
+        portal: 'Airport procurement portals', 
+        est_annual_capex_gbp_bn: 'Project-specific' 
+      }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Strong across TfL, water and major programmes' },
+      { name: 'Arcadis', presence: 'Water, highways and advisory with significant London footprint' },
+      { name: 'AECOM', presence: 'Civils design, PM & PMO on transport/energy' },
+      { name: 'Faithful+Gould (AtkinsRéalis)', presence: 'QS/PM and controls on national/London frameworks' },
+      { name: 'Mace Consult', presence: 'Major programme and PMO roles with London clients' },
+      { name: 'Local/regional QS & PM firms', presence: 'Competitive on borough single-asset schemes' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        'Director (All Services)': '£1,050–1,500/day',
+        'Associate Director / Project Director': '£875–1,150/day',
+        'Executive / Senior PM / Senior QS': '£700–975/day',
+        'Professional QS / PM / Planner': '£575–775/day',
+        'Assistant / Graduate (CM, PM, Controls)': '£350–525/day'
+      },
+      notes: 'Indicative London infrastructure rates; flex by framework caps, central vs outer London location, duration, and service blend.'
+    },
+    key_dates: [
+      { 
+        date: 'Q1–Q2 (each FY)', 
+        item: 'GLA & borough budget setting; TfL business planning cycles', 
+        impact: 'Sets pipeline for local transport, active travel, station upgrades and renewals.' 
+      },
+      { 
+        date: '2025–26 start (investment windows)', 
+        item: 'AMP8 and grid programme ramp-up; station & line enhancements scheduling', 
+        impact: 'Peak window to position for cost, PM, controls and assurance roles.' 
+      },
+      { 
+        date: 'Ongoing (monthly/quarterly)', 
+        item: 'FTS / Contracts Finder and client portal releases – London-tagged notices', 
+        impact: 'Maintain rolling watchlist of professional services tenders and mini-comps.' 
+      }
+    ],
+    contacts: [
+      { 
+        label: 'TfL Procurement', 
+        value: 'Panels and call-offs for professional services and delivery support.', 
+        url: '' 
+      },
+      { 
+        label: 'Find a Tender (FTS) & Contracts Finder', 
+        value: 'Filter by London and CPV for infra, QS, PM & advisory.', 
+        url: '' 
+      },
+      { 
+        label: 'Utility Portals (NG / UKPN / Thames Water)', 
+        value: 'Frameworks and programme call-offs across energy and water.', 
+        url: '' 
+      },
+      { 
+        label: 'Internal Contact Map', 
+        value: 'Overlay who we know where (clients, partners, alumni). Refresh quarterly.', 
+        url: '' 
+      }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderServiceMix(hostSel, obj){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=30;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">Core</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = d.name;
+
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 22);
+  renderServiceMix('#serviceMix', d.spend.service_mix_pct);
+  const split = d.discipline_split_pct || {};
+  el('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` + 
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`
+    <div class="row">
+      <span class="k">${c.label}</span>
+      <span class="muted"> — ${c.value}</span>
+    </div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework / Vehicle','Authority','Scope (relevance)','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Entry Route','Est. Annual Capex (share)'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), cl.portal||'–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence in regional infra'],
+      (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate (regional infra)'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${
+    rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')
+  }</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('LDN_INFRA_ALL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
