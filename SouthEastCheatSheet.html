@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>South East England – Infrastructure (All Services) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">South East England – Infrastructure (All Services) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Infra Budgets – Where is the Work? (Next 12 Months, est.)</h2>
+        <div id="budgets"></div>
+        <div class="note small">
+          Indicative share of <b>South East</b> infrastructure opportunity for the next year 
+          across sectors. Replace with your intel each refresh.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Service-Line Mix – How We Play</h2>
+        <div id="serviceMix"></div>
+        <div class="note small">
+          Split of <b>Cost Management, Project Management, Project Controls and Advisory</b> demand on SE infrastructure.
+          Use to shape recruitment and pursuit teams.
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="card">
+          <div class="k">1-Year Demand</div>
+          <div class="v" id="kpi1">High and diversified</div>
+          <div class="small muted">
+            Driven by AMP8 across multiple water companies, National Highways South East, UKPN grid upgrades, and port/airport programmes.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">5-Year Trajectory</div>
+          <div class="v" id="kpi5">Accelerating</div>
+          <div class="small muted">
+            Rail Southern Region renewals, Lower Thames Crossing enabling, A27/A259 corridors, and town-centre regeneration sustain growth.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">10-Year View</div>
+          <div class="v" id="kpi10">Structural growth</div>
+          <div class="small muted">
+            Net zero, resilience, and grid reinforcement (offshore wind/solar/imports) lock in long-run work.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Discipline Split (Typical SE Infra Commission)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (SE Access Points)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates – Next 12–18 Months</h2>
+        <table id="keyDates"></table>
+      </div>
+
+      <div class="card">
+        <h2>Key Clients & Warm Doors</h2>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-Regional Growth Playbooks</h2>
+        <p class="small muted">
+          One-page guides for how to grow our infrastructure footprint in each key South East area.
+          Keep these alongside this cheat sheet and refresh annually.
+        </p>
+        <ul class="small">
+          <li><a href="SE_Solent_Portsmouth_Southampton_Growth_Playbook.html" target="_blank">Solent (Portsmouth &amp; Southampton) – Growth Playbook</a></li>
+          <li><a href="SE_Kent_Medway_Growth_Playbook.html" target="_blank">Kent &amp; Medway – Growth Playbook</a></li>
+          <li><a href="SE_Surrey_Sussex_Brighton_Growth_Playbook.html" target="_blank">Surrey, Sussex &amp; Brighton – Growth Playbook</a></li>
+          <li><a href="SE_Thames_Valley_Oxfordshire_Berks_Bucks_Growth_Playbook.html" target="_blank">Thames Valley (Oxfordshire, Berkshire &amp; Bucks) – Growth Playbook</a></li>
+        </ul>
+        <div class="note small" style="margin-top:6px">
+          Tip: link these from your internal SharePoint / dashboard so regional leads can download and annotate.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">
+    How to use: duplicate per UK region / service-line combination (e.g. <code>regions/south-east-infra-all.html</code>).
+    Replace the <code>DATA</code> constants during refresh. No external libraries.
+  </div>
+</div>
+
+<script>
+const DATA = {
+  SE_INFRA_ALL: {
+    id: 'SE_INFRA_ALL',
+    name: 'South East England – Infrastructure (Cost, PM, Controls & Advisory)',
+    headlines: [
+      'South East infrastructure spans dense urban, coastal and strategic corridor assets with strong multi-utility demand.',
+      'Water investment (AMP8) across Southern Water, South East Water, Thames Water and Portsmouth Water underpins steady civils and environmental programmes.',
+      'Energy and transport are active: UK Power Networks and National Grid reinforcements, National Highways South East corridors (A27/A259/M27/M3/M25), and rail Southern Region renewals.'
+    ],
+    win_themes: [
+      'Deploy integrated Cost + PM + Controls teams with coastal/resilience experience fit for dense urban interfaces and constrained corridors.',
+      'Use should-cost and benchmarking for water, highways junctions and station enhancements to challenge tendered prices and reduce risk allowances.',
+      'Programme-level controls and governance (risk/QRA, cost-schedule integration, carbon & benefits tracking) aligned to DfT and HM Treasury business case gateways.',
+      'Carbon–cost optimisation: whole-life options, coastal defence nature-based solutions, low-disruption construction sequencing for commuter networks.',
+      'Rapid mobilisation pods for grid connections, substations and interconnector-enabling civils; interface management around live operational sites.',
+      'Digital commercial insight (contract analytics, live dashboards, CEMAR intelligence) to manage high-volume minor works and renewals.'
+    ],
+    routes_to_market: [
+      'AMP8 water programmes – treatment upgrades, leakage and network resilience across SW, SE and TW regions in the South East footprint.',
+      'Strategic and local highways – A27/A259 coastal corridor, M27/M3, M25 renewals, safety and technology schemes; local authority maintenance programmes.',
+      'Rail Southern Region (Kent, Sussex, Wessex) – stations, track, structures and signalling renewals.',
+      'Electricity transmission & distribution – UKPN, SSEN (Southern) and National Grid reinforcements, connections and grid modernisation.',
+      'Urban transport & regeneration – Solent, Brighton & Hove, Kent/Medway, Thames Valley towns: bus priority, mass transit options, station-led regen.',
+      'Ports, Freeport & logistics – Solent Freeport sites, Port of Dover, Portsmouth International Port, Southampton Port-adjacent enabling works.',
+      'Airports & surface access – Gatwick and Southampton airport improvements, highway/rail access.'
+    ],
+    spend: {
+      sector_split_pct: {
+        'Water & Wastewater': 24,
+        'Energy / Power & Grid': 20,
+        'Highways & Local Roads': 18,
+        'Rail (Southern Region)': 16,
+        'Urban Transport & Regeneration': 12,
+        'Ports, Logistics & Freeport-linked': 6,
+        'Airports & Surface Access': 4
+      },
+      service_mix_pct: {
+        'Cost Management': 32,
+        'Project Management': 26,
+        'Project Controls / PMO': 24,
+        'Advisory (strategy, business cases, assurance)': 18
+      }
+    },
+    discipline_split_pct: {
+      'Cost Management – estimating, cost planning, change & audit': 31,
+      'Project Management – sponsor support, governance, stakeholder mgmt.': 27,
+      'Project Controls – planning, risk/QRA, reporting, PMO': 24,
+      'Advisory – options appraisal, business cases, commercial strategy': 18
+    },
+    frameworks_expected: [
+      { 
+        title: 'Water Investment Professional Services / Capital Delivery Alliances (AMP8)', 
+        authority: 'Southern Water / South East Water / Thames Water / Portsmouth Water', 
+        sector: 'Water & Wastewater', 
+        est_value_gbp_bn: 'Multi-bn (2025–30, regional shares)', 
+        duration_years: 5, 
+        status: 'Mobilising / rolling call-offs', 
+        due_qtr: 'From 2025' 
+      },
+      { 
+        title: 'Highways – South East Regional Delivery & Renewals', 
+        authority: 'National Highways South East / Local Highways', 
+        sector: 'Strategic & Local Roads', 
+        est_value_gbp_bn: 'Programme-based', 
+        duration_years: 5, 
+        status: 'Active / pipeline schemes', 
+        due_qtr: 'Rolling competitions' 
+      },
+      { 
+        title: 'Rail CP Programmes – Southern Region Professional Services (Kent/Sussex/Wessex)', 
+        authority: 'Network Rail – Southern Region', 
+        sector: 'Rail Renewals / Enhancements', 
+        est_value_gbp_bn: 'Multi-year call-offs', 
+        duration_years: 5, 
+        status: 'Active / ongoing procurements', 
+        due_qtr: 'Ongoing' 
+      },
+      { 
+        title: 'Electricity Transmission & Distribution – Substations, Reinforcements & Connections', 
+        authority: 'National Grid / UK Power Networks / SSEN (Southern)', 
+        sector: 'Energy Networks', 
+        est_value_gbp_bn: 'Part of national grid upgrades', 
+        duration_years: 5, 
+        status: 'Active / pipeline', 
+        due_qtr: '2025–2030' 
+      },
+      { 
+        title: 'City & County Transport / Regeneration Panels', 
+        authority: 'Solent partners, Kent/Medway, Brighton & Hove, Thames Valley authorities', 
+        sector: 'Local Transport & Place', 
+        est_value_gbp_bn: 'Programme-level', 
+        duration_years: 4, 
+        status: 'As issued', 
+        due_qtr: 'Ad-hoc through the year' 
+      },
+      { 
+        title: 'Ports / Freeport Enabling & O&M Facilities (consultancy panels)', 
+        authority: 'Solent Freeport consortium / Port authorities (Dover, Portsmouth, ABP Southampton)', 
+        sector: 'Ports & Maritime', 
+        est_value_gbp_bn: 'Scheme-by-scheme', 
+        duration_years: 3, 
+        status: 'Pipeline', 
+        due_qtr: 'As opportunities arise' 
+      }
+    ],
+    key_clients: [
+      { 
+        name: 'Southern Water / South East Water / Thames Water / Portsmouth Water', 
+        sectors: ['Networks','Treatment','Environmental / WFD','Resilience'], 
+        portal: 'Client / alliance portals', 
+        est_annual_capex_gbp_bn: 'Share of AMP8 (regional)' 
+      },
+      { 
+        name: 'National Highways – South East', 
+        sectors: ['SRN renewals','Corridor upgrades','Safety / technology'], 
+        portal: 'National procurement portals', 
+        est_annual_capex_gbp_bn: 'Share of national RIS portfolio' 
+      },
+      { 
+        name: 'Network Rail – Southern Region (Kent, Sussex, Wessex)', 
+        sectors: ['Track & structures','Stations','Signalling','Electrification'], 
+        portal: 'Rail procurement portals', 
+        est_annual_capex_gbp_bn: 'Multi-year CP renewals/enhancements' 
+      },
+      { 
+        name: 'National Grid / UK Power Networks / SSEN (Southern)', 
+        sectors: ['Substations','Reinforcements','Connections','Grid modernisation'], 
+        portal: 'Utility / framework portals', 
+        est_annual_capex_gbp_bn: 'Part of wider grid upgrades' 
+      },
+      { 
+        name: 'Solent partners, Kent & Medway, Brighton & Hove, Surrey, Sussex, Oxfordshire, Berkshire & Bucks authorities', 
+        sectors: ['Local transport','Active travel','Station-led regen','Net-zero estates'], 
+        portal: 'FTS / Contracts Finder / regional portals', 
+        est_annual_capex_gbp_bn: 'Programme-driven' 
+      },
+      { 
+        name: 'Ports & Freeport Bodies (Solent Freeport, Dover, Portsmouth, ABP Southampton)', 
+        sectors: ['O&M facilities','Quays','Logistics','Cruise & container access'], 
+        portal: 'Local authority / port procurement', 
+        est_annual_capex_gbp_bn: 'Project-specific' 
+      }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Strong in water, highways and major programmes' },
+      { name: 'Arcadis', presence: 'Water, highways and advisory across the region' },
+      { name: 'AECOM', presence: 'Civils design, PM & PMO on transport/energy' },
+      { name: 'Faithful+Gould (AtkinsRéalis)', presence: 'QS/PM and controls on national frameworks' },
+      { name: 'Mace Consult', presence: 'Major programme and PMO roles in city-regions' },
+      { name: 'Local/regional QS & PM firms', presence: 'Competitive on single-asset schemes in counties/unitaries' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        'Director (All Services)': '£975–1,400/day',
+        'Associate Director / Project Director': '£825–1,075/day',
+        'Executive / Senior PM / Senior QS': '£650–925/day',
+        'Professional QS / PM / Planner': '£525–725/day',
+        'Assistant / Graduate (CM, PM, Controls)': '£350–500/day'
+      },
+      notes: 'Indicative South East infrastructure rates; flex by framework caps, proximity to London, duration, and blend of Cost/PM/Controls/Advisory.'
+    },
+    key_dates: [
+      { 
+        date: 'Q1–Q2 (each FY)', 
+        item: 'Local authority budget setting and city/county transport allocations', 
+        impact: 'Confirms pipeline for local highways, active travel and regeneration schemes.' 
+      },
+      { 
+        date: '2025–26 start (investment windows)', 
+        item: 'AMP8 mobilisation and grid reinforcement works ramp up', 
+        impact: 'Peak window to position for cost, PM, controls and assurance roles.' 
+      },
+      { 
+        date: 'Ongoing (monthly/quarterly)', 
+        item: 'FTS / Contracts Finder and client portal releases – South East-tagged notices', 
+        impact: 'Maintain rolling watchlist of regional professional services tenders and mini-comps.' 
+      }
+    ],
+    contacts: [
+      { 
+        label: 'Find a Tender (FTS)', 
+        value: 'Filter by South East and CPV for infra, QS, PM & advisory.', 
+        url: '' 
+      },
+      { 
+        label: 'Contracts Finder', 
+        value: 'Smaller LA/regeneration opportunities – South East keywords.', 
+        url: '' 
+      },
+      { 
+        label: 'Client Portals', 
+        value: 'Water, roads, rail, energy and local authorities.', 
+        url: '' 
+      },
+      { 
+        label: 'Internal Contact Map', 
+        value: 'Overlay who we know where (clients, partners, alumni). Refresh quarterly.', 
+        url: '' 
+      }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderServiceMix(hostSel, obj){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=30;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">Core</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = d.name;
+
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 22);
+  renderServiceMix('#serviceMix', d.spend.service_mix_pct);
+  const split = d.discipline_split_pct || {};
+  el('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`
+    <div class="row">
+      <span class="k">${c.label}</span>
+      <span class="muted"> — ${c.value}</span>
+    </div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework / Vehicle','Authority','Scope (relevance)','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Entry Route','Est. Annual Capex (share)'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), cl.portal||'–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence in regional infra'],
+      (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate (regional infra)'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${
+    rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')
+  }</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('SE_INFRA_ALL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
