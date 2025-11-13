@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wales – Infrastructure (All Services) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">Wales – Infrastructure (All Services) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Infra Budgets – Where is the Work? (Next 12 Months, est.)</h2>
+        <div id="budgets"></div>
+        <div class="note small">
+          Indicative share of <b>Wales</b> infrastructure opportunity for the next year 
+          across sectors. Replace with your intel each refresh.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Service-Line Mix – How We Play</h2>
+        <div id="serviceMix"></div>
+        <div class="note small">
+          Split of <b>Cost Management, Project Management, Project Controls and Advisory</b> demand across Welsh infrastructure.
+          Use to shape recruitment and pursuit teams.
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="card">
+          <div class="k">1-Year Demand</div>
+          <div class="v" id="kpi1">Strong & steady</div>
+          <div class="small muted">
+            Driven by AMP8 (Welsh Water), TfW renewals/enhancements and trunk road maintenance.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">5-Year Trajectory</div>
+          <div class="v" id="kpi5">Sustained growth</div>
+          <div class="small muted">
+            Devolved transport, grid reinforcement and place-based regeneration underpin demand.
+          </div>
+        </div>
+        <div class="card">
+          <div class="k">10-Year View</div>
+          <div class="v" id="kpi10">Structural investment</div>
+          <div class="small muted">
+            Net-zero targets, water quality and resilience, and port/energy hubs create long-run programmes.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Discipline Split (Typical Welsh Infra Commission)</h2>
+        <div class="row" id="sectorSplit"></div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs"></div>
+        <div id="tabContent"></div>
+      </div>
+    </div>
+
+    <aside class="grid">
+      <div class="card">
+        <h2>Executive Summary (30s)</h2>
+        <ul id="execSummary"></ul>
+      </div>
+      <div class="card">
+        <h2>Win Themes & Differentiators</h2>
+        <ul id="winThemes"></ul>
+      </div>
+      <div class="card">
+        <h2>Route to Market (Welsh Access Points)</h2>
+        <ul id="routes"></ul>
+      </div>
+      <div class="card">
+        <h2>Key Dates – Next 12–18 Months</h2>
+        <table id="keyDates"></table>
+      </div>
+
+      <div class="card">
+        <h2>Key Clients & Warm Doors</h2>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sub-Regional Growth Playbooks</h2>
+        <p class="small muted">
+          One-page guides for how to grow our infrastructure footprint across Wales.
+          Keep these alongside this cheat sheet and refresh annually.
+        </p>
+        <ul class="small">
+          <li><a href="Wales_SE_Region_Growth_Playbook.html" target="_blank">South East Wales (Cardiff Capital Region) – Growth Playbook</a></li>
+          <li><a href="Wales_SW_Region_Growth_Playbook.html" target="_blank">South West Wales (Swansea Bay City Region) – Growth Playbook</a></li>
+          <li><a href="Wales_North_Growth_Playbook.html" target="_blank">North Wales – Growth Playbook</a></li>
+          <li><a href="Wales_Mid_Growth_Playbook.html" target="_blank">Mid Wales – Growth Playbook</a></li>
+        </ul>
+        <div class="note small" style="margin-top:6px">
+          Tip: link these from your internal SharePoint / dashboard so regional leads can download and annotate.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">
+    How to use: duplicate per UK region / service-line combination (e.g. <code>regions/wales-infra-all.html</code>).
+    Replace the <code>DATA</code> constants during refresh. No external libraries.
+  </div>
+</div>
+
+<script>
+const DATA = {
+  WALES_INFRA_ALL: {
+    id: 'WALES_INFRA_ALL',
+    name: 'Wales – Infrastructure (Cost, PM, Controls & Advisory)',
+    headlines: [
+      'Welsh infrastructure is anchored by AMP8 investment from Welsh Water (Dŵr Cymru) focused on resilience, water quality and environmental outcomes.',
+      'Transport for Wales programmes and Welsh trunk road renewals sustain demand for client-side PM, Cost and Controls across the network.',
+      'Energy transition, ports-led growth (incl. floating offshore wind supply chain) and place-based regeneration provide advisory and PMO opportunities.'
+    ],
+    win_themes: [
+      'Be the integrated partner across water, transport and energy in Wales with blended Cost, PM and Controls teams.',
+      'Deploy benchmarked should-cost models for civils, treatment works, stations and highways to challenge pricing and secure VfM.',
+      'Stand-up programme controls (risk/QRA, schedule-cost integration, performance reporting) aligned to Welsh public sector governance and BC stages.',
+      'Lead with whole-life carbon + cost optimisation on water/environment and transport options.',
+      'Rapid mobilisation pods (1–2 Cost + 1 PM + 1 Controls) to establish mini-PMOs for new Welsh Government / TfW investment packages.',
+      'Use digital reporting (dashboards, CEMAR insights, portfolio trackers) for live commercial visibility.'
+    ],
+    routes_to_market: [
+      'AMP8 water investment – treatment upgrades, network resilience, environmental schemes (Welsh Water).',
+      'Welsh trunk road renewals & maintenance – via SWTRA/NMWTRA and Welsh Government programmes.',
+      'Rail renewals/enhancements – stations, track, signalling through Network Rail / TfW interfaces.',
+      'Electricity network upgrades and connections – substations, reinforcements, grid modernisation (transmission & distribution).',
+      'City/regional transport & regeneration – bus priority, active travel, town-centre regeneration via Welsh Government and local authorities.'
+    ],
+    spend: {
+      sector_split_pct: {
+        'Water & Wastewater': 35,
+        'Rail (renewals / stations)': 16,
+        'Highways & Trunk Roads': 18,
+        'Energy / Power & Grid': 16,
+        'Urban Transport & Regeneration': 10,
+        'Ports, Logistics & Freeport-linked': 3,
+        'Airports & Surface Access': 2
+      },
+      service_mix_pct: {
+        'Cost Management': 33,
+        'Project Management': 27,
+        'Project Controls / PMO': 25,
+        'Advisory (strategy, business cases, assurance)': 15
+      }
+    },
+    discipline_split_pct: {
+      'Cost Management – estimating, cost planning, change & audit': 30,
+      'Project Management – sponsor support, governance, stakeholder mgmt.': 25,
+      'Project Controls – planning, risk/QRA, reporting, PMO': 25,
+      'Advisory – options appraisal, business cases, commercial strategy': 20
+    },
+    frameworks_expected: [
+      { 
+        title: 'AMP8 Professional Services / Capital Delivery Alliances', 
+        authority: 'Welsh Water (Dŵr Cymru)', 
+        sector: 'Water & Wastewater', 
+        est_value_gbp_bn: 'Multi-bn (2025–30, Wales)', 
+        duration_years: 5, 
+        status: 'Mobilising / call-offs', 
+        due_qtr: 'Rolling call-offs from 2025' 
+      },
+      { 
+        title: 'Welsh Trunk Road Renewals & Maintenance', 
+        authority: 'Welsh Government via SWTRA / NMWTRA', 
+        sector: 'Highways & Trunk Roads', 
+        est_value_gbp_bn: 'Programme-based', 
+        duration_years: 5, 
+        status: 'Active / pipeline schemes', 
+        due_qtr: 'Rolling competitions' 
+      },
+      { 
+        title: 'Rail CP Programmes – Wales & Borders Professional Services', 
+        authority: 'Network Rail / TfW', 
+        sector: 'Rail Renewals / Enhancements', 
+        est_value_gbp_bn: 'Multi-year call-offs', 
+        duration_years: 5, 
+        status: 'Active / ongoing procurements', 
+        due_qtr: 'Ongoing' 
+      },
+      { 
+        title: 'Electricity Networks – Substations & Connections (Wales)', 
+        authority: 'Transmission / Distribution Operators', 
+        sector: 'Energy Networks', 
+        est_value_gbp_bn: 'Part of GB-wide investment plans', 
+        duration_years: 5, 
+        status: 'Active / pipeline', 
+        due_qtr: '2025–2030' 
+      },
+      { 
+        title: 'Welsh Government / LA Professional Services Panels', 
+        authority: 'Welsh Government & Local Authorities', 
+        sector: 'Local Transport & Place', 
+        est_value_gbp_bn: 'Programme-level', 
+        duration_years: 4, 
+        status: 'As issued', 
+        due_qtr: 'Ad-hoc through the year' 
+      }
+    ],
+    key_clients: [
+      { 
+        name: 'Welsh Water (Dŵr Cymru)', 
+        sectors: ['Water networks','Treatment works','Environmental / WFD','Resilience'], 
+        portal: 'Client / alliance portals', 
+        est_annual_capex_gbp_bn: 'Share of AMP8 (Wales)' 
+      },
+      { 
+        name: 'Welsh Government – Highways (SWTRA / NMWTRA)', 
+        sectors: ['Trunk road renewals','Structures','Safety / technology'], 
+        portal: 'Welsh procurement portals', 
+        est_annual_capex_gbp_bn: 'Programme portfolios' 
+      },
+      { 
+        name: 'Transport for Wales / Network Rail – Wales & Borders', 
+        sectors: ['Track & structures','Stations','Signalling','Electrification'], 
+        portal: 'Rail procurement portals', 
+        est_annual_capex_gbp_bn: 'Multi-year CP renewals/enhancements' 
+      },
+      { 
+        name: 'Electricity Transmission / Distribution Operators (Wales)', 
+        sectors: ['Substations','Reinforcements','Connections','Grid modernisation'], 
+        portal: 'Utility / framework portals', 
+        est_annual_capex_gbp_bn: 'Part of GB grid upgrades' 
+      },
+      { 
+        name: 'Welsh Government & Local Authorities', 
+        sectors: ['Local transport','Active travel','Town-centre regen','Net-zero estates'], 
+        portal: 'Sell2Wales / regional portals', 
+        est_annual_capex_gbp_bn: 'Programme-driven' 
+      }
+    ],
+    competitors: [
+      { name: 'Turner & Townsend', presence: 'Water, rail and major programmes presence in Wales' },
+      { name: 'Arcadis', presence: 'Water, highways and advisory across Wales' },
+      { name: 'AECOM', presence: 'Civils design, PM & PMO on transport/energy' },
+      { name: 'Faithful+Gould (AtkinsRéalis)', presence: 'QS/PM and controls on national frameworks' },
+      { name: 'Mace Consult', presence: 'Major programme and PMO roles' },
+      { name: 'Local/regional QS & PM firms', presence: 'Competitive on single-asset schemes' }
+    ],
+    pricing: {
+      day_rates_gbp: {
+        'Director (All Services)': '£900–1,300/day',
+        'Associate Director / Project Director': '£775–1,025/day',
+        'Executive / Senior PM / Senior QS': '£625–875/day',
+        'Professional QS / PM / Planner': '£475–675/day',
+        'Assistant / Graduate (CM, PM, Controls)': '£300–450/day'
+      },
+      notes: 'Indicative Wales infrastructure rates; flex by framework caps, geography, duration, and blend of Cost/PM/Controls/Advisory.'
+    },
+    key_dates: [
+      { 
+        date: 'Q1–Q2 (each FY)', 
+        item: 'Welsh Government budget setting and transport allocations', 
+        impact: 'Confirms pipeline for trunk roads, active travel and regeneration.' 
+      },
+      { 
+        date: '2025–26 start (investment windows)', 
+        item: 'AMP8 and energy programme delivery mobilisation', 
+        impact: 'Peak positioning window for cost, PM, controls and assurance roles.' 
+      },
+      { 
+        date: 'Ongoing (monthly/quarterly)', 
+        item: 'Sell2Wales / FTS / client portal releases – Wales-tagged notices', 
+        impact: 'Maintain rolling watchlist of professional services tenders and mini-comps.' 
+      }
+    ],
+    contacts: [
+      { 
+        label: 'Sell2Wales', 
+        value: 'Primary portal for Welsh public sector opportunities (set alerts for infra/QS/PM).', 
+        url: '' 
+      },
+      { 
+        label: 'Find a Tender (FTS)', 
+        value: 'Major utilities and broader public notices.', 
+        url: '' 
+      },
+      { 
+        label: 'Contracts Finder', 
+        value: 'Smaller LA/regeneration opportunities (Wales keyword filters).', 
+        url: '' 
+      },
+      { 
+        label: 'Client Portals', 
+        value: 'Welsh Water, TfW/NR, utilities, Welsh Government.', 
+        url: '' 
+      },
+      { 
+        label: 'Internal Contact Map', 
+        value: 'Overlay of who we know where (clients, partners, alumni). Refresh quarterly.', 
+        url: '' 
+      }
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderServiceMix(hostSel, obj){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=30;
+    return `<div class="bud-row">
+      <div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">Core</span>':''}</span><span>${v}%</span></div>
+      <div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  el('#countryTitle').textContent = d.name;
+
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 22);
+  renderServiceMix('#serviceMix', d.spend.service_mix_pct);
+  const split = d.discipline_split_pct || {};
+  el('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  const tabs = el('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  const kd = el('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  el('#contacts').innerHTML = (d.contacts||[]).map(c=>`
+    <div class="row">
+      <span class="k">${c.label}</span>
+      <span class="muted"> — ${c.value}</span>
+    </div>`).join('');
+}
+
+function bindList(sel, arr){ el(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = el('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework / Vehicle','Authority','Scope (relevance)','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Entry Route','Est. Annual Capex (share)'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), cl.portal||'–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence in Welsh infra'],
+      (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate (Welsh infra)'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${
+    rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')
+  }</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('WALES_INFRA_ALL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
