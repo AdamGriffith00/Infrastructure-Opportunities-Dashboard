@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>West Midlands – Infrastructure (All Services) Cheat Sheet</title>
+  <style>
+    :root{
+      --bg:#3c3c3c; --card:#0e0e10; --ink:#f3f3f3; --muted:#b9b9b9; --accent:#ffffff;
+      --line:#1a1a1a; --chip:#111214; --yellow:#ffd700; --bar:#25262b;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;height:100%;
+      background: rgb(60,60,60);
+      color:var(--ink);
+      font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      position:relative;overflow-x:hidden
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols{grid-template-columns:1.25fr .75fr}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:4px 10px;border-radius:999px;color:var(--muted)}
+    h1{font-size:24px;margin:0 0 6px 0}
+    h2{font-size:17px;margin:0 0 6px 0;color:var(--accent)}
+    h3{font-size:14px;margin:0 0 4px 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card{padding:12px}
+    .k{font-size:11px;color:var(--muted)}
+    .v{font-size:18px;font-weight:700}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .tab{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);cursor:pointer;color: var(--yellow); font-weight:600}
+    .tab.active{outline:2px solid #555; text-decoration:underline}
+    .hide{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .pill{padding:2px 8px;border-radius:999px;background:#1b2135;border:1px solid var(--line);color:var(--muted)}
+    a{color:#f0f0f0;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px}
+    .note{background:#0c0c0e;border:1px dashed var(--line);padding:8px;border-radius:10px;color:var(--muted)}
+    .header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    ul{margin:6px 0 0 18px}
+    .bud-bar{height:22px; background:var(--bar); border-radius:999px; position:relative; overflow:hidden}
+    .bud-fill{height:100%; background:var(--yellow)}
+    .bud-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hi-badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#2a260f;color:#f3e29f;margin-left:6px}
+    .bud-row{margin-bottom:8px}
+    @media (max-width: 980px){ .grid.cols{grid-template-columns:1fr} .kpi{grid-template-columns:1fr 1fr 1fr} }
+    @media (max-width: 640px){ .kpi{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="countryTitle">West Midlands – Infrastructure (All Services) Cheat Sheet</h1>
+  </div>
+
+  <div class="grid cols" style="margin-top:6px">
+    <div class="grid">
+
+      <div class="card">
+        <h2>Infra Budgets – Where is the Work? (Next 12 Months, est.)</h2>
+        <div id="budgets"></div>
+        <div class="note small">
+          Indicative share of <b>West Midlands</b> infrastructure opportunity for the next year across sectors. Replace with your intel each refresh.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Service-Line Mix – How We Play</h2>
+        <div id="serviceMix"></div>
+        <div class="note small">
+          Split of <b>Cost Management, Project Management, Project Controls and Advisory</b> demand across the region.
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="card"><div class="k">1-Year Demand</div><div class="v" id="kpi1">Strong</div><div class="small muted">HS2 enabling works, utilities and local transport sustain workload.</div></div>
+        <div class="card"><div class="k">5-Year Trajectory</div><div class="v" id="kpi5">Accelerating</div><div class="small muted">Energy transition, regeneration and rail upgrades expand portfolios.</div></div>
+        <div class="card"><div class="k">10-Year View</div><div class="v" id="kpi10">Structural growth</div><div class="small muted">Net zero estates, power grid, and transport decarbonisation drive demand.</div></div>
+      </div>
+
+      <div class="card"><h2>Discipline Split (Typical Regional Infra Commission)</h2><div class="row" id="sectorSplit"></div></div>
+
+      <div class="card"><div class="tabs" id="tabs"></div><div id="tabContent"></div></div>
+    </div>
+
+    <aside class="grid">
+      <div class="card"><h2>Executive Summary (30s)</h2><ul id="execSummary"></ul></div>
+      <div class="card"><h2>Win Themes & Differentiators</h2><ul id="winThemes"></ul></div>
+      <div class="card"><h2>Route to Market (Regional Access Points)</h2><ul id="routes"></ul></div>
+      <div class="card"><h2>Key Dates – Next 12–18 Months</h2><table id="keyDates"></table></div>
+      <div class="card"><h2>Key Clients & Warm Doors</h2><div id="contacts"></div></div>
+      <div class="card">
+        <h2>Sub-Regional Growth Playbooks</h2>
+        <ul class="small">
+          <li><a href="WM_Birmingham_Growth_Playbook.html" target="_blank">Birmingham & Solihull</a></li>
+          <li><a href="WM_Coventry_Warwickshire_Growth_Playbook.html" target="_blank">Coventry & Warwickshire</a></li>
+          <li><a href="WM_BlackCountry_Growth_Playbook.html" target="_blank">Black Country</a></li>
+          <li><a href="WM_Staffordshire_Growth_Playbook.html" target="_blank">Staffordshire</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <div class="note small">Duplicate per UK region / service-line combination (e.g. <code>regions/west-midlands-infra-all.html</code>).</div>
+</div>
+
+<script>
+const DATA = {
+  WM_INFRA_ALL: {
+    id: 'WM_INFRA_ALL',
+    name: 'West Midlands – Infrastructure (Cost, PM, Controls & Advisory)',
+    headlines: [
+      'HS2 Phase One legacy, network upgrades and local transport programmes sustain near-term demand.',
+      'Energy transition and net zero estates create long-term investment opportunities.',
+      'Freeport, industrial corridors and urban regeneration anchor advisory and PMO growth.'
+    ],
+    win_themes: [
+      'Position as the delivery partner bridging rail, utilities, highways and regeneration portfolios.',
+      'Deploy integrated Cost/PM/Controls delivery cells for local and regional frameworks.',
+      'Expand assurance and governance capability aligned to combined authority investment cases.',
+      'Optimise delivery using whole-life cost and carbon analytics across energy and transport.',
+      'Leverage digital dashboards, data analytics and reporting for transparent programme performance.'
+    ],
+    routes_to_market: [
+      'HS2 and associated legacy/transport investments.',
+      'WMCA and Local Authority programmes – transport, housing, regeneration.',
+      'AMP8 water frameworks – Severn Trent and South Staffs Water.',
+      'Energy and grid upgrade programmes – National Grid, DNOs.',
+      'Highways renewals and improvement schemes – National Highways, LAs.'
+    ],
+    spend: {
+      sector_split_pct: {
+        'Rail & HS2 Legacy': 25,
+        'Highways & Local Roads': 20,
+        'Water & Wastewater': 18,
+        'Energy / Power & Grid': 15,
+        'Urban Transport & Regeneration': 15,
+        'Industrial / Freeport / Logistics': 6,
+        'Airports & Surface Access': 1
+      },
+      service_mix_pct: {
+        'Cost Management': 32,
+        'Project Management': 28,
+        'Project Controls / PMO': 25,
+        'Advisory (strategy, business cases, assurance)': 15
+      }
+    },
+    discipline_split_pct: {
+      'Cost Management – estimating, cost planning, change & audit': 30,
+      'Project Management – sponsor support, governance, stakeholder mgmt.': 25,
+      'Project Controls – planning, risk/QRA, reporting, PMO': 25,
+      'Advisory – options appraisal, business cases, commercial strategy': 20
+    },
+    frameworks_expected: [
+      {title:'HS2 Legacy and Associated Programmes',authority:'HS2 Ltd / Local Authorities',sector:'Rail & Regeneration',est_value_gbp_bn:'Multi-bn (region share)',duration_years:5,status:'Active / transitioning',due_qtr:'Rolling'},
+      {title:'AMP8 Professional Services – Severn Trent / South Staffs Water',authority:'Water Utilities',sector:'Water & Wastewater',est_value_gbp_bn:'Multi-bn (2025–30)',duration_years:5,status:'Mobilising',due_qtr:'2025 onwards'},
+      {title:'WMCA Infrastructure & Housing Programmes',authority:'West Midlands Combined Authority',sector:'Transport / Regeneration',est_value_gbp_bn:'Programme-level',duration_years:5,status:'Active',due_qtr:'Ongoing'},
+      {title:'Regional Highways Renewals & Maintenance',authority:'National Highways & Local Authorities',sector:'Highways & Local Roads',est_value_gbp_bn:'Programme-based',duration_years:5,status:'Active / pipeline',due_qtr:'Rolling'},
+      {title:'Energy & Grid Upgrades (Midlands)',authority:'National Grid / DNOs',sector:'Energy',est_value_gbp_bn:'Part of GB-wide plan',duration_years:5,status:'Active',due_qtr:'2025–2030'}
+    ],
+    key_clients: [
+      {name:'HS2 Ltd',sectors:['Rail','Stations','Civils legacy','Regeneration'],portal:'Client / public procurement portals',est_annual_capex_gbp_bn:'HS2 regional works'},
+      {name:'West Midlands Combined Authority (WMCA)',sectors:['Transport','Housing','Regeneration'],portal:'FTS / WMCA procurement',est_annual_capex_gbp_bn:'Programme-driven'},
+      {name:'Severn Trent / South Staffs Water',sectors:['Networks','Treatment works'],portal:'Client / alliance portals',est_annual_capex_gbp_bn:'Share of AMP8 (region)'},
+      {name:'National Highways (Midlands)',sectors:['SRN renewals','Junctions','Technology'],portal:'National procurement portals',est_annual_capex_gbp_bn:'Share of RIS portfolio'},
+      {name:'National Grid / DNOs',sectors:['Substations','Connections','Grid modernisation'],portal:'Utility portals',est_annual_capex_gbp_bn:'Part of GB grid upgrades'}
+    ],
+    competitors: [
+      {name:'Turner & Townsend',presence:'Strong in HS2, water and regeneration'},
+      {name:'Arcadis',presence:'Active across transport, highways and energy'},
+      {name:'AECOM',presence:'Civils design and PMO on rail/energy'},
+      {name:'Faithful+Gould (AtkinsRéalis)',presence:'QS/PM and controls nationally'},
+      {name:'Mace Consult',presence:'Major programme delivery / PMO'},
+      {name:'Local/regional QS & PM firms',presence:'Competitive on single assets'}
+    ],
+    pricing: {
+      day_rates_gbp: {
+        'Director (All Services)': '£950–1,350/day',
+        'Associate Director / Project Director': '£775–1,050/day',
+        'Executive / Senior PM / Senior QS': '£625–875/day',
+        'Professional QS / PM / Planner': '£475–675/day',
+        'Assistant / Graduate (CM, PM, Controls)': '£300–450/day'
+      },
+      notes: 'Indicative regional rates reflecting metro demand and HS2 legacy uplift.'
+    },
+    key_dates: [
+      {date:'Q1–Q2 (each FY)',item:'WMCA and LA budget setting',impact:'Confirms pipeline for regeneration and transport schemes.'},
+      {date:'2025–26',item:'AMP8 and grid programme mobilisation',impact:'Key procurement and mobilisation phase.'},
+      {date:'Ongoing',item:'WMCA / FTS / Contracts Finder releases',impact:'Maintain rolling opportunity list.'}
+    ],
+    contacts: [
+      {label:'Find a Tender (FTS)',value:'Utilities and broader public notices (set WM filters).'},
+      {label:'Contracts Finder',value:'Smaller LA/regeneration opportunities (regional keyword filters).'},
+      {label:'WMCA Portal',value:'Transport, housing and skills investment programmes.'},
+      {label:'Client Portals',value:'Severn Trent, South Staffs, National Grid, HS2.'},
+      {label:'Internal Contact Map',value:'Overlay of client relationships and alumni; refresh quarterly.'}
+    ]
+  }
+};
+
+const TABS = [
+  { id: 'frameworks', label: 'Frameworks' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'competitors', label: 'Competitors' },
+  { id: 'pricing', label: 'Pricing' }
+];
+
+const el = (sel)=>document.querySelector(sel);
+const pctPill = (name,val)=>`<span class="pill">${name}: ${val}%</span>`;
+
+function renderBudgetBars(hostSel, obj, hiCut){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=hiCut;
+    return `<div class="bud-row"><div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">High</span>':''}</span><span>${v}%</span></div><div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div></div>`;
+  }).join('');
+}
+
+function renderServiceMix(hostSel, obj){
+  const host = el(hostSel);
+  const entries = Object.entries(obj||{});
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  host.innerHTML = entries.map(([k,v])=>{
+    const w = Math.round((v/max)*100);
+    const hi = v>=30;
+    return `<div class="bud-row"><div class="bud-meta"><span>${k}${hi?'<span class="hi-badge">Core</span>':''}</span><span>${v}%</span></div><div class="bud-bar"><div class="bud-fill" style="width:${w}%"></div></div></div>`;
+  }).join('');
+}
+
+function renderDiscipline(code){
+  const d = DATA[code];
+  document.querySelector('#countryTitle').textContent = d.name;
+
+  renderBudgetBars('#budgets', d.spend.sector_split_pct, 22);
+  renderServiceMix('#serviceMix', d.spend.service_mix_pct);
+  const split = d.discipline_split_pct || {};
+  document.querySelector('#sectorSplit').innerHTML = Object.keys(split).map(k=>pctPill(k, split[k])).join(' ');
+
+  const tabs = document.querySelector('#tabs');
+  tabs.innerHTML = TABS.map(t=>`<button class="tab" data-tab="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>activateTab(btn.dataset.tab, d)));
+  activateTab('frameworks', d);
+
+  bindList('#execSummary', d.headlines);
+  bindList('#winThemes', d.win_themes);
+  bindList('#routes', d.routes_to_market);
+
+  const kd = document.querySelector('#keyDates');
+  kd.innerHTML = `<tr><th style="width:140px">Date</th><th>Item</th><th>Impact</th></tr>` +
+    (d.key_dates||[]).map(x=>`<tr><td>${x.date}</td><td>${x.item}</td><td class="muted">${x.impact||''}</td></tr>`).join('');
+
+  document.querySelector('#contacts').innerHTML = (d.contacts||[]).map(c=>`
+    <div class="row">
+      <span class="k">${c.label}</span>
+      <span class="muted"> — ${c.value}</span>
+    </div>`).join('');
+}
+
+function bindList(sel, arr){ document.querySelector(sel).innerHTML = (arr||[]).map(x=>`<li>${x}</li>`).join(''); }
+
+function activateTab(tabId, d){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  const c = document.querySelector('#tabContent');
+  if(tabId==='frameworks'){
+    c.innerHTML = tableHtml(['Framework / Vehicle','Authority','Scope (relevance)','Est. Value','Duration','Status','Due'],
+      (d.frameworks_expected||[]).map(f=>[
+        f.title, f.authority, f.sector, f.est_value_gbp_bn||'–', f.duration_years?f.duration_years+'y':'–', f.status, f.due_qtr
+      ]));
+  } else if(tabId==='clients'){
+    c.innerHTML = tableHtml(['Client','Sectors','Entry Route','Est. Annual Capex (share)'],
+      (d.key_clients||[]).map(cl=>[
+        cl.name, (cl.sectors||[]).join(', '), cl.portal||'–', cl.est_annual_capex_gbp_bn||'–'
+      ]));
+  } else if(tabId==='competitors'){
+    c.innerHTML = tableHtml(['Competitor','Presence in regional infra'],
+      (d.competitors||[]).map(co=>[co.name, co.presence||'–']));
+  } else if(tabId==='pricing'){
+    const pr = d.pricing?.day_rates_gbp||{};
+    c.innerHTML = tableHtml(['Role','Indicative day rate (regional infra)'], Object.entries(pr).map(([k,v])=>[k.replaceAll('_',' '), v])) +
+      `<div class="note small" style="margin-top:6px">${d.pricing?.notes||''}</div>`;
+  }
+}
+
+function tableHtml(headers, rows){
+  return `<table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${
+    rows.map(r=>`<tr>${r.map(cell=>`<td>${cell??'–'}</td>`).join('')}</tr>`).join('')
+  }</table>`;
+}
+
+(function(){
+  function init(){ renderDiscipline('WM_INFRA_ALL'); }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</body>
+</html>
