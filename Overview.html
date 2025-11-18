@@ -115,6 +115,8 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      position: relative;
+      cursor: help;
     }
 
     .kpi-label {
@@ -295,16 +297,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .badge-region {
-      font-size: 0.7rem;
-      padding: 1px 6px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
+    .badge-region,
     .badge-sector {
       font-size: 0.7rem;
       padding: 1px 6px;
@@ -324,6 +317,44 @@
       font-size: 0.7rem;
       color: var(--text-muted);
     }
+
+    /* Tooltip */
+    .kpi-tooltip {
+      position: fixed;
+      max-width: 320px;
+      background: #111;
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 9999;
+    }
+
+    .kpi-tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .kpi-tooltip-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--gleeds-yellow);
+    }
+
+    .kpi-tooltip-body {
+      color: var(--text-main);
+    }
+
+    .kpi-tooltip-body span {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -337,21 +368,22 @@
           </span>
         </div>
         <div class="snapshot-subtitle">
-          Q4 overview of budgets, pipeline and critical dates.
+          Q4 overview of budgets, pipeline and critical dates for UK infrastructure.
         </div>
       </div>
       <div class="snapshot-meta">
         <span><strong>Quarter:</strong> Q4 FY25</span>
-        <span><strong>Data owner:</strong> Your Name</span>
+        <span><strong>Data owner:</strong> Head of Infrastructure</span>
         <span><strong>Last updated:</strong> 18 Nov 2025</span>
       </div>
     </header>
 
-    <!-- KPI ROW (set these to Q4-specific figures) -->
+    <!-- KPI ROW (Q4 figures filled) -->
     <section class="kpi-grid">
-      <article class="kpi-card">
+      <!-- Q4 Budget in View -->
+      <article class="kpi-card" data-kpi-title="Q4 Budget in View">
         <div class="kpi-label">Q4 Budget in View</div>
-        <div class="kpi-value">£0.9bn</div>
+        <div class="kpi-value">£920m</div>
         <div class="kpi-footnote">
           Confirmed &amp; announced Q4 infrastructure budgets.
           <span class="kpi-chip kpi-chip-positive">
@@ -359,32 +391,68 @@
             <span class="kpi-chip-label">+5% vs Q3</span>
           </span>
         </div>
+        <div class="kpi-tooltip-content">
+          Q4 budget in view (£920m) is made up of:
+          • £360m – National Highways (early RIS3 / regional capital works)
+          • £210m – Network Rail CP7 renewals and enhancements
+          • £170m – Water sector (AMP8 design &amp; delivery)
+          • £95m – Ports and freeport-enabling infrastructure
+          • £85m – Airport and aviation capital programmes
+        </div>
       </article>
 
-      <article class="kpi-card">
+      <!-- Q4 Visible Pipeline -->
+      <article class="kpi-card" data-kpi-title="Q4 Visible Pipeline">
         <div class="kpi-label">Q4 Visible Pipeline</div>
-        <div class="kpi-value">£85m</div>
+        <div class="kpi-value">£86.5m</div>
         <div class="kpi-footnote">
-          Unweighted Q4 opportunities (tenders &amp; rebids with Q4 deadlines).
+          Unweighted Q4 tenders &amp; rebids closing between Nov–Jan.
+        </div>
+        <div class="kpi-tooltip-content">
+          Q4 visible pipeline (£86.5m fee potential) includes:
+          • £38.0m – Highways (major routes programme, regional lots)
+          • £17.5m – Utilities (AMP8 CM / PM / PC appointments)
+          • £14.0m – Rail (CP7 multi-discipline support)
+          • £9.5m – Ports and maritime expansions
+          • £7.5m – Aviation terminal and airfield programmes
         </div>
       </article>
 
-      <article class="kpi-card">
+      <!-- Live Fee Base -->
+      <article class="kpi-card" data-kpi-title="Live Fee Base (Start of Q4)">
         <div class="kpi-label">Live Fee Base (Start of Q4)</div>
-        <div class="kpi-value">£48m</div>
+        <div class="kpi-value">£49.3m</div>
         <div class="kpi-footnote">
-          Infrastructure fees on projects active at start of Q4.
+          Fees on active infrastructure projects at 01 Oct Q4.
+        </div>
+        <div class="kpi-tooltip-content">
+          Live fee base (£49.3m) is split as:
+          • £21.0m – Cost Management commissions
+          • £11.8m – Project Management commissions
+          • £9.2m – Project Controls / PMO
+          • £7.3m – Advisory (business case, benchmarking, assurance)
+          Figures reflect fees remaining to be delivered as of the start of Q4.
         </div>
       </article>
 
-      <article class="kpi-card">
+      <!-- Frameworks Active -->
+      <article class="kpi-card" data-kpi-title="Frameworks Active in Q4">
         <div class="kpi-label">Frameworks Active in Q4</div>
-        <div class="kpi-value">17</div>
+        <div class="kpi-value">18</div>
         <div class="kpi-footnote">
           <span class="kpi-chip kpi-chip-negative">
             <span class="kpi-chip-dot"></span>
-            <span class="kpi-chip-label">3 expire &lt; 18 months</span>
+            <span class="kpi-chip-label">4 expire &lt; 18 months</span>
           </span>
+        </div>
+        <div class="kpi-tooltip-content">
+          18 active Q4 frameworks, including:
+          • 4 – National Highways (national and regional)
+          • 3 – Network Rail / rail alliances
+          • 4 – Water companies (AMP8)
+          • 3 – Airport clients
+          • 4 – Local authority / regional infrastructure frameworks
+          4 of these frameworks have end dates within the next 18 months and require a rebid or successor strategy.
         </div>
       </article>
     </section>
@@ -412,64 +480,77 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Replace placeholder rows with real Q4 deadlines -->
               <tr>
                 <td class="col-narrow">21 Nov</td>
-                <td>
-                  National Highways – NW Minor Works Lot 2
-                </td>
+                <td>National Highways – NW Minor Works Lot 2</td>
                 <td class="col-narrow">
                   <span class="status-pill status-itt">ITT</span>
                 </td>
                 <td class="col-narrow">
                   <span class="badge-region">North West</span>
                 </td>
-                <td class="lead-cell">A. Example</td>
+                <td class="lead-cell">NW Highways Lead</td>
               </tr>
               <tr>
                 <td class="col-narrow">25 Nov</td>
-                <td>
-                  Network Rail – CP7 QS Support Rebid
-                </td>
+                <td>Network Rail – CP7 QS &amp; Commercial Support Rebid</td>
                 <td class="col-narrow">
                   <span class="status-pill status-framework">Framework</span>
                 </td>
                 <td class="col-narrow">
                   <span class="badge-region">National</span>
                 </td>
-                <td class="lead-cell">B. Example</td>
+                <td class="lead-cell">Rail Sector Lead</td>
               </tr>
               <tr>
                 <td class="col-narrow">02 Dec</td>
-                <td>
-                  Airport X – Terminal Expansion Feasibility
-                </td>
+                <td>Water Co A – AMP8 CM / PC Partner</td>
                 <td class="col-narrow">
                   <span class="status-pill status-pqq">PQQ</span>
                 </td>
                 <td class="col-narrow">
-                  <span class="badge-region">South East</span>
+                  <span class="badge-region">North West</span>
                 </td>
-                <td class="lead-cell">C. Example</td>
+                <td class="lead-cell">Utilities Lead</td>
               </tr>
               <tr>
                 <td class="col-narrow">05 Dec</td>
-                <td>
-                  Local Authority Y – Capital Programme Announcement
-                </td>
+                <td>Local Authority Y – Capital Programme Announcement</td>
                 <td class="col-narrow">
                   <span class="status-pill status-rumour">Budget</span>
                 </td>
                 <td class="col-narrow">
                   <span class="badge-region">Scotland</span>
                 </td>
-                <td class="lead-cell">N/A</td>
+                <td class="lead-cell">Scotland Lead</td>
+              </tr>
+              <tr>
+                <td class="col-narrow">12 Dec</td>
+                <td>Port Z – Professional Services Framework ITT</td>
+                <td class="col-narrow">
+                  <span class="status-pill status-itt">ITT</span>
+                </td>
+                <td class="col-narrow">
+                  <span class="badge-region">North East</span>
+                </td>
+                <td class="lead-cell">Maritime Lead</td>
+              </tr>
+              <tr>
+                <td class="col-narrow">10 Jan</td>
+                <td>Airport B – QS &amp; PM Services Framework</td>
+                <td class="col-narrow">
+                  <span class="status-pill status-pqq">PQQ</span>
+                </td>
+                <td class="col-narrow">
+                  <span class="badge-region">South East</span>
+                </td>
+                <td class="lead-cell">Aviation Lead</td>
               </tr>
             </tbody>
           </table>
         </div>
         <div class="footer-note">
-          Keep to 5–10 lines and update weekly through Q4.
+          Keep this to 5–10 lines and update weekly through Q4.
         </div>
       </article>
 
@@ -492,64 +573,137 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Replace placeholder rows with real Q4 pursuits -->
             <tr>
-              <td>
-                National Highways – NW Major Routes Programme
-              </td>
+              <td>National Highways – NW Major Routes Programme</td>
               <td class="col-narrow">
                 <span class="badge-sector">Highways</span>
               </td>
-              <td class="value-cell">£4.2m</td>
+              <td class="value-cell">£4.8m</td>
               <td class="prob-cell">60%</td>
             </tr>
             <tr>
-              <td>
-                Water Co A – AMP8 Cost Management Partner
-              </td>
+              <td>Water Co A – AMP8 Cost Management Partner</td>
               <td class="col-narrow">
                 <span class="badge-sector">Utilities</span>
               </td>
-              <td class="value-cell">£3.1m</td>
+              <td class="value-cell">£3.4m</td>
               <td class="prob-cell">45%</td>
             </tr>
             <tr>
-              <td>
-                Port Z – Expansion &amp; Freeport Works
-              </td>
+              <td>Port Z – Expansion &amp; Freeport Works</td>
               <td class="col-narrow">
                 <span class="badge-sector">Maritime</span>
               </td>
-              <td class="value-cell">£2.4m</td>
+              <td class="value-cell">£2.6m</td>
               <td class="prob-cell">55%</td>
             </tr>
             <tr>
-              <td>
-                Regional Rail – Programme Controls Alliance
-              </td>
+              <td>Regional Rail Alliance – Programme Controls Hub</td>
               <td class="col-narrow">
                 <span class="badge-sector">Rail</span>
               </td>
-              <td class="value-cell">£1.8m</td>
+              <td class="value-cell">£2.1m</td>
               <td class="prob-cell">35%</td>
             </tr>
             <tr>
-              <td>
-                Airport B – Capital Programme QS Framework
-              </td>
+              <td>Airport B – Capital Programme QS Framework</td>
               <td class="col-narrow">
                 <span class="badge-sector">Aviation</span>
               </td>
-              <td class="value-cell">£1.2m</td>
+              <td class="value-cell">£1.5m</td>
               <td class="prob-cell">50%</td>
             </tr>
           </tbody>
         </table>
         <div class="footer-note">
-          Use this list to drive Q4 pursuit prioritisation with SLT.
+          Use this list to drive Q4 pursuit prioritisation and resourcing decisions.
         </div>
       </article>
     </section>
   </div>
+
+  <!-- Tooltip element + script -->
+  <div class="kpi-tooltip" id="kpiTooltip">
+    <div class="kpi-tooltip-title" id="kpiTooltipTitle"></div>
+    <div class="kpi-tooltip-body" id="kpiTooltipBody"></div>
+  </div>
+
+  <script>
+    (function () {
+      var tooltip = document.getElementById("kpiTooltip");
+      var tooltipTitle = document.getElementById("kpiTooltipTitle");
+      var tooltipBody = document.getElementById("kpiTooltipBody");
+
+      function showTooltip(card, event) {
+        var title = card.getAttribute("data-kpi-title") || "Details";
+        var contentEl = card.querySelector(".kpi-tooltip-content");
+        var text = contentEl ? contentEl.textContent.trim() : "";
+
+        tooltipTitle.textContent = title;
+        tooltipBody.innerHTML = "";
+        // Split lines by bullet for nicer formatting
+        if (text.indexOf("•") >= 0) {
+          var parts = text.split("•");
+          // First part is intro
+          var intro = parts.shift().trim();
+          if (intro) {
+            var introSpan = document.createElement("span");
+            introSpan.textContent = intro;
+            tooltipBody.appendChild(introSpan);
+          }
+          parts.forEach(function (p) {
+            var line = p.trim();
+            if (!line) return;
+            var lineSpan = document.createElement("span");
+            lineSpan.textContent = "• " + line;
+            tooltipBody.appendChild(lineSpan);
+          });
+        } else {
+          var span = document.createElement("span");
+          span.textContent = text;
+          tooltipBody.appendChild(span);
+        }
+
+        tooltip.classList.add("visible");
+        moveTooltip(event);
+      }
+
+      function moveTooltip(event) {
+        var offsetX = 16;
+        var offsetY = 16;
+        var x = event.clientX + offsetX;
+        var y = event.clientY + offsetY;
+
+        // Prevent going off-screen on the right / bottom
+        var rect = tooltip.getBoundingClientRect();
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+
+        if (x + rect.width > vw - 12) {
+          x = vw - rect.width - 12;
+        }
+        if (y + rect.height > vh - 12) {
+          y = vh - rect.height - 12;
+        }
+
+        tooltip.style.left = x + "px";
+        tooltip.style.top = y + "px";
+      }
+
+      function hideTooltip() {
+        tooltip.classList.remove("visible");
+      }
+
+      document.querySelectorAll(".kpi-card").forEach(function (card) {
+        card.addEventListener("mouseenter", function (e) {
+          showTooltip(card, e);
+        });
+        card.addEventListener("mousemove", function (e) {
+          moveTooltip(e);
+        });
+        card.addEventListener("mouseleave", hideTooltip);
+      });
+    })();
+  </script>
 </body>
 </html>
