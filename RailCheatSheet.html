@@ -81,6 +81,80 @@
         <div class="card"><div class="k">10-Year Spend (est)</div><div class="v" id="kpi10">£80–90bn (CP7/8, mass transit, digital)</div></div>
       </div>
 
+<div class="card">
+  <h2>Scope of Spend Figures – Addressable Market (UK Rail)</h2>
+  <div class="small">
+    <ul>
+      <li><strong>CP7 England &amp; Wales – £44bn (2024–29)</strong> covers operations, maintenance and renewals on the Network Rail mainline, excluding enhancements. This is roughly <strong>£8–9bn per year</strong> of addressable infrastructure spend.</li>
+      <li><strong>Scotland – £4.8bn (2024–29)</strong> is a separate settlement for Scotland's Railway, adding approximately <strong>£0.9–1.0bn per year</strong> of renewals and maintenance investment to the GB total.</li>
+      <li><strong>Enhancements &amp; Integrated Rail Plan (IRP – c.£96bn)</strong> sit on top of CP7. 2026 will see design and construction activity across schemes such as Transpennine Route Upgrade, Midland Main Line electrification, East Coast corridor upgrades and East West Rail. Funding is released project‑by‑project rather than via a single central pot.</li>
+      <li><strong>Devolved metro / light rail systems</strong> (TfL: LU, London Overground, DLR; Tyne &amp; Wear Metro; Metrolink; West Midlands Metro; South Wales Metro; Glasgow Subway and others) operate under their own multi‑year capital plans and City Region Sustainable Transport Settlements. These are included in this addressable view as part of the wider UK rail system.</li>
+      <li><strong>HS2 and other major projects</strong> continue as a multi‑billion‑pound annual programme through the late 2020s, covering high‑speed civil works, stations, interfaces with the classic network and regeneration around key hubs (e.g. Euston).</li>
+      <li><strong>Northern Ireland &amp; rolling stock / depots</strong> – Translink/DfI rail renewals, depots and cross‑border works, together with UK rolling stock and depot investment, are recognised as part of the overall rail market even where procurement routes differ from core Network Rail spend.</li>
+      <li>This sheet therefore aims to give a <strong>whole‑system UK rail view</strong> of the <strong>addressable market in and around 2026</strong> (mainline, metro, high‑speed, light rail and depots), using indicative ranges where formal 2026 allocations are not yet fixed.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <h2>2026 Addressable Market – One-year View (indicative)</h2>
+  <div class="small">
+    <p>This view brings the major UK rail funding streams together into an indicative one‑year picture for 2026. Figures below are <strong>order‑of‑magnitude ranges</strong>, blending published settlements with internal assumptions; they are intended for strategic planning rather than forecasting.</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:32%">Segment</th>
+          <th style="width:22%">Illustrative 2026 infrastructure spend</th>
+          <th>Notes (what's in scope)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mainline OMR – Network Rail England &amp; Wales (CP7)</td>
+          <td>c.£8–9bn</td>
+          <td>Annualised view of the £44bn CP7 operations, maintenance and renewals settlement for England &amp; Wales (2024–29), excluding separately funded enhancements.</td>
+        </tr>
+        <tr>
+          <td>Mainline OMR – Scotland</td>
+          <td>c.£0.9–1.0bn</td>
+          <td>Annualised view of the £4.8bn CP7 settlement for Scotland's Railway (renewals, maintenance and operations support).</td>
+        </tr>
+        <tr>
+          <td>Enhancements &amp; IRP corridors</td>
+          <td>c.£3–5bn</td>
+          <td>Design and delivery across IRP‑related schemes (Transpennine Route Upgrade, Midland Main Line electrification, East Coast capacity, East West Rail and similar). Based on a portion of the £96bn IRP package being active in 2026.</td>
+        </tr>
+        <tr>
+          <td>Devolved metro / light rail &amp; city‑region schemes</td>
+          <td>c.£2–3bn</td>
+          <td>TfL rail and Underground capital programme (including DfT support for renewals), plus CRSTS/metro schemes for systems such as Metrolink, Tyne &amp; Wear Metro, West Midlands Metro, South Wales Metro, Glasgow Subway and other urban rail.</td>
+        </tr>
+        <tr>
+          <td>HS2 Phase One &amp; related works</td>
+          <td>c.£4–6bn</td>
+          <td>Continuing construction on HS2 Phase One and associated stations and interfaces. The overall programme is now costed at over £100bn with spend expected to remain multi‑billion per year into the 2030s.</td>
+        </tr>
+        <tr>
+          <td>Northern Ireland rail</td>
+          <td>c.£0.1–0.2bn</td>
+          <td>Translink/DfI renewals, enhancements and cross‑border schemes on the Northern Ireland network.</td>
+        </tr>
+        <tr>
+          <td>Rolling stock, depots &amp; systems</td>
+          <td>c.£1–2bn</td>
+          <td>Passenger and freight rolling stock programmes (new fleets and overhauls) and associated depot, stabling and systems works where infrastructure and rolling stock interfaces.</td>
+        </tr>
+        <tr>
+          <td><strong>Total indicative UK rail infrastructure &amp; systems</strong></td>
+          <td><strong>c.£20–25bn</strong></td>
+          <td>Not all of this is simultaneously contestable, but it represents a reasonable whole‑system view of the 2026 addressable rail market (subject to future Spending Reviews and scheme‑level decisions).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
       <div class="card">
         <h2>Sub-sector Split (indicative)</h2>
         <div class="row" id="sectorSplit"></div>
@@ -126,26 +200,34 @@ const DATA = {
     id: 'UK_RAIL',
     name: 'United Kingdom – Rail',
     headlines: [
-      'CP7 in flight: steady renewals; selective enhancements; digital signalling growth.',
-      'Devolved authorities (TfL, Scotland, Wales, city regions) provide multiple access points.',
-      'Alliancing & programme controls remain heavily weighted in evaluations.'
+      'c.£20–25bn per year of UK rail infrastructure and systems spend in 2026 across mainline, metro, high-speed and depots (indicative whole-system view).',
+      'CP7 renewals & maintenance (England, Wales and Scotland) provide the stable backbone, with IRP-led enhancements, digital signalling and electrification layered on top.',
+      'HS2 Phase One, metro/light rail and city-region transit schemes add multi-year demand for complex programme, commercial and systems integration support.',
+      'Devolved authorities (TfL, Scotland, Wales, city regions) now control a growing share of capital, requiring region-specific strategies and relationships.',
+      'Competition is strongest where alliancing, programme controls, safety and digital/ESG credentials are demonstrably embedded in delivery teams.'
     ],
     win_themes: [
-      'Programme controls and commercial assurance for multi-year renewals.',
-      'Read-across from major programmes (HS2/transit) to CP7 delivery.',
-      'Safety credentials embedded (RISQS/NR Passport).',
-      'Digital-first PMO: cost/schedule/carbon analytics.'
+      'Programme controls and commercial assurance for multi-year renewals and enhancement portfolios.',
+      'Read-across from major programmes (HS2, metro, complex stations) into CP7 and IRP delivery models.',
+      'Whole-system perspective: integration of mainline, metro, high-speed and depots rather than project-by-project only.',
+      'Safety and assurance credentials embedded (e.g. RISQS, NR Passport, CDM governance) as standard ways of working.',
+      'Digital-first PMO and cost management: schedule/cost performance data, risk analytics and carbon reporting in one place.',
+      'Commercial advisory around alliancing, NEC4, target cost mechanisms and performance incentives.'
     ],
     routes_to_market: [
-      'Network Rail CP7 regional frameworks with rolling call-offs.',
-      'TfL engineering & project delivery frameworks (stations/systems).',
-      'Transport Scotland / ScotRail; Sell2Wales for TfW.',
-      'City region call-offs (WYCA mass transit, TfGM, Nexus, WMCA).'
+      'Network Rail CP7 regional and national frameworks (professional services, design & delivery) with rolling call-offs.',
+      'TfL engineering and project delivery frameworks covering stations, systems, renewals and line upgrades.',
+      'Transport Scotland / ScotRail consultancy routes and major project commissions under devolved settlements.',
+      'Transport for Wales and Core Valley Lines arrangements, including design & build supply-chain interfaces.',
+      'HS2 Ltd professional services, station and systems frameworks for remaining Phase One works.',
+      'City-region and combined authority call-offs (e.g. TfGM, WYCA, WMCA, Nexus) using CRSTS and local transport funding.',
+      'Direct appointments or sub-consultancy via tier 1 contractors on alliance and enterprise model projects.'
     ],
     spend: {
-      y1_total_gbp_bn: '£8–10bn',
-      y5_total_gbp_bn: '£44bn (indicative)',
-      y10_total_gbp_bn: '£80–90bn (indicative)',
+y1_total_gbp_bn: '£8–10bn (mainline renewals/enhancements, GB est.)',
+y5_total_gbp_bn: '£44bn CP7 renewals & maintenance (E&W only) + c.£5bn Scotland',
+y10_total_gbp_bn: '£80–90bn incl. CP7 (GB), IRP and devolved/metro & light rail (indicative)',
+
       sector_split_pct: {
         'Renewals (Track/Civils/Power)': 45,
         'Enhancements/Capacity': 15,
@@ -207,17 +289,22 @@ const DATA = {
       notes: 'Indicative UK rail rates; validate per framework and location.'
     },
     key_dates: [
-      { date: 'Each Nov', item: 'Autumn Statement', impact: 'CAPEX envelopes for transport & rail' },
-      { date: 'Feb–Apr (annual)', item: 'NR Business Planning Windows', impact: 'workbank confirmations' },
-      { date: '2029', item: 'Start of CP8', impact: 're-procurement & pipeline reshape' }
+      { date: 'Each Nov', item: 'UK Autumn Statement', impact: 'Sets/updates transport and rail CAPEX envelopes and wider public spending context.' },
+      { date: 'Dec (annual)', item: 'Scottish & Welsh Budgets', impact: 'Confirm devolved transport/rail capital for Scotland and Wales.' },
+      { date: 'Feb–Apr (annual)', item: 'NR Business Planning Windows', impact: 'Workbank confirmations, in-year adjustments and pipeline visibility for CP7.' },
+      { date: 'Periodic (cp7 mid-point)', item: 'CP7 Mid-term Review', impact: 'Potential re-phasing of renewals and enhancements across routes and regions.' },
+      { date: 'City-region cycles', item: 'CRSTS / devolved transport settlements', impact: 'Refresh of metro, light rail and mass transit funding envelopes.' },
+      { date: '2029', item: 'Start of CP8', impact: 'Re-procurement of frameworks and major reshaping of the medium-term pipeline.' }
     ],
     contacts: [
-      { label: 'Network Rail', value: 'Corporate Site', url: 'https://www.networkrail.co.uk' },
-      { label: 'DfT', value: 'Policy & funding', url: 'https://www.gov.uk/government/organisations/department-for-transport' },
-      { label: 'Transport for London', value: 'Authority site', url: 'https://tfl.gov.uk' },
+      { label: 'Network Rail', value: 'Corporate site', url: 'https://www.networkrail.co.uk' },
+      { label: 'Department for Transport (DfT)', value: 'Policy & funding', url: 'https://www.gov.uk/government/organisations/department-for-transport' },
+      { label: 'Transport for London (TfL)', value: 'Authority site', url: 'https://tfl.gov.uk' },
       { label: 'Transport Scotland', value: 'Authority site', url: 'https://www.transport.gov.scot' },
-      { label: 'Transport for Wales', value: 'Authority site', url: 'https://trc.cymru' },
-      { label: 'Translink (NI)', value: 'Authority site', url: 'https://www.translink.co.uk' }
+      { label: 'Transport for Wales (TfW)', value: 'Authority site', url: 'https://trc.cymru' },
+      { label: 'Translink (Northern Ireland)', value: 'Authority site', url: 'https://www.translink.co.uk' },
+      { label: 'HS2 Ltd', value: 'Programme information', url: 'https://www.hs2.org.uk' },
+      { label: 'Office of Rail and Road (ORR)', value: 'Regulator & statistics', url: 'https://www.orr.gov.uk' }
     ]
     ,
     meta: {}
