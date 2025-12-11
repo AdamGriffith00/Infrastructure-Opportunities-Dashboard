@@ -5,13 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UK Map - Fixed</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: rgb(216, 216, 216);
-            min-height: 100vh;
-        }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: rgb(216, 216, 216);
+        min-height: 100vh;
+    }
+
+    :root {
+        --active: #DA4F27;
+        --inactive: #3A3A3A;
+        --border: #4A4A4A;
+    }
+
+    .nav {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        padding: 12px 16px;
+        border: 1px solid rgba(0,0,0,0.15);
+        background: #2b2b2b;
+        border-radius: 14px;
+        flex-wrap: wrap;
+        margin: 0 auto 18px;
+        max-width: 1000px;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+    }
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 140px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 800;
+        letter-spacing: .3px;
+        border: 1px solid var(--border);
+        background: var(--inactive);
+        color: #fff;
+        transition: transform .14s ease, border-color .14s ease, background .14s ease;
+        cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: var(--active); }
+    .btn.active { background: var(--active); border-color: var(--active); color: #000; }
         
         .container {
             display: grid;
@@ -162,6 +201,14 @@
     </style>
 </head>
 <body>
+    <nav class="nav" aria-label="Primary navigation">
+        <a class="btn" href="Overall.html">Overall</a>
+        <a class="btn" href="sectors.html">Sectors</a>
+        <a class="btn" href="Regions.html">Regions</a>
+        <a class="btn" href="disciplines.html">Disciplines</a>
+        <a class="btn" href="LiveProjects.html">Current Projects</a>
+        <a class="btn active" href="budget-summary.html" aria-current="page">Budget Summary</a>
+    </nav>
     <div class="container">
         <!-- Left side regions -->
         <div id="scotland-box" class="region-box">
