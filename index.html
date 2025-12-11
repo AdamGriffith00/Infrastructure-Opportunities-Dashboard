@@ -43,14 +43,14 @@
       min-width:140px; padding:12px 16px; border-radius:12px; text-decoration:none; cursor:default;
       font-weight:800; letter-spacing:.3px; border:1px solid var(--border);
       background: var(--inactive); color:#fff; transition: transform .14s ease, border-color .14s ease, background .14s ease;
-      pointer-events:none;
+      cursor:pointer;
     }
+    .btn:hover{ transform: translateY(-1px); border-color: var(--active); }
     .btn.active{
       background: var(--active);
       border-color: var(--active);
-      color:#000; cursor:pointer; pointer-events:auto;
+      color:#000;
     }
-    .btn.active:hover{ transform: translateY(-1px); }
     main{display:grid; place-items:center; padding:24px 16px}
     .card{
       width:min(960px, 94vw); background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -66,11 +66,12 @@
   </header>
 
   <nav class="nav" aria-label="Primary">
-    <span class="btn" aria-disabled="true">Overall</span>
+    <a class="btn" href="Overall.html">Overall</a>
     <a class="btn active" href="sectors.html">Sectors</a>
-    <a class="btn active" href="regions.html">Regions</a>
+    <a class="btn active" href="Regions.html">Regions</a>
     <a class="btn active" href="disciplines.html">Disciplines</a>
-    <a class="btn active" href="liveprojects.html">Current Projects</a>
+    <a class="btn active" href="LiveProjects.html">Current Projects</a>
+    <a class="btn active" href="budget-summary.html">Budget Summary</a>
   </nav>
 
   <main>
