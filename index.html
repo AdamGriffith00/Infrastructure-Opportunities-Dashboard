@@ -43,14 +43,55 @@
       min-width:140px; padding:12px 16px; border-radius:12px; text-decoration:none; cursor:default;
       font-weight:800; letter-spacing:.3px; border:1px solid var(--border);
       background: var(--inactive); color:#fff; transition: transform .14s ease, border-color .14s ease, background .14s ease;
-      pointer-events:none;
+      cursor:pointer;
     }
+    .btn:hover{ transform: translateY(-1px); border-color: var(--active); }
     .btn.active{
       background: var(--active);
       border-color: var(--active);
-      color:#000; cursor:pointer; pointer-events:auto;
+      color:#000;
     }
-    .btn.active:hover{ transform: translateY(-1px); }
+    .main-tabs {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 22px;
+      align-items: start;
+      max-width: 1100px;
+      margin: 40px auto 30px;
+    }
+
+    .main-tab {
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border-radius: 18px;
+      border: 2px solid #444;
+      background-color: #333333;
+      color: #ffffff;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 0 rgba(0,0,0,.45);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+    }
+
+    .main-tab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 0 rgba(0,0,0,.5);
+    }
+
+    .main-tab.active {
+      background-color: #e85b0d; /* Gleeds orange */
+      color: #ffffff;
+    }
+
+    @media (max-width: 1100px) {
+      .main-tabs { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+    }
+    @media (max-width: 650px) {
+      .main-tabs { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    }
     main{display:grid; place-items:center; padding:24px 16px}
     .card{
       width:min(960px, 94vw); background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -65,13 +106,14 @@
     <div class="subtitle">Gleeds • Internal View</div>
   </header>
 
-  <nav class="nav" aria-label="Primary">
-    <span class="btn" aria-disabled="true">Overall</span>
-    <a class="btn active" href="sectors.html">Sectors</a>
-    <a class="btn active" href="regions.html">Regions</a>
-    <a class="btn active" href="disciplines.html">Disciplines</a>
-    <a class="btn active" href="liveprojects.html">Current Projects</a>
-  </nav>
+  <div class="main-tabs">
+    <a href="Overall.html" class="main-tab active">Overall</a>
+    <a href="budget-summary.html" class="main-tab">Budget Summary</a>
+    <a href="sectors.html" class="main-tab">Sectors</a>
+    <a href="Regions.html" class="main-tab">Regions</a>
+    <a href="disciplines.html" class="main-tab">Disciplines</a>
+    <a href="LiveProjects.html" class="main-tab">Current Projects</a>
+  </div>
 
   <main>
     <div class="card">
