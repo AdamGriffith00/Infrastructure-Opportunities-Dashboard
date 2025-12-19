@@ -3,351 +3,381 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Infrastructure Hub</title>
+  <title>Overall 2026 • Infrastructure Opportunities and Budget Dashboard</title>
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --gleeds-yellow: #F7C400;
+      --gleeds-dark: #3C3C3C;
+      --gleeds-light: #F5F5F5;
+      --card: #2F2F2F;
+      --border: #4A4A4A;
+      --active: #DA4F27;
+      --inactive: #3A3A3A;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: #f3f3f3; color: #222;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--gleeds-dark);
+      color: var(--gleeds-light);
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
     }
-    /* Tabs */
-    .tab-container {
-      display: flex;
-      flex-wrap: nowrap;               /* keep on one line */
-      overflow-x: auto;                 /* allow scroll on small screens */
-      -webkit-overflow-scrolling: touch;
-      background: rgb(247,196,0);       /* Gleeds yellow */
-    }
-    .tab {
-      flex: 0 0 calc(100% / 6);         /* exactly 6 equal columns */
+
+    .hero {
+      padding: 22px 18px 12px;
       text-align: center;
-      padding: 1em;
-      cursor: pointer;
-      background: rgb(247,196,0);
+    }
+    .hero .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #2b2b2b;
+      border: 1px solid var(--border);
+      color: var(--gleeds-yellow);
+      font-weight: 800;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      font-size: .85rem;
+    }
+    .hero h1 {
+      margin-top: 10px;
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      letter-spacing: .6px;
+      color: var(--gleeds-yellow);
+    }
+    .hero p {
+      margin-top: 8px;
+      opacity: .9;
+      font-size: 1rem;
+    }
+
+    .nav {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: #2b2b2b;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 140px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 800;
+      letter-spacing: .3px;
+      border: 1px solid var(--border);
+      background: var(--inactive);
       color: #fff;
-      border-bottom: 2px solid transparent;
-      transition: background .25s;
-      user-select: none;
-      white-space: nowrap;              /* keep labels on one line */
+      transition: transform .14s ease, border-color .14s ease, background .14s ease;
+      cursor: pointer;
     }
-    .tab:hover, .tab.active { background: rgb(60,60,60); } /* charcoal */
-    .tab-content { display: none; padding: 1em; background: #fff; }
-    .tab-content.active { display: block; }
+    .btn:hover { transform: translateY(-1px); border-color: var(--active); }
+    .btn.active { background: var(--active); border-color: var(--active); color: #000; }
 
-    /* Iframes for other tabs */
-    iframe { width: 100%; height: 90vh; border: none; background: #fff; }
-
-    /* Live Opportunities */
-    .live-wrap { max-width: 1200px; margin: 0 auto; }
-    .live-header { display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; margin-bottom:.5rem; }
-    .live-title { font-size:1.75rem; font-weight:700; margin:0; }
-    .last-updated { color:#555; font-size:.95rem; }
-    .error { color:#b00020; margin:.5rem 0 0; font-weight:600; }
-
-    /* Filter bar */
-    .filter-bar {
-      display:flex; flex-wrap:wrap; gap:.5rem; margin:.5rem 0 1rem;
+    /* Main navigation tabs */
+    .main-tabs {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 22px;
+      align-items: start;
+      max-width: 1100px;
+      margin: 40px auto 30px;
     }
-    .filter-pill {
-      border:1px solid #ddd; background:#fff; color:#333;
-      padding:.35rem .6rem; border-radius:999px; font-size:.9rem; cursor:pointer;
-      user-select:none;
-    }
-    .filter-pill.active { background: rgb(60,60,60); color:#fff; border-color: rgb(60,60,60); }
 
-    /* Table container (mobile scroll) */
-    .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid #e5e5e5; border-radius:8px; background:#fff; }
-    table { width:100%; border-collapse:collapse; min-width:900px; }
-    thead th {
-      position:sticky; top:0; background:#f8f8f8; z-index:1;
-      text-align:left; padding:10px 12px; font-weight:700; border-bottom:1px solid #e5e5e5; white-space:nowrap;
+    .main-tab {
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border-radius: 18px;
+      border: 2px solid #444;
+      background-color: #333333;
+      color: #ffffff;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 0 rgba(0,0,0,.45);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
     }
-    tbody td { padding:10px 12px; border-bottom:1px solid #eee; vertical-align:top; }
-    tbody tr:hover { background:#fafafa; }
-    a.title-link { color:#0b63ce; text-decoration:none; }
-    a.title-link:hover { text-decoration:underline; }
 
-    .pill {
-      display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; line-height:1.6;
-      background:#eef2f7; color:#333; white-space:nowrap;
+    .main-tab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 0 rgba(0,0,0,.5);
     }
-    /* sector tints */
-    .pill.aviation{background:#e8f2ff;}
-    .pill.utilities{background:#efeaff;}
-    .pill.rail{background:#eaf7ee;}
-    .pill.highways{background:#fff4e5;}
-    .pill.maritime{background:#e9f7fa;}
-    .pill.infrastructure{background:#f1f3f5;}
 
-    .muted { color:#666; font-size:.9rem; }
-    .right { text-align:right; }
+    .main-tab.active {
+      background-color: #e85b0d; /* Gleeds orange */
+      color: #ffffff;
+    }
+
+    @media (max-width: 1100px) {
+      .main-tabs { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+    }
+    @media (max-width: 650px) {
+      .main-tabs { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    }
+
+    main {
+      padding: 18px 16px 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .section {
+      width: min(1280px, 95vw);
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 18px 20px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .section-title { font-size: 1.25rem; font-weight: 800; letter-spacing: .3px; color: var(--gleeds-yellow); }
+    .section-subtitle { color: #d8d8d8; opacity: .85; font-size: .95rem; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .kpi-card {
+      background: linear-gradient(135deg, #313131, #272727);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 14px 16px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.32);
+    }
+    .kpi-label { font-size: .95rem; color: #e8e8e8; opacity: .9; }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; letter-spacing: .3px; color: var(--gleeds-yellow); margin-top: 6px; }
+    .kpi-note { font-size: .9rem; color: #c8c8c8; opacity: .85; margin-top: 4px; }
+
+    .sector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .sector-card {
+      background: #272727;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 14px 16px;
+      text-decoration: none;
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(0,0,0,.32);
+      transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+      display: grid;
+      gap: 6px;
+    }
+    .sector-card:hover { transform: translateY(-2px); border-color: var(--active); box-shadow: 0 14px 26px rgba(0,0,0,.4); }
+    .sector-title { font-size: 1.1rem; font-weight: 800; letter-spacing: .2px; color: var(--gleeds-yellow); }
+    .sector-metrics { display: flex; gap: 12px; flex-wrap: wrap; color: #eaeaea; font-weight: 700; }
+    .badge { background: #3A3A3A; border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-size: .9rem; }
+    .sector-list { margin: 4px 0 0 18px; color: #d0d0d0; line-height: 1.4; }
+
+    .discipline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .discipline-card {
+      background: #2c2c2c;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 12px 14px;
+      text-decoration: none;
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(0,0,0,.28);
+      transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+      display: grid;
+      gap: 4px;
+    }
+    .discipline-card:hover { transform: translateY(-2px); border-color: var(--active); box-shadow: 0 12px 22px rgba(0,0,0,.4); }
+    .discipline-title { font-weight: 800; color: var(--gleeds-yellow); }
+    .discipline-note { color: #d0d0d0; font-size: .95rem; }
+
+    footer { padding: 12px 16px 18px; text-align: center; color: #d0d0d0; opacity: .75; font-size: .9rem; }
   </style>
 </head>
 <body>
-  <!-- Top tabs -->
-  <div class="tab-container">
-    <div class="tab active" data-tab="budget-summary">2025/26 Budget Summary</div>
-    <div class="tab" data-tab="regions">Regions - 2025/26 Projects</div>
-    <div class="tab" data-tab="ten-year-budget">10 Year Budget Summary</div>
-    <div class="tab" data-tab="frameworks">Frameworks</div>
-    <div class="tab" data-tab="gleeds-pipeline">Gleeds Pipeline</div>
-    <div class="tab" data-tab="live">Live Opportunities</div>
-  </div>
-  
-  <!-- Tab bodies -->
-  <div class="tab-content active" id="budget-summary">
-    <iframe src="budget-summary.html" title="Budget Summary"></iframe>
+  <header class="hero">
+    <div class="eyebrow">2026 Summary</div>
+    <h1>Overall 2026 Infrastructure Opportunities</h1>
+    <p>Top-down view across sectors, regions and disciplines for 2026.</p>
+  </header>
+
+  <div class="main-tabs">
+    <a href="Overall.html" class="main-tab active">Overall</a>
+    <a href="budget-summary.html" class="main-tab">Budget Summary</a>
+    <a href="sectors.html" class="main-tab">Sectors</a>
+    <a href="Regions.html" class="main-tab">Regions</a>
+    <a href="disciplines.html" class="main-tab">Disciplines</a>
+    <a href="LiveProjects.html" class="main-tab">Current Projects</a>
   </div>
 
-  <div class="tab-content" id="regions">
-    <iframe src="uk-map.html" title="Regions"></iframe>
-  </div>
-  
-  <div class="tab-content" id="ten-year-budget">
-    <iframe src="uk-interactive-map-10-year.html" title="Regions"></iframe>
-  </div>
-
-  <div class="tab-content" id="gleeds-pipeline">
-    <p>Content for Gleeds Pipeline will go here.</p>
-  </div>
-
-  <!-- LIVE OPPORTUNITIES -->
-  <div class="tab-content" id="live">
-    <div class="live-wrap">
-      <div class="live-header">
-        <h2 class="live-title">Live Opportunities</h2>
-        <div class="last-updated" id="lastUpdated">Last updated: —</div>
+  <main>
+    <section class="section" aria-labelledby="kpi-title">
+      <div class="section-header">
+        <div class="section-title" id="kpi-title">2026 at a glance</div>
+        <div class="section-subtitle">Use this as the SLT readout for budget and pipeline scale.</div>
       </div>
-      <div id="liveError" class="error" style="display:none;"></div>
-
-      <!-- Sector filters -->
-      <div class="filter-bar" id="filterBar">
-        <!-- pills injected -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total 2026 addressable budget</div>
+          <div class="kpi-value">£38.2bn</div>
+          <div class="kpi-note">Across all tracked sectors and regions. <!-- Update with consolidated 2026 budget when source data lands. --></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">2026 opportunities tracked</div>
+          <div class="kpi-value">134</div>
+          <div class="kpi-note">Count of lots/frameworks scoped for 2026. <!-- Replace with live opportunity count. --></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Frameworks / lots monitored</div>
+          <div class="kpi-value">42</div>
+          <div class="kpi-note">Large competitive frameworks due in 2026. <!-- Swap with validated framework list volume. --></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top 3 clients by 2026 budget</div>
+          <div class="kpi-value" style="font-size:1.15rem;">Network Rail • National Highways • Thames Water</div>
+          <div class="kpi-note">Sorted by total 2026 allocation. <!-- Update client ordering/labels once refreshed. --></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top 3 regions by 2026 budget</div>
+          <div class="kpi-value" style="font-size:1.1rem;">London • South East • North West</div>
+          <div class="kpi-note">Regional roll-up of 2026 spend. <!-- Replace with live regional totals. --></div>
+        </div>
       </div>
+    </section>
 
-      <div class="table-scroll">
-        <table id="liveTable">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Buyer</th>
-              <th>Region</th>
-              <th>Deadline</th>
-              <th>Days left</th>
-              <th class="right">Estimated value</th>
-              <th>Sector</th>
-              <th>Source</th>
-            </tr>
-          </thead>
-          <tbody><!-- rows injected here --></tbody>
-        </table>
+    <section class="section" aria-labelledby="sector-title">
+      <div class="section-header">
+        <div class="section-title" id="sector-title">Sector highlights</div>
+        <div class="section-subtitle">Click any tile to jump into detailed maps and cheat sheets.</div>
       </div>
-      <p class="muted" id="liveCount" style="margin-top:.5rem"></p>
-    </div>
-  </div>
-
-  <!-- FRAMEWORKS TAB CONTENT -->
-  <div class="tab-content" id="frameworks">
-    <div class="live-wrap">
-      <div class="live-header">
-        <h2 class="live-title">Frameworks</h2>
-        <div class="last-updated">Last refreshed: <span id="fw-last-refreshed">—</span></div>
+      <div class="sector-grid">
+        <a class="sector-card" href="rail.html">
+          <div class="sector-title">Rail</div>
+          <div class="sector-metrics">
+            <span class="badge">£12.5bn</span>
+            <span class="badge">28 opportunities</span>
+          </div>
+          <ul class="sector-list">
+            <li>Rail network renewals and Midlands Rail Hub leads 2026</li>
+            <li>Rolling stock upgrades and digital signalling pipeline</li>
+          </ul>
+          <!-- Replace the rail budget/opportunity numbers with 2026 totals from rail.html -->
+        </a>
+        <a class="sector-card" href="highways.html">
+          <div class="sector-title">Highways</div>
+          <div class="sector-metrics">
+            <span class="badge">£9.3bn</span>
+            <span class="badge">24 opportunities</span>
+          </div>
+          <ul class="sector-list">
+            <li>RIS3 enabling works and safety upgrades</li>
+            <li>Key A-road junction modernisations</li>
+          </ul>
+          <!-- Update with 2026 Highways totals/opportunities from highways.html -->
+        </a>
+        <a class="sector-card" href="utilities.html">
+          <div class="sector-title">Utilities</div>
+          <div class="sector-metrics">
+            <span class="badge">£7.8bn</span>
+            <span class="badge">26 opportunities</span>
+          </div>
+          <ul class="sector-list">
+            <li>AMP8 water resilience and smart metering</li>
+            <li>Grid reinforcements supporting energy transition</li>
+          </ul>
+          <!-- Update Utilities values to match 2026 scope in utilities.html -->
+        </a>
+        <a class="sector-card" href="aviation.html">
+          <div class="sector-title">Aviation</div>
+          <div class="sector-metrics">
+            <span class="badge">£4.1bn</span>
+            <span class="badge">18 opportunities</span>
+          </div>
+          <ul class="sector-list">
+            <li>Terminal optimisation and airfield resilience works</li>
+            <li>Key UK hub capacity and security upgrades</li>
+          </ul>
+          <!-- Swap values with confirmed 2026 aviation totals from aviation.html -->
+        </a>
+        <a class="sector-card" href="maritime.html">
+          <div class="sector-title">Maritime</div>
+          <div class="sector-metrics">
+            <span class="badge">£2.6bn</span>
+            <span class="badge">12 opportunities</span>
+          </div>
+          <ul class="sector-list">
+            <li>Port modernisation and berth dredging programmes</li>
+            <li>Freeport-linked logistics corridors</li>
+          </ul>
+          <!-- Refresh maritime figures with 2026 totals from maritime.html -->
+        </a>
+        <a class="sector-card" href="disciplines.html">
+          <div class="sector-title">Disciplines hub</div>
+          <div class="sector-metrics">
+            <span class="badge">£1.9bn</span>
+            <span class="badge">8 cross-sector lots</span>
+          </div>
+          <ul class="sector-list">
+            <li>Discipline-led frameworks cutting across sectors</li>
+            <li>Great for early positioning with national clients</li>
+          </ul>
+          <!-- Update discipline budgets/opportunity counts when 2026 discipline roll-up is available. -->
+        </a>
       </div>
-      <!-- The Frameworks table + Bid Analyser wizard will render here -->
-      <div id="frameworks-root"></div>
-    </div>
-  </div>
+    </section>
 
-  <script>
-    /* ---------- Tab wiring ---------- */
-    const tabs = document.querySelectorAll('.tab');
-    const contents = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        contents.forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.tab).classList.add('active');
+    <section class="section" aria-labelledby="discipline-title">
+      <div class="section-header">
+        <div class="section-title" id="discipline-title">Discipline snapshots</div>
+        <div class="section-subtitle">Quick pivot into discipline-led opportunities for 2026.</div>
+      </div>
+      <div class="discipline-grid">
+        <a class="discipline-card" href="CostManagement.html">
+          <div class="discipline-title">Cost Management</div>
+          <div class="discipline-note">£9.8bn in flight • 40+ bids</div>
+          <div class="discipline-note">Focus: capital efficiency and benchmarking</div>
+          <!-- Replace values with 2026 Cost Management totals from discipline data. -->
+        </a>
+        <a class="discipline-card" href="ProjectManagement.html">
+          <div class="discipline-title">Project Management</div>
+          <div class="discipline-note">£8.1bn • 32 opportunities</div>
+          <div class="discipline-note">Major frameworks across transport and utilities</div>
+          <!-- Update with 2026 Project Management metrics when refreshed. -->
+        </a>
+        <a class="discipline-card" href="ProjectControls.html">
+          <div class="discipline-title">Project Controls</div>
+          <div class="discipline-note">£6.7bn • 22 opportunities</div>
+          <div class="discipline-note">Controls packages aligned to mega-programmes</div>
+          <!-- Substitute with live 2026 Project Controls totals. -->
+        </a>
+        <a class="discipline-card" href="Advisory.html">
+          <div class="discipline-title">Advisory</div>
+          <div class="discipline-note">£3.2bn • 12 opportunities</div>
+          <div class="discipline-note">Strategy, assurance and investment-grade advice</div>
+          <!-- Update Advisory 2026 values when available. -->
+        </a>
+      </div>
+    </section>
+  </main>
 
-        if (tab.dataset.tab === 'live') {
-          if (!document.getElementById('liveTable').dataset.loaded) {
-            loadLive();
-          }
-        }
-        // Frameworks tab doesn't need lazy-init; its JS checks for #frameworks-root before running.
-      });
-    });
-
-    /* ---------- Live data + filters ---------- */
-    let allItems = [];
-    let activeKey = 'all'; // 'all' | sector keys
-
-    const FILTERS = [
-      { key:'all',           label:'All' },
-      { key:'aviation',      label:'Aviation' },
-      { key:'utilities',     label:'Utilities' },
-      { key:'rail',          label:'Rail' },
-      { key:'highways',      label:'Highways' },
-      { key:'maritime',      label:'Maritime' },
-      { key:'infrastructure',label:'Infrastructure' },
-    ];
-
-    async function loadLive() {
-      const tbody = document.querySelector('#liveTable tbody');
-      const errEl = document.getElementById('liveError');
-      const updatedEl = document.getElementById('lastUpdated');
-      const countEl = document.getElementById('liveCount');
-
-      errEl.style.display = 'none'; errEl.textContent = '';
-      tbody.innerHTML = ''; countEl.textContent = '';
-
-      try {
-        const res = await fetch('/.netlify/functions/latest', { cache: 'no-store' });
-        if (!res.ok) throw new Error(`latest returned ${res.status}`);
-        const data = await res.json();
-
-        updatedEl.textContent = `Last updated: ${formatDateTime(data.updatedAt)}`;
-        allItems = Array.isArray(data.items) ? data.items.map(normalizeSector) : [];
-
-        // build filter bar (with counts)
-        buildFilters();
-
-        // initial render
-        applyFilter();
-        document.getElementById('liveTable').dataset.loaded = '1';
-      } catch (e) {
-        errEl.textContent = `Error: ${e.message}`;
-        errEl.style.display = 'block';
-      }
-    }
-
-    function buildFilters(){
-      const bar = document.getElementById('filterBar');
-      const counts = countBySector(allItems);
-      bar.innerHTML = FILTERS.map(f => {
-        const c = f.key === 'all' ? allItems.length : (counts[f.key] || 0);
-        const active = f.key === activeKey ? 'active' : '';
-        return `<span class="filter-pill ${active}" data-key="${f.key}">${f.label} (${c})</span>`;
-      }).join('');
-      bar.querySelectorAll('.filter-pill').forEach(pill=>{
-        pill.addEventListener('click', ()=>{
-          activeKey = pill.dataset.key;
-          bar.querySelectorAll('.filter-pill').forEach(el=>el.classList.toggle('active', el===pill));
-          applyFilter();
-        });
-      });
-    }
-
-    function applyFilter(){
-      const tbody = document.querySelector('#liveTable tbody');
-      const countEl = document.getElementById('liveCount');
-
-      const filtered = activeKey === 'all'
-        ? allItems
-        : allItems.filter(it => (it._sectorKey || '') === activeKey);
-
-      tbody.innerHTML = filtered.map(renderRow).join('');
-      countEl.textContent = `${filtered.length} opportunities`;
-    }
-
-    function countBySector(items){
-      const m = {};
-      for (const it of items){
-        const k = it._sectorKey || 'infrastructure';
-        m[k] = (m[k]||0)+1;
-      }
-      return m;
-    }
-
-    /* ---------- Rendering ---------- */
-    function renderRow(it) {
-      const title = esc(it.title || 'Untitled');
-      const buyer = esc(it.organisation || '');
-      const region = esc(it.region || '');
-      const url = it.url ? esc(it.url) : '#';
-
-      const deadlineISO = it.deadline || '';
-      const deadlineTxt = deadlineISO ? formatDateTime(deadlineISO) : '—';
-      const days = deadlineISO ? daysLeft(deadlineISO) : null;
-      const daysTxt = days === null ? '—' : (days >= 0 ? `${days} day${days===1?'':'s'} left` : 'Closed');
-
-      const valueLow = num(it.valueLow);
-      const valueHigh = num(it.valueHigh);
-      const valueTxt =
-        valueLow === null && valueHigh === null ? '—'
-        : valueLow !== null && valueHigh !== null ? `${gbp(valueLow)} – ${gbp(valueHigh)}`
-        : gbp(valueLow ?? valueHigh);
-
-      const sectorKey = it._sectorKey || '';
-      const sectorLabel = sectorKey ? cap(sectorKey) : '—';
-
-      const source = esc(it.source || '—');
-
-      return `
-        <tr>
-          <td><a class="title-link" href="${url}" target="_blank" rel="noopener">${title}</a></td>
-          <td>${buyer || '—'}</td>
-          <td>${region || '—'}</td>
-          <td>${deadlineTxt}</td>
-          <td>${daysTxt}</td>
-          <td class="right">${valueTxt}</td>
-          <td><span class="pill ${sectorKey}">${sectorLabel}</span></td>
-          <td>${source}</td>
-        </tr>
-      `;
-    }
-
-    /* ---------- Helpers ---------- */
-    function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function cap(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
-    function num(x){ const n = Number(x); return Number.isFinite(n) ? n : null; }
-    function gbp(n){
-      try { return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n); }
-      catch{ return `£${Math.round(n).toLocaleString('en-GB')}`; }
-    }
-    function formatDateTime(iso){
-      const d = new Date(iso);
-      if (isNaN(d)) return '—';
-      const pad = v=>String(v).padStart(2,'0');
-      return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    }
-    function daysLeft(iso){
-      const d = new Date(iso);
-      if (isNaN(d)) return null;
-      const ms = d - new Date();
-      return Math.ceil(ms / (1000*60*60*24));
-    }
-
-    // Normalize/derive a consistent sector key for filtering
-    function normalizeSector(it){
-      const raw = (it.sector || '').toString().toLowerCase();
-      let key = '';
-      // direct matches
-      if (/aviation/.test(raw)) key = 'aviation';
-      else if (/utilit(y|ies)/.test(raw)) key = 'utilities';
-      else if (/rail/.test(raw)) key = 'rail';
-      else if (/highway|road/.test(raw)) key = 'highways';
-      else if (/maritime|port|harbour|harbor/.test(raw)) key = 'maritime';
-      else if (/infrastructure/.test(raw)) key = 'infrastructure';
-
-      // if not provided, infer from title/org
-      if (!key){
-        const hay = `${(it.title||'')} ${(it.organisation||'')}`.toLowerCase();
-        if (/airport|airfield|airside|aviation/.test(hay)) key = 'aviation';
-        else if (/water|gas|electric|utilities|utility|sewer|wastewater/.test(hay)) key = 'utilities';
-        else if (/rail|rolling stock|station|track/.test(hay)) key = 'rail';
-        else if (/highway|roads?\b|junction|carriageway/.test(hay)) key = 'highways';
-        else if (/port|harbour|harbor|dock|maritime|ferry/.test(hay)) key = 'maritime';
-        else key = 'infrastructure'; // sensible default bucket
-      }
-      it._sectorKey = key;
-      return it;
-    }
-  </script>
-
-<!-- Frameworks assets (table + analyser + export) -->
-<link rel="stylesheet" href="/assets/css/frameworks.css">
-<script src="/assets/js/frameworks.js" defer></script>
+  <footer>Infrastructure Opportunities and Budget Dashboard • Gleeds</footer>
 </body>
 </html>
